@@ -17,7 +17,6 @@ class ScanScreen extends StatelessWidget {
     return Scaffold(
       body: BlocConsumer<DeviceScanBloc, DeviceScanState>(
         listener: (context, state) {
-          print(state);
         },
         builder: (context, state) => Center(
           child: Padding(
@@ -46,7 +45,7 @@ class ScanScreen extends StatelessWidget {
                               const VerticalSizedBox(),
                               const CircularProgressIndicator(color: Colors.white),
                               const VerticalSizedBox(4),
-                              CustomText("Поиск"),
+                              CustomText("Поиск${state.loadingDots}"),
                             ],
                           ],
                         ),

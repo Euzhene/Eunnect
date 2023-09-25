@@ -22,7 +22,13 @@ class DeviceScanBloc extends Cubit<DeviceScanState> {
   Isolate? _scanIsolate;
   ReceivePort? _scanPort;
 
-  DeviceScanBloc() : super(const DeviceScanState());
+  DeviceScanBloc() : super(const DeviceScanState()) {
+    Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+      if (!state.loading) return;
+      String loadingDots = state.loadingDots;
+      emit(state.copyWith(loadingDots: loadingDots.length < 3 ? loadingDots += "." : ""));
+    });
+  }
 
   Future<void> onInitServer() async {
     DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
