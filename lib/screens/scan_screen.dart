@@ -1,5 +1,5 @@
 import 'package:eunnect/constants.dart';
-import 'package:eunnect/device_info.dart';
+import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
