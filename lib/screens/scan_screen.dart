@@ -1,7 +1,9 @@
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
+import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,10 +17,20 @@ class ScanScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     DeviceScanBloc bloc = context.read<DeviceScanBloc>();
     return Scaffold(
-      body: BlocConsumer<DeviceScanBloc, DeviceScanState>(
-        listener: (context, state) {
-        },
-        builder: (context, state) => Center(
+      body: BlocConsumer<DeviceScanBloc, DeviceScanState>(listener: (context, state) {
+        if (state is MoveState) Navigator.of(context).pushNamed(deviceActionsRoute, arguments: state.pairDeviceInfo);
+        if (state is ErrorState) showErrorSnackBar(context, text: state.error);
+        if (state is SuccessState) showSuccessSnackBar(context, text: state.message);
+        if (state is PairDialogState)
+          showConfirmDialog(context,
+              title: "Устройство ${state.pairDeviceInfo.deviceInfo.name} хочет сделать сопряжение",
+              onConfirm: () => bloc.onPairConfirmed(state.pairDeviceInfo),
+              onCancel: () => bloc.onPairConfirmed(null));
+      }, buildWhen: (prevS, curS) {
+        return curS is LoadedState;
+      }, builder: (context, state) {
+        state as LoadedState;
+        return Center(
           child: Padding(
             padding: const EdgeInsets.all(horizontalPadding),
             child: SingleChildScrollView(
@@ -26,7 +38,7 @@ class ScanScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   CustomCard(
-                      headerText: "Доступные устройства (${state.devicesNvl.length})",
+                      headerText: "Доступные устройства (${state.devices.length + state.pairedDevices.length})",
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(minHeight: 300),
                         child: Column(
@@ -37,7 +49,24 @@ class ScanScreen extends StatelessWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  ...state.devicesNvl.map((e) => _buildDeviceItem(e)).toList()
+                                  if (state.pairedDevices.isNotEmpty)
+                                    CustomText(
+                                      "Сопряженные",
+                                      fontSize: 15,
+                                    ),
+                                  ...state.pairedDevices.map((e) => _buildDeviceItem(e: e.deviceInfo, onPressed: () =>bloc.onPairedDeviceChosen(e))).toList(),
+                                  if (state.devices.isNotEmpty)
+                                    CustomText(
+                                      "Найденные",
+                                      fontSize: 15,
+                                    ),
+                                  ...state.devices
+                                      .map((e) => _buildDeviceItem(
+                                          e: e,
+                                          onPressed: () async {
+                                            bloc.onPairRequested(e);
+                                          }))
+                                      .toList()
                                 ],
                               ),
                             ),
@@ -53,19 +82,17 @@ class ScanScreen extends StatelessWidget {
                   TextButton(
                       onPressed: state.loading ? null : () => bloc.onScanDevicesRequested(),
                       child: CustomText("Поиск устройств")),
-                  TextButton(
-                      onPressed: () => bloc.onCancelScanRequested(),
-                      child: CustomText("Отменить поиск")),
+                  TextButton(onPressed: () => bloc.onCancelScanRequested(), child: CustomText("Отменить поиск")),
                 ],
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _buildDeviceItem(DeviceInfo e) {
+  Widget _buildDeviceItem({required DeviceInfo e, required VoidCallback onPressed}) {
     IconData iconData;
     switch (e.platform) {
       case windowsPlatform:
@@ -83,13 +110,16 @@ class ScanScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const VerticalSizedBox(),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(iconData, color: Colors.white),
-            const HorizontalSizedBox(horizontalPadding / 2),
-            CustomText(e.name, fontSize: 20),
-          ],
+        InkWell(
+          onTap: onPressed,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(iconData, color: Colors.white),
+              const HorizontalSizedBox(horizontalPadding / 2),
+              CustomText(e.name, fontSize: 20),
+            ],
+          ),
         )
       ],
     );

@@ -2,22 +2,14 @@ import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/routes.dart';
+import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:logging/logging.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Logger.root.level = Level.FINE;
-  Logger.root.onRecord.listen((record) {
-    print(
-        '${DateFormat.Hms().format(record.time)}: ${record.level.name}: ${record.loggerName}: ${record.message} ${record.error} ${record.stackTrace}');
-  });
-
   await GetItHelper.registerAll();
-  GetItHelper.i<MainBloc>().checkFirstLaunch();
   runApp(const Eunnect());
 }
 
@@ -30,8 +22,18 @@ class Eunnect extends StatelessWidget {
       title: 'MaKuKu Connect',
       theme: ThemeData(
         scaffoldBackgroundColor: scaffoldBackgroundColor,
+        appBarTheme: AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true,foregroundColor: white),
         useMaterial3: true,
       ),
+      builder: (context, widget) {
+        return BlocListener(
+          bloc: GetItHelper.i<MainBloc>(),
+            listener: (context, state) {
+              if (state is ErrorMainState) showErrorSnackBar(context, text: state.error);
+              else if (state is SuccessMainState) showSuccessSnackBar(context, text: state.message);
+            },
+            child: widget ?? Container());
+      },
       onGenerateRoute: onGenerateRoute,
       initialRoute: scanRoute,
     );

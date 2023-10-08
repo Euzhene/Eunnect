@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:eunnect/repo/local_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,25 +12,26 @@ abstract class GetItHelper {
   static final GetIt i = GetIt.I;
 
   static Future<void> registerAll() async {
-    await _registerDeviceInfo();
     await _registerSharedPreferences();
     await _registerMainBloc();
+    await _registerDeviceInfo();
   }
 
   static Future<void> _registerDeviceInfo() async {
     if (i.isRegistered<DeviceInfo>()) await i.unregister<DeviceInfo>();
 
     DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
+    String deviceId = LocalStorage().getDeviceId();
 
     DeviceInfo deviceInfo;
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
-      deviceInfo = DeviceInfo(name: androidInfo.model, platform: androidPlatform);
+      deviceInfo = DeviceInfo(name: androidInfo.model, platform: androidPlatform, id: deviceId);
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-      deviceInfo = DeviceInfo(name: windowsInfo.computerName, platform: windowsPlatform);
+      deviceInfo = DeviceInfo(name: windowsInfo.computerName, platform: windowsPlatform, id: deviceId);
     } else {
-      deviceInfo = const DeviceInfo(name: "Unknown", platform: "");
+      deviceInfo = DeviceInfo(name: "Unknown", platform: "Unsupported", id: deviceId);
     }
 
     i.registerSingleton<DeviceInfo>(deviceInfo);
@@ -45,5 +47,6 @@ abstract class GetItHelper {
     if (i.isRegistered<MainBloc>()) await i.unregister<MainBloc>();
     MainBloc mainBloc = MainBloc();
     i.registerSingleton<MainBloc>(mainBloc);
+    await mainBloc.checkFirstLaunch();
   }
 }

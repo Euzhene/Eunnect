@@ -33,16 +33,23 @@ class ErrorMessage {
 const _callField = "call";
 const _errorMessageField = "error";
 const _dataField = "data";
+const _senderIdField = "sender_id";
 
 class SocketMessage {
   final String call;
   final String? error;
   final String? data;
+  final String? senderId;
 
-  SocketMessage({required this.call, this.data, this.error});
+  SocketMessage({required this.call, this.data, this.error, this.senderId});
 
   String toJsonString() {
-    Map<String, dynamic> json = {_callField: call, _dataField: data, _errorMessageField: error};
+    Map<String, dynamic> json = {
+      _callField: call,
+      _dataField: data,
+      _errorMessageField: error,
+      _senderIdField: senderId,
+    };
     return jsonEncode(json);
   }
 
@@ -51,7 +58,8 @@ class SocketMessage {
   factory SocketMessage.fromJsonString(String jsonString) {
     Map<String, dynamic> json = jsonDecode(jsonString);
 
-    return SocketMessage(call: json[_callField], error: json[_errorMessageField], data: json[_dataField]);
+    return SocketMessage(
+        call: json[_callField], error: json[_errorMessageField], data: json[_dataField], senderId: json[_senderIdField]);
   }
 
   factory SocketMessage.fromUInt8List(Uint8List data) => SocketMessage.fromJsonString(utf8.decode(data));

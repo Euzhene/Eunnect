@@ -1,7 +1,7 @@
 
 part of 'main_bloc.dart';
 
-abstract class MainState extends Equatable {
+class MainState extends Equatable {
 
   @override
   List<Object?> get props => [];
@@ -14,6 +14,10 @@ class ErrorMainState extends MainState {
 }
 
 class SuccessMainState extends MainState {
+  final String message;
 
+  SuccessMainState({required this.message});
 }
+
+
 

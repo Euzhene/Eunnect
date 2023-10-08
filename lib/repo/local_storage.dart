@@ -9,6 +9,7 @@ import '../models/pair_device_info.dart';
 
 const _isFirstLaunchKey = "is_first_launch";
 const _secretKey = "secret_key";
+const _deviceIdKey = "device_id";
 const _pairedDevicesKey = "paired_devices";
 
 class LocalStorage {
@@ -32,32 +33,42 @@ class LocalStorage {
     return (await _storage.read(key: _secretKey))!;
   }
 
+  Future<void> setDeviceId() async {
+    String deviceId = const Uuid().v4();
+    await _preferences.setString(_deviceIdKey, deviceId);
+  }
+
+  String getDeviceId() {
+    return _preferences.getString(_deviceIdKey)!;
+  }
+
   Future<void> clearAll() async {
     await _storage.deleteAll();
     await _preferences.clear();
   }
 
-  Future<List<PairDeviceInfo>> getPairedDevices() async {
-    String listJsonString = (await _storage.read(key: _pairedDevicesKey))!;
-    return PairDeviceInfo.fromListJson(listJsonString);
+  Future<Set<PairDeviceInfo>> getPairedDevices() async {
+    String? listJsonString = (await _storage.read(key: _pairedDevicesKey));
+    if (listJsonString == null) return {};
+    return PairDeviceInfo.fromListJson(listJsonString).toSet();
   }
 
-  Future<void> _savePairedDevices(List<PairDeviceInfo> list) async {
-    String json = jsonEncode(list);
+  Future<void> _savePairedDevices(Set<PairDeviceInfo> list) async {
+    String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
     await _storage.write(key: _pairedDevicesKey, value: json);
   }
 
   Future<List<PairDeviceInfo>> addPairedDevice(PairDeviceInfo pairDeviceInfo) async {
-    List<PairDeviceInfo> pairDevices = await getPairedDevices();
+    Set<PairDeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.add(pairDeviceInfo);
     await _savePairedDevices(pairDevices);
-    return pairDevices;
+    return pairDevices.toList();
   }
 
   Future<List<PairDeviceInfo>> deletePairedDevice(PairDeviceInfo pairDeviceInfo) async {
-    List<PairDeviceInfo> pairDevices = await getPairedDevices();
+    Set<PairDeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.removeWhere((e) => e.senderId == pairDeviceInfo.senderId);
     await _savePairedDevices(pairDevices);
-    return pairDevices;
+    return pairDevices.toList();
   }
 }
