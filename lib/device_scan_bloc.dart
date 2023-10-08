@@ -119,9 +119,12 @@ class DeviceScanBloc extends Cubit<DeviceScanState> {
       await CustomServerSocket.pairStream.close();
       LoadedState _state = state.loadedState;
       if (pairDeviceInfo != null) {
-        List<PairDeviceInfo> pairedDevices = await _storage.addPairedDevice(pairDeviceInfo);
+        _pairedDevices.clear();
+        _pairedDevices.addAll(await _storage.addPairedDevice(pairDeviceInfo));
         emit(const SuccessState(message: "Успешно сопряжено"));
-        emit(_state.copyWith(pairedDevices: pairedDevices, devices: _state.devices.toList()..remove(pairDeviceInfo.deviceInfo)));
+        emit(_state.copyWith(
+            pairedDevices: _state.pairedDevices.toList()..add(pairDeviceInfo),
+            devices: _state.devices.toList()..remove(pairDeviceInfo.deviceInfo)));
       } else {
         emit(_state);
       }
