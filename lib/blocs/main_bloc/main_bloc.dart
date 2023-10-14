@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
@@ -11,6 +13,7 @@ class MainBloc extends Cubit<MainState> {
   MainBloc() : super(MainState());
 
   Future<void> checkFirstLaunch() async {
+
     try {
       if (!_storage.isFirstLaunch()) return;
 

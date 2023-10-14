@@ -1,4 +1,4 @@
-
+import 'package:intl/intl.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -20,3 +20,6 @@ const Color black = Colors.black;
 const Color errorColor = Colors.red;
 const Color successColor = Colors.green;
 const Color warnColor = Colors.yellow;
+
+
+final DateFormat dateFormat = DateFormat("dd-MM-y");

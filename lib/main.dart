@@ -22,7 +22,7 @@ class Eunnect extends StatelessWidget {
       title: 'MaKuKu Connect',
       theme: ThemeData(
         scaffoldBackgroundColor: scaffoldBackgroundColor,
-        appBarTheme: AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true,foregroundColor: white),
+        appBarTheme: const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true,foregroundColor: white),
         useMaterial3: true,
       ),
       builder: (context, widget) {

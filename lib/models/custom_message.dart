@@ -64,3 +64,35 @@ class SocketMessage {
 
   factory SocketMessage.fromUInt8List(Uint8List data) => SocketMessage.fromJsonString(utf8.decode(data));
 }
+
+const _bytesField = "bytes";
+const _filenameField = "filename";
+const _extensionField = "extension";
+
+class FileMessage {
+  final List<int> bytes;
+  final String filename;
+ // final String extension;
+
+  FileMessage({required this.bytes, required this.filename});
+
+  FileMessage copyWith({List<int>? bytes}) => FileMessage(bytes: bytes ?? this.bytes,  filename: filename);
+
+  String toJsonString() => jsonEncode({
+        _bytesField: bytes.toString(),
+        _filenameField: filename,
+    //    _extensionField: extension,
+      });
+
+  List<int> toUInt8List() => utf8.encode(toJsonString());
+
+  factory FileMessage.fromJsonString(String jsonString) {
+    Map<String, dynamic> json = jsonDecode(jsonString);
+
+    return FileMessage(
+      bytes: jsonDecode(json[_bytesField]).cast<int>().toList(),
+      filename: json[_filenameField],
+   //   extension: json[_extensionField],
+    );
+  }
+}

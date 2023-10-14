@@ -1,4 +1,4 @@
-part of 'device_scan_bloc.dart';
+part of 'scan_bloc.dart';
 
 abstract class DeviceScanState extends Equatable {
   const DeviceScanState();
@@ -47,26 +47,30 @@ class LoadedState extends DeviceScanState {
   final List<DeviceInfo> devices;
   final String loadingDots;
   final List<PairDeviceInfo> pairedDevices;
+  final List<int>? fileBytes;
 
   const LoadedState(
       {this.loading = false,
       this.devices = const [],
       this.loadingDots = "",
-      this.pairedDevices = const []});
+      this.pairedDevices = const [],
+      this.fileBytes,});
 
   LoadedState copyWith({
     List<DeviceInfo>? devices,
     bool? loading,
     String? loadingDots,
     List<PairDeviceInfo>? pairedDevices,
+    List<int>? fileBytes,
   }) =>
       LoadedState(
         loading: loading ?? this.loading,
         devices: devices ?? this.devices,
         loadingDots: loadingDots ?? this.loadingDots,
         pairedDevices: pairedDevices ?? this.pairedDevices,
+        fileBytes: fileBytes ?? this.fileBytes,
       );
 
   @override
-  List<Object?> get props => [loading, devices, loadingDots, pairedDevices];
+  List<Object?> get props => [loading, devices, loadingDots, pairedDevices,fileBytes];
 }

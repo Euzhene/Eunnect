@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:equatable/equatable.dart';
+import 'package:eunnect/constants.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/custom_server_socket.dart';
@@ -14,12 +15,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'blocs/main_bloc/main_bloc.dart';
 
 part 'device_scan_state.dart';
 
-class DeviceScanBloc extends Cubit<DeviceScanState> {
+class ScanBloc extends Cubit<DeviceScanState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
 
   Isolate? _scanIsolate;
@@ -29,7 +33,7 @@ class DeviceScanBloc extends Cubit<DeviceScanState> {
 
   final List<PairDeviceInfo> _pairedDevices = [];
 
-  DeviceScanBloc() : super(const LoadedState(devices: [])) {
+  ScanBloc() : super(const LoadedState(devices: [])) {
     _storage.getPairedDevices().then((value) {
       _pairedDevices.clear();
       _pairedDevices.addAll(value);
@@ -61,6 +65,37 @@ class DeviceScanBloc extends Cubit<DeviceScanState> {
       LoadedState _state = state.loadedState;
       emit(PairDialogState(pairDeviceInfo: pairDeviceInfo));
       emit(_state);
+    };
+
+    CustomServerSocket.onFileCall = (FileMessage message) async {
+      Directory? docDir;
+      try {
+        if (!Platform.isAndroid) {
+          docDir = await getApplicationDocumentsDirectory();
+          if (!docDir.path.endsWith(Platform.pathSeparator)) docDir = Directory(docDir.path+Platform.pathSeparator);
+        }
+        else {
+          docDir = Directory("/storage/emulated/0/Download/");
+
+          if (!await docDir.exists()) {
+            docDir = Directory("/storage/emulated/0/Downloads/");
+          }
+
+        }
+
+        File file = File("${docDir.path}${message.filename}");
+        await file.writeAsBytes(message.bytes);
+        _mainBloc.emitDefaultSuccess("Файл ${message.filename} успешно передан и сохранен в ${docDir.path}");
+      } catch (e, st) {
+        FLog.error(text: e.toString(), stacktrace: st);
+        String error;
+        if (e is FileSystemException)
+          error = "Ошибка сохранения файла в ${docDir?.path ?? "неизвестный путь"}";
+        else
+          error = "Внутреняя ошибка";
+
+        _mainBloc.emitDefaultError(error);
+      }
     };
 
     CustomServerSocket.start();
@@ -174,6 +209,15 @@ class DeviceScanBloc extends Cubit<DeviceScanState> {
       _mainBloc.emitDefaultError("Не удалось подключиться");
       //  emit(const ErrorState(error: "Не удалось подключиться"));
       emit(_state);
+    }
+  }
+
+  Future<void> onSendLogs() async {
+    File logs = await FLog.exportLogs();
+    ShareResult res = await Share.shareXFiles([XFile(logs.path)], text: "MaKuKU ${dateFormat.format(DateTime.now())}");
+    if (res.status == ShareResultStatus.success) {
+      _mainBloc.emitDefaultSuccess("Логи отправлены");
+      FLog.clearLogs();
     }
   }
 }

@@ -57,26 +57,3 @@ Widget _buildDialog({required List<Widget> actions, required String title, requi
       actionsAlignment: MainAxisAlignment.spaceEvenly,
       actions: actions);
 }
-
-// showErrorDialog(BuildContext context, {required String error}) {
-//   return showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         bool showErrorDetails = false;
-//         return StatefulBuilder(builder: (BuildContext context, setState) {
-//           return AlertDialog(
-//               title: Text(error, textAlign: TextAlign.center),
-//               content: SingleChildScrollView(
-//                   child: CustomCard(
-//                       color: lightGrey,
-//                       child: Text(!showErrorDetails ? errorMessage.errorStringNvl : errorMessage.toStringWithoutShortError()))),
-//               actionsAlignment: MainAxisAlignment.spaceEvenly,
-//               actions: [
-//                 CustomButton(onPressed: () => Navigator.of(context).pop(), text: "Закрыть"),
-//                 CustomButton(
-//                     onPressed: () => setState(() => showErrorDetails = !showErrorDetails),
-//                     text: "${showErrorDetails ? "Скрыть" : "Показать"} детали"),
-//               ]);
-//         });
-//       });
-// }

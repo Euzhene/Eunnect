@@ -1,7 +1,8 @@
+// ignore_for_file: deprecated_export_use
+
 import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
-import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/pair_device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -15,7 +16,8 @@ int port = 10242;
 
 const deviceInfoCall = "device_info";
 const pairDevicesCall = "pair_devices";
-const sendBufferCall = "send_buffer";
+const sendBufferCall = "buffer";
+const sendFileCall = "file";
 
 abstract class CustomServerSocket {
   static ServerSocket? _server;
@@ -24,6 +26,7 @@ abstract class CustomServerSocket {
   static FutureOr<DeviceInfo> Function()? onDeviceInfoCall;
   static Function(PairDeviceInfo)? onPairDeviceCall;
   static Function(String)? onBufferCall;
+  static Function(FileMessage)? onFileCall;
 
   static late StreamController<PairDeviceInfo?> pairStream;
 
@@ -37,13 +40,33 @@ abstract class CustomServerSocket {
   }
 
   static void start() {
-    _server?.listen((event) async {
-      Uint8List bytes = await event.single;
-
-      if (bytes.isEmpty) return;
-
-      SocketMessage receiveMessage = SocketMessage.fromUInt8List(bytes);
+    _server?.listen((socket) async {
+      SocketMessage? receiveMessage;
       SocketMessage? sendMessage;
+      var bytesBuilder = BytesBuilder();
+      Stream<Uint8List> stream = socket.asBroadcastStream();
+      FileMessage? fileMessage;
+
+      Uint8List bytes = await stream.first;
+      receiveMessage = SocketMessage.fromUInt8List(bytes);
+
+      stream.listen((bytes) async {
+        if (bytes.isEmpty) return;
+
+        bytesBuilder.add(bytes);
+        socket.add(bytes);
+      }, onDone: () {
+        if (receiveMessage!.call != sendFileCall) return;
+
+        if (bytesBuilder.isNotEmpty) {
+          fileMessage = fileMessage!.copyWith(bytes: bytesBuilder.takeBytes());
+          onFileCall?.call(fileMessage!);
+        }
+        socket.destroy();
+      }, onError: (e, st) {
+        FLog.error(text: e.toString(), stacktrace: st);
+        socket.destroy();
+      });
 
       switch (receiveMessage.call) {
         case deviceInfoCall:
@@ -54,15 +77,17 @@ abstract class CustomServerSocket {
           break;
         case sendBufferCall:
           sendMessage = await _sendBufferHandler(receiveMessage);
+          break;
+        case sendFileCall:
+          fileMessage = FileMessage.fromJsonString(receiveMessage.data!);
+          //   sendMessage = await _sendFileHandler(receiveMessage, s,socket);
+          return;
         default:
           sendMessage = _defaultHandler(receiveMessage.call);
           break;
       }
-
-      sendMessage ??= _defaultHandler(receiveMessage.call);
-
-      event.add(sendMessage.toUInt8List());
-      event.close();
+      socket.add(sendMessage!.toUInt8List());
+      socket.destroy();
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
     });
@@ -94,6 +119,37 @@ abstract class CustomServerSocket {
       SocketMessage(call: call, error: "Вызов $call не поддерживается в данной версии приложения");
 
   static Future<SocketMessage> _sendBufferHandler(SocketMessage receiveMessage) async {
+    SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
+    if (checkRes != null) return checkRes;
+
+    String buffer = receiveMessage.data!;
+    await onBufferCall?.call(buffer);
+    return SocketMessage(call: receiveMessage.call);
+  }
+
+  // static Future<SocketMessage> _sendFileHandler(SocketMessage receiveMessage, Stream<Uint8List> stream, Socket socket) async {
+  //   SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
+  //   if (checkRes != null) return checkRes;
+  //   var bytesBuilder = BytesBuilder();
+  //
+  //   stream.listen((bytes) async {
+  //     if (bytes.isEmpty) return;
+  //
+  //     bytesBuilder.add(bytes);
+  //     socket.add(bytes);
+  //     print("listen");
+  //   }, onDone: () {
+  //     print("done");
+  //     if (bytesBuilder.isEmpty) return;
+  //
+  //     onFileCall?.call(bytesBuilder.takeBytes());
+  //     socket.close();
+  //   });
+  //
+  //   return SocketMessage(call: receiveMessage.call);
+  // }
+
+  static Future<SocketMessage?> _checkPairDevice(SocketMessage receiveMessage) async {
     if (receiveMessage.senderId == null)
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (пустой ключ)");
     String secretKey = await _localStorage.getSecretKey();
@@ -101,8 +157,6 @@ abstract class CustomServerSocket {
     if (secretKey != receiveMessage.senderId)
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (неверный ключ)");
 
-    String buffer = receiveMessage.data!;
-    await onBufferCall?.call(buffer);
-    return SocketMessage(call: receiveMessage.call);
+    return null;
   }
 }
