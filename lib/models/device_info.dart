@@ -15,21 +15,14 @@ class DeviceInfo extends Equatable {
   final String id;
   final String name;
   final String platform;
-  final String? ipAddress;
+  final String ipAddress;
 
   const DeviceInfo({
     required this.name,
     required this.platform,
-    this.ipAddress,
+    required this.ipAddress,
     required this.id,
   });
-
-  DeviceInfo copyWith({String? ipAddress}) => DeviceInfo(
-        name: name,
-        platform: platform,
-        ipAddress: ipAddress ?? this.ipAddress,
-        id: id,
-      );
 
   DeviceInfo.fromJson(Map<String, dynamic> json)
       : id = json[_idField],

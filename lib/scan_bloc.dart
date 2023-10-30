@@ -49,8 +49,7 @@ class ScanBloc extends Cubit<DeviceScanState> {
   }
 
   Future<void> onInitServer() async {
-    await CustomServerSocket.initServer();
-    _myDeviceInfo = _myDeviceInfo.copyWith(ipAddress: CustomServerSocket.deviceIp);
+    await CustomServerSocket.initServer(_myDeviceInfo.ipAddress);
     CustomServerSocket.onDeviceInfoCall = () {
       return _myDeviceInfo;
     };

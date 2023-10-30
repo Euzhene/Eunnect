@@ -10,7 +10,8 @@ import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../scan_bloc.dart';
+import '../blocs/scan_bloc/scan_bloc.dart';
+import '../blocs/scan_bloc/scan_state.dart';
 import '../widgets/custom_text.dart';
 
 class ScanScreen extends StatelessWidget {
@@ -20,19 +21,15 @@ class ScanScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     ScanBloc bloc = context.read<ScanBloc>();
     return Scaffold(
-      body: BlocConsumer<ScanBloc, DeviceScanState>(listener: (context, state) {
-        if (state is MoveState) Navigator.of(context).pushNamed(deviceActionsRoute, arguments: state.pairDeviceInfo);
-        if (state is ErrorState) showErrorSnackBar(context, text: state.error);
-        if (state is SuccessState) showSuccessSnackBar(context, text: state.message);
-        if (state is PairDialogState)
-          showConfirmDialog(context,
-              title: "Устройство ${state.pairDeviceInfo.deviceInfo.name} хочет сделать сопряжение",
-              onConfirm: () => bloc.onPairConfirmed(state.pairDeviceInfo),
-              onCancel: () => bloc.onPairConfirmed(null));
+      body: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
+        // if (state is PairDialogState)
+        //   showConfirmDialog(context,
+        //       title: "Устройство ${state.pairDeviceInfo.deviceInfo.name} хочет сделать сопряжение",
+        //       onConfirm: () => bloc.onPairConfirmed(state.pairDeviceInfo),
+        //       onCancel: () => bloc.onPairConfirmed(null));
       }, buildWhen: (prevS, curS) {
-        return curS is LoadedState;
+        return true;
       }, builder: (context, state) {
-        state as LoadedState;
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(horizontalPadding),
@@ -46,7 +43,7 @@ class ScanScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         CustomCard(
-                            headerText: "Доступные устройства (${state.devices.length + state.pairedDevices.length})",
+                            headerText: "Доступные устройства (${state.foundDevices.length + state.pairedDevices.length})",
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(minHeight: 300),
                               child: Column(
@@ -64,36 +61,36 @@ class ScanScreen extends StatelessWidget {
                                           ),
                                         ...state.pairedDevices
                                             .map((e) =>
-                                                _buildDeviceItem(e: e.deviceInfo, onPressed: () => bloc.onPairedDeviceChosen(e)))
+                                                _buildDeviceItem(e: e, onPressed: (){}))
                                             .toList(),
-                                        if (state.devices.isNotEmpty)
+                                        if (state.foundDevices.isNotEmpty)
                                           CustomText(
                                             "Найденные",
                                             fontSize: 15,
                                           ),
-                                        ...state.devices
+                                        ...state.foundDevices
                                             .map((e) => _buildDeviceItem(
                                                 e: e,
                                                 onPressed: () async {
-                                                  bloc.onPairRequested(e);
+                                               //   Navigator.of(context).pushNamed(deviceActionsRoute, arguments: state.foundDevices);
                                                 }))
                                             .toList()
                                       ],
                                     ),
                                   ),
-                                  if (state.loading) ...[
-                                    const VerticalSizedBox(),
-                                    const CircularProgressIndicator(color: Colors.white),
-                                    const VerticalSizedBox(4),
-                                    CustomText("Поиск${state.loadingDots}"),
-                                  ],
+                                  // if (state.loading) ...[
+                                  //   const VerticalSizedBox(),
+                                  //   const CircularProgressIndicator(color: Colors.white),
+                                  //   const VerticalSizedBox(4),
+                                  //   CustomText("Поиск${state.loadingDots}"),
+                                  // ],
                                 ],
                               ),
                             )),
-                        TextButton(
-                            onPressed: state.loading ? null : () => bloc.onScanDevicesRequested(),
-                            child: CustomText("Поиск устройств")),
-                        TextButton(onPressed: () => bloc.onCancelScanRequested(), child: CustomText("Отменить поиск")),
+                        // TextButton(
+                        //     onPressed: state.loading ? null : () => bloc.onScanDevicesRequested(),
+                        //     child: CustomText("Поиск устройств")),
+                        // TextButton(onPressed: () => bloc.onCancelScanRequested(), child: CustomText("Отменить поиск")),
                       ],
                     ),
                   ),
@@ -103,7 +100,7 @@ class ScanScreen extends StatelessWidget {
                       bottom: 0,
                       right: 0,
                       child: CustomButton(
-                        onPressed: () => bloc.onSendLogs(),
+                        onPressed: () {},
                         text: "Отправить логи",
                         textColor: white,
                       ))

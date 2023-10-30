@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../blocs/main_bloc/main_bloc.dart';
@@ -24,14 +25,16 @@ abstract class GetItHelper {
     String deviceId = LocalStorage().getDeviceId();
 
     DeviceInfo deviceInfo;
+    String deviceIp = (await NetworkInfo().getWifiIP())!;
+
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
-      deviceInfo = DeviceInfo(name: androidInfo.model, platform: androidPlatform, id: deviceId);
+      deviceInfo = DeviceInfo(name: androidInfo.model, platform: androidPlatform, id: deviceId,ipAddress: deviceIp);
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-      deviceInfo = DeviceInfo(name: windowsInfo.computerName, platform: windowsPlatform, id: deviceId);
+      deviceInfo = DeviceInfo(name: windowsInfo.computerName, platform: windowsPlatform, id: deviceId,ipAddress: deviceIp);
     } else {
-      deviceInfo = DeviceInfo(name: "Unknown", platform: "Unsupported", id: deviceId);
+      deviceInfo = DeviceInfo(name: "Unknown", platform: "Unsupported", id: deviceId,ipAddress: deviceIp);
     }
 
     i.registerSingleton<DeviceInfo>(deviceInfo);

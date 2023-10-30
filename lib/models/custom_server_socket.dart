@@ -8,7 +8,6 @@ import 'package:eunnect/models/pair_device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/foundation.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 
 import 'custom_message.dart';
 
@@ -21,7 +20,6 @@ const sendFileCall = "file";
 
 abstract class CustomServerSocket {
   static ServerSocket? _server;
-  static String? deviceIp;
 
   static FutureOr<DeviceInfo> Function()? onDeviceInfoCall;
   static Function(PairDeviceInfo)? onPairDeviceCall;
@@ -32,11 +30,10 @@ abstract class CustomServerSocket {
 
   static final LocalStorage _localStorage = LocalStorage();
 
-  static Future<void> initServer() async {
+  static Future<void> initServer(String ipAddress) async {
     await _server?.close();
-    deviceIp = (await NetworkInfo().getWifiIP())!;
-    _server = await ServerSocket.bind(deviceIp, port);
-    FLog.info(text: "Сервер иницилизирован. Адрес - $deviceIp");
+    _server = await ServerSocket.bind(ipAddress, port);
+    FLog.info(text: "Сервер иницилизирован. Адрес - $ipAddress");
   }
 
   static void start() {
