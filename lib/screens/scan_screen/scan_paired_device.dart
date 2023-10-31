@@ -1,10 +1,26 @@
-
 import 'package:eunnect/models/device_info.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'scan_paired_device.freezed.dart';
 
-@Freezed()
-class ScanPairedDevice with _$ScanPairedDevice {
-  const factory ScanPairedDevice({@Default(false) bool available, required DeviceInfo deviceInfo}) = _ScanPairedDevice;
+class ScanPairedDevice extends DeviceInfo {
+  final bool available;
+
+  const ScanPairedDevice(
+      {required this.available, required super.name, required super.platform, required super.ipAddress, required super.id});
+
+  ScanPairedDevice copyWith({
+    bool? available
+  }) =>
+      ScanPairedDevice(
+          available: available ?? this.available,
+          name: name,
+          platform: platform,
+          ipAddress: ipAddress,
+          id: id);
+
+  factory ScanPairedDevice.fromDeviceInfo(DeviceInfo deviceInfo,[bool available=false]) {
+    return ScanPairedDevice(available: available, name: deviceInfo.name, platform: deviceInfo.platform, ipAddress: deviceInfo.ipAddress, id: deviceInfo.id);
+  }
+
+  @override
+  List<Object?> get props => [...super.props,available];
 }

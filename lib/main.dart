@@ -10,15 +10,18 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await GetItHelper.registerAll();
-  runApp(const Eunnect());
+  GetItHelper.i<MainBloc>().startServer();
+  runApp(Eunnect());
 }
 
 class Eunnect extends StatelessWidget {
-  const Eunnect({super.key});
+  Eunnect({super.key});
+  final _navKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navKey,
       title: appName,
       theme: ThemeData(
         scaffoldBackgroundColor: scaffoldBackgroundColor,
@@ -27,17 +30,16 @@ class Eunnect extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (context, widget) {
-
+       MainBloc bloc = GetItHelper.i<MainBloc>();
         return BlocListener(
-            bloc: GetItHelper.i<MainBloc>(),
+            bloc: bloc,
             listener: (context, state) {
               if (state is ErrorMainState)
                 showErrorSnackBar(context, text: state.error);
               else if (state is SuccessMainState)
                 showSuccessSnackBar(context, text: state.message);
               else if (state is PairDialogState) {
-                MainBloc bloc = context.read<MainBloc>();
-                showConfirmDialog(context,
+                showConfirmDialog(_navKey.currentContext!,
                     title: "Устройство ${state.deviceInfo.name} хочет установить сопряжение",
                     onConfirm: () => bloc.onPairConfirmed(state.deviceInfo),
                     onCancel: () => bloc.onPairConfirmed(null));

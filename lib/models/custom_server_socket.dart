@@ -95,14 +95,15 @@ abstract class CustomServerSocket {
     try {
       DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
-      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 10),onTimeout: ()=>null);
+      pairStream = StreamController();
+      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 30),onTimeout: ()=>null);
       if (myPairDeviceInfo == null)
         return SocketMessage(call: pairDevicesCall, error: "Устройство не разрешило сопряжение");
       else
         return SocketMessage(call: pairDevicesCall, data: myPairDeviceInfo.toJsonString());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      return SocketMessage(call: pairDevicesCall, error: "Произошла ошибка при чтении полученных данных");
+      return SocketMessage(call: pairDevicesCall, error: "Произошла ошибка на сервере при чтении полученных данных");
     }
   }
 

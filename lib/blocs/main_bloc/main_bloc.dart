@@ -17,7 +17,6 @@ part 'main_state.dart';
 
 class MainBloc extends Cubit<MainState> {
   final LocalStorage _storage = LocalStorage();
-  final DeviceInfo _myDeviceInfo = GetItHelper.i<DeviceInfo>();
   late Function(DeviceInfo) onPairedDeviceChanged;
 
   MainBloc() : super(MainState());
@@ -39,7 +38,7 @@ class MainBloc extends Cubit<MainState> {
   }
 
   Future<void> startServer() async {
-    await CustomServerSocket.initServer(_myDeviceInfo.ipAddress);
+    await CustomServerSocket.initServer(GetItHelper.i<DeviceInfo>().ipAddress);
     CustomServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
       emit(PairDialogState(deviceInfo: deviceInfo));
       emit(MainState());
@@ -92,6 +91,7 @@ class MainBloc extends Cubit<MainState> {
       await CustomServerSocket.pairStream.close();
       if (pairDeviceInfo != null) {
         await _storage.addPairedDevice(pairDeviceInfo);
+        onPairedDeviceChanged(pairDeviceInfo);
         emitDefaultSuccess("Успешно сопряжено");
       }
     } catch (e, st) {

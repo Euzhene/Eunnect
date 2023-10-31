@@ -54,9 +54,9 @@ class ScanScreen extends StatelessWidget {
                           bottom: 0,
                           right: 0,
                           child: CustomButton(
-                            onPressed: () {},
+                            onPressed: () =>bloc.onSendLogs(),
                             text: "Отправить логи",
-                            textColor: white,
+                            textColor: black,
                           ))
                   ],
                 ),
@@ -69,7 +69,7 @@ class ScanScreen extends StatelessWidget {
   List<Widget> _buildFoundDeviceList({required Set<DeviceInfo> devices, required ScanBloc bloc}) => _buildBaseDeviceList(
       devices: devices,
       label: "Обнаруженные устройства",
-      list: devices.map((e) => _buildFoundDeviceItem(e: e, onPressed: () async {})).toList());
+      list: devices.map((e) => _buildFoundDeviceItem(e: e, onPressed: () async {bloc.onPairRequested(e);})).toList());
 
   List<Widget> _buildPairedDeviceList(
           {required Set<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
@@ -82,7 +82,7 @@ class ScanScreen extends StatelessWidget {
                   onPressed: () async {
                     await bloc
                         .onPairedDeviceChosen(e)
-                        .then((value) => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e.deviceInfo));
+                        .then((value) => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e));
                   }))
               .toList());
 
@@ -103,7 +103,7 @@ class ScanScreen extends StatelessWidget {
 
   Widget _buildPairedDeviceItem({required ScanPairedDevice e, required VoidCallback onPressed}) {
     return _buildBaseDeviceItem(
-        deviceInfo: e.deviceInfo, onPressed: onPressed, additionalText: e.available ? "" : "(не доступен)");
+        deviceInfo: e, onPressed: onPressed, additionalText: e.available ? "" : "(не доступен)");
   }
 
   Widget _buildFoundDeviceItem({required DeviceInfo e, required VoidCallback onPressed}) {
