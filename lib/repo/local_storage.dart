@@ -58,17 +58,17 @@ class LocalStorage {
     await _storage.write(key: _pairedDevicesKey, value: json);
   }
 
-  Future<List<DeviceInfo>> addPairedDevice(DeviceInfo pairDeviceInfo) async {
+  Future<Set<DeviceInfo>> addPairedDevice(DeviceInfo pairDeviceInfo) async {
     Set<DeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.add(pairDeviceInfo);
     await _savePairedDevices(pairDevices);
-    return pairDevices.toList();
+    return pairDevices;
   }
 
-  Future<List<DeviceInfo>> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
+  Future<Set<DeviceInfo>> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
     Set<DeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
     await _savePairedDevices(pairDevices);
-    return pairDevices.toList();
+    return pairDevices;
   }
 }

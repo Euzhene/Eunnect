@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
@@ -18,58 +19,72 @@ class ScanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ScanBloc bloc = context.read<ScanBloc>();
+
     return Scaffold(
       appBar: AppBar(title: const Text("Подключение Устройств")),
-      body: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
-      }, buildWhen: (prevS, curS) {
-        return true;
-      }, builder: (context, state) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      CustomText(
-                        "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
-                        textAlign: TextAlign.start,
-                        fontSize: 16,
+      body: BlocConsumer<ScanBloc, ScanState>(
+          listener: (context, state) {},
+          buildWhen: (prevS, curS) {
+            return true;
+          },
+          builder: (context, state) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          CustomText(
+                            "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
+                            textAlign: TextAlign.start,
+                            fontSize: 16,
+                          ),
+                          ..._buildFoundDeviceList(devices: state.foundDevices, bloc: bloc),
+                          ..._buildPairedDeviceList(devices: state.pairedDevices, bloc: bloc, context: context),
+                        ],
                       ),
-                      ..._buildFoundDeviceList(devices: state.foundDevices),
-                      ..._buildPairedDeviceList(devices: state.pairedDevices),
-                    ],
-                  ),
+                    ),
+                    if (!Platform.isWindows)
+                      Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: CustomButton(
+                            onPressed: () {},
+                            text: "Отправить логи",
+                            textColor: white,
+                          ))
+                  ],
                 ),
-                if (!Platform.isWindows)
-                  Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: CustomButton(
-                        onPressed: () {},
-                        text: "Отправить логи",
-                        textColor: white,
-                      ))
-              ],
-            ),
-          ),
-        );
-      }),
+              ),
+            );
+          }),
     );
   }
 
-  List<Widget> _buildFoundDeviceList({required Set<DeviceInfo> devices}) => _buildBaseDeviceList(
+  List<Widget> _buildFoundDeviceList({required Set<DeviceInfo> devices, required ScanBloc bloc}) => _buildBaseDeviceList(
       devices: devices,
       label: "Обнаруженные устройства",
       list: devices.map((e) => _buildFoundDeviceItem(e: e, onPressed: () async {})).toList());
 
-  List<Widget> _buildPairedDeviceList({required Set<ScanPairedDevice> devices}) => _buildBaseDeviceList(
-      devices: devices,
-      label: "Сопряженные устройства",
-      list: devices.map((e) => _buildPairedDeviceItem(e: e, onPressed: () async {})).toList());
+  List<Widget> _buildPairedDeviceList(
+          {required Set<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
+      _buildBaseDeviceList(
+          devices: devices,
+          label: "Сопряженные устройства",
+          list: devices
+              .map((e) => _buildPairedDeviceItem(
+                  e: e,
+                  onPressed: () async {
+                    await bloc
+                        .onPairedDeviceChosen(e)
+                        .then((value) => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e.deviceInfo));
+                  }))
+              .toList());
 
   List<Widget> _buildBaseDeviceList({required Set devices, required String label, required List<Widget> list}) {
     return [
