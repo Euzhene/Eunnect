@@ -8,8 +8,10 @@ const _nameField = "name";
 const _platformField = "platform";
 const _ipAddressField = "ip_address";
 
-const windowsPlatform = "windows";
-const androidPlatform = "android";
+const windowsDeviceType = "windows";
+const linuxDeviceType = "linux";
+const phoneDeviceType = "phone";
+const tabletDeviceType = "tablet";
 
 class DeviceInfo extends Equatable {
   final String id;
@@ -44,6 +46,11 @@ class DeviceInfo extends Equatable {
   }
 
   factory DeviceInfo.fromUInt8List(Uint8List data) => DeviceInfo.fromJsonString(utf8.decode(data));
+
+  static List<DeviceInfo> fromJsonList(String listJson) {
+    Iterable list = jsonDecode(listJson);
+    return List.from(list.map((e) => DeviceInfo.fromJsonString(e)));
+  }
 
   @override
   List<Object?> get props => [name, platform, ipAddress, id];

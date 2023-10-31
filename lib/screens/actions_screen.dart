@@ -1,10 +1,10 @@
 import 'package:eunnect/blocs/device_actions_bloc/actions_bloc.dart';
-import 'package:eunnect/models/pair_device_info.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../models/device_info.dart';
 import '../widgets/custom_text.dart';
 
 class ActionsScreen extends StatelessWidget {
@@ -13,11 +13,11 @@ class ActionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ActionsBloc bloc = context.read();
-    PairDeviceInfo deviceInfo = bloc.deviceInfo;
+    DeviceInfo deviceInfo = bloc.deviceInfo;
 
     return Scaffold(
         appBar: AppBar(
-          title: Text("${deviceInfo.deviceInfo.name} (${deviceInfo.deviceInfo.ipAddress})"),
+          title: Text("${deviceInfo.name} (${deviceInfo.ipAddress})"),
           centerTitle: true,
         ),
         body: BlocBuilder<ActionsBloc,DeviceActionsState>(

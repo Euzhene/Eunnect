@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/pair_device_info.dart';
+import '../models/device_info.dart';
 
 const _isFirstLaunchKey = "is_first_launch";
 const _secretKey = "secret_key";
@@ -47,27 +47,27 @@ class LocalStorage {
     await _preferences.clear();
   }
 
-  Future<Set<PairDeviceInfo>> getPairedDevices() async {
+  Future<Set<DeviceInfo>> getPairedDevices() async {
     String? listJsonString = (await _storage.read(key: _pairedDevicesKey));
     if (listJsonString == null) return {};
-    return PairDeviceInfo.fromListJson(listJsonString).toSet();
+    return DeviceInfo.fromJsonList(listJsonString).toSet();
   }
 
-  Future<void> _savePairedDevices(Set<PairDeviceInfo> list) async {
+  Future<void> _savePairedDevices(Set<DeviceInfo> list) async {
     String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
     await _storage.write(key: _pairedDevicesKey, value: json);
   }
 
-  Future<List<PairDeviceInfo>> addPairedDevice(PairDeviceInfo pairDeviceInfo) async {
-    Set<PairDeviceInfo> pairDevices = await getPairedDevices();
+  Future<List<DeviceInfo>> addPairedDevice(DeviceInfo pairDeviceInfo) async {
+    Set<DeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.add(pairDeviceInfo);
     await _savePairedDevices(pairDevices);
     return pairDevices.toList();
   }
 
-  Future<List<PairDeviceInfo>> deletePairedDevice(PairDeviceInfo pairDeviceInfo) async {
-    Set<PairDeviceInfo> pairDevices = await getPairedDevices();
-    pairDevices.removeWhere((e) => e.senderId == pairDeviceInfo.senderId);
+  Future<List<DeviceInfo>> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
+    Set<DeviceInfo> pairDevices = await getPairedDevices();
+    pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
     await _savePairedDevices(pairDevices);
     return pairDevices.toList();
   }

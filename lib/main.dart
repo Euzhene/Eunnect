@@ -19,10 +19,10 @@ class Eunnect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MaKuKu Connect',
+      title: appName,
       theme: ThemeData(
         scaffoldBackgroundColor: scaffoldBackgroundColor,
-        appBarTheme: const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true,foregroundColor: white),
+        appBarTheme: const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true,foregroundColor: Colors.black),
         useMaterial3: true,
       ),
       builder: (context, widget) {

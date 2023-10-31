@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
 import 'package:eunnect/models/device_info.dart';
-import 'package:eunnect/models/pair_device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/foundation.dart';
@@ -22,11 +21,11 @@ abstract class CustomServerSocket {
   static ServerSocket? _server;
 
   static FutureOr<DeviceInfo> Function()? onDeviceInfoCall;
-  static Function(PairDeviceInfo)? onPairDeviceCall;
+  static Function(DeviceInfo)? onPairDeviceCall;
   static Function(String)? onBufferCall;
   static Function(FileMessage)? onFileCall;
 
-  static late StreamController<PairDeviceInfo?> pairStream;
+  static late StreamController<DeviceInfo?> pairStream;
 
   static final LocalStorage _localStorage = LocalStorage();
 
@@ -94,9 +93,9 @@ abstract class CustomServerSocket {
     if (data == null) return SocketMessage(call: pairDevicesCall, error: "Нет разрешения на вызов (пустой ключ)");
 
     try {
-      PairDeviceInfo pairDeviceInfo = PairDeviceInfo.fromJsonString(data);
+      DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
-      PairDeviceInfo? myPairDeviceInfo = await pairStream.stream.single;
+      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single;
       if (myPairDeviceInfo == null)
         return SocketMessage(call: pairDevicesCall, error: "Устройство не разрешило сопряжение");
       else
@@ -147,11 +146,11 @@ abstract class CustomServerSocket {
   // }
 
   static Future<SocketMessage?> _checkPairDevice(SocketMessage receiveMessage) async {
-    if (receiveMessage.senderId == null)
+    if (receiveMessage.deviceId == null)
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (пустой ключ)");
     String secretKey = await _localStorage.getSecretKey();
 
-    if (secretKey != receiveMessage.senderId)
+    if (secretKey != receiveMessage.deviceId)
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (неверный ключ)");
 
     return null;

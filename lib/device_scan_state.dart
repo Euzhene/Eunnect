@@ -10,7 +10,7 @@ abstract class DeviceScanState extends Equatable {
 }
 
 class PairDialogState extends DeviceScanState {
-  final PairDeviceInfo pairDeviceInfo;
+  final DeviceInfo pairDeviceInfo;
 
   const PairDialogState({required this.pairDeviceInfo});
 
@@ -37,7 +37,7 @@ class SuccessState extends DeviceScanState {
 }
 
 class MoveState extends DeviceScanState {
-  final PairDeviceInfo pairDeviceInfo;
+  final DeviceInfo pairDeviceInfo;
 
   const MoveState({required this.pairDeviceInfo});
 }
@@ -46,7 +46,7 @@ class LoadedState extends DeviceScanState {
   final bool loading;
   final List<DeviceInfo> devices;
   final String loadingDots;
-  final List<PairDeviceInfo> pairedDevices;
+  final List<DeviceInfo> pairedDevices;
   final List<int>? fileBytes;
 
   const LoadedState(
@@ -60,7 +60,7 @@ class LoadedState extends DeviceScanState {
     List<DeviceInfo>? devices,
     bool? loading,
     String? loadingDots,
-    List<PairDeviceInfo>? pairedDevices,
+    List<DeviceInfo>? pairedDevices,
     List<int>? fileBytes,
   }) =>
       LoadedState(

@@ -8,7 +8,6 @@ import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/custom_server_socket.dart';
 import 'package:eunnect/models/device_info.dart';
-import 'package:eunnect/models/pair_device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/foundation.dart';
@@ -31,7 +30,7 @@ class ScanBloc extends Cubit<DeviceScanState> {
   DeviceInfo _myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final LocalStorage _storage = LocalStorage();
 
-  final List<PairDeviceInfo> _pairedDevices = [];
+  final List<DeviceInfo> _pairedDevices = [];
 
   ScanBloc() : super(const LoadedState(devices: [])) {
     _storage.getPairedDevices().then((value) {
@@ -59,7 +58,7 @@ class ScanBloc extends Cubit<DeviceScanState> {
       _mainBloc.emitDefaultSuccess("Передан текст в буфер");
     };
 
-    CustomServerSocket.onPairDeviceCall = (PairDeviceInfo pairDeviceInfo) async {
+    CustomServerSocket.onPairDeviceCall = (DeviceInfo pairDeviceInfo) async {
       CustomServerSocket.pairStream = StreamController();
       LoadedState _state = state.loadedState;
       emit(PairDialogState(pairDeviceInfo: pairDeviceInfo));
@@ -122,10 +121,10 @@ class ScanBloc extends Cubit<DeviceScanState> {
           DeviceInfo deviceInfo = message.data as DeviceInfo;
           LoadedState _state = state.loadedState;
 
-          if (_pairedDevices.where((element) => element.deviceInfo.id == deviceInfo.id).isNotEmpty)
+          if (_pairedDevices.where((element) => element.id == deviceInfo.id).isNotEmpty)
             emit(_state.copyWith(
                 pairedDevices: _state.pairedDevices.toList()
-                  ..add(_pairedDevices.firstWhere((element) => element.deviceInfo.id == deviceInfo.id))));
+                  ..add(_pairedDevices.firstWhere((element) => element.id == deviceInfo.id))));
           else
             emit(_state.copyWith(devices: _state.devices.toList()..add(deviceInfo)));
         }
@@ -140,14 +139,12 @@ class ScanBloc extends Cubit<DeviceScanState> {
     }
   }
 
-  Future<void> onPairConfirmed(PairDeviceInfo? pairDeviceInfo) async {
+  Future<void> onPairConfirmed(DeviceInfo? pairDeviceInfo) async {
     try {
       if (pairDeviceInfo == null) {
         CustomServerSocket.pairStream.sink.add(null);
       } else {
-        PairDeviceInfo myPairDeviceInfo = PairDeviceInfo(
-            senderId: await _storage.getSecretKey(), deviceInfo: _myDeviceInfo, receiverId: pairDeviceInfo.senderId);
-        CustomServerSocket.pairStream.sink.add(myPairDeviceInfo);
+        CustomServerSocket.pairStream.sink.add(pairDeviceInfo);
       }
 
       await CustomServerSocket.pairStream.close();
@@ -158,7 +155,7 @@ class ScanBloc extends Cubit<DeviceScanState> {
         emit(const SuccessState(message: "Успешно сопряжено"));
         emit(_state.copyWith(
             pairedDevices: _state.pairedDevices.toList()..add(pairDeviceInfo),
-            devices: _state.devices.toList()..remove(pairDeviceInfo.deviceInfo)));
+            devices: _state.devices.toList()..remove(pairDeviceInfo)));
       } else {
         emit(_state);
       }
@@ -180,7 +177,7 @@ class ScanBloc extends Cubit<DeviceScanState> {
         return;
       }
 
-      PairDeviceInfo pairDeviceInfo = PairDeviceInfo.fromJsonString(socketMessage.data!);
+      DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(socketMessage.data!);
       _pairedDevices.clear();
       _pairedDevices.addAll(await _storage.addPairedDevice(pairDeviceInfo));
 
@@ -189,16 +186,16 @@ class ScanBloc extends Cubit<DeviceScanState> {
 
       emit(_state.copyWith(
           pairedDevices: _state.pairedDevices.toList()..add(pairDeviceInfo),
-          devices: _state.devices.toList()..remove(pairDeviceInfo.deviceInfo)));
+          devices: _state.devices.toList()..remove(pairDeviceInfo)));
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
   }
 
-  Future<void> onPairedDeviceChosen(PairDeviceInfo pairDeviceInfo) async {
+  Future<void> onPairedDeviceChosen(DeviceInfo pairDeviceInfo) async {
     try {
-      await (await Socket.connect(pairDeviceInfo.deviceInfo.ipAddress, port)).close(); //check we can work with another device
+      await (await Socket.connect(pairDeviceInfo.ipAddress, port)).close(); //check we can work with another device
       LoadedState _state = state.loadedState;
       emit(MoveState(pairDeviceInfo: pairDeviceInfo));
       emit(_state);
@@ -261,9 +258,8 @@ FutureOr<SocketMessage> pair(List args) async {
           timeout: const Duration(seconds: 2))
       .then((value) async {
     Socket socket = value;
-    PairDeviceInfo pairDeviceInfo = PairDeviceInfo(senderId: secretKey, deviceInfo: myDeviceInfo);
 
-    socket.add(SocketMessage(call: pairDevicesCall, data: pairDeviceInfo.toJsonString()).toUInt8List());
+    socket.add(SocketMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString()).toUInt8List());
     await socket.close();
 
     final bytes = await socket.single;

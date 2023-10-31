@@ -7,11 +7,15 @@ import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/custom_server_socket.dart';
 import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/repo/local_storage.dart';
+import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ScanBloc extends Cubit<ScanState> {
+  final LocalStorage _localStorage = LocalStorage();
+
   Isolate? _scanIsolate;
   ReceivePort _receivePort = ReceivePort();
 
@@ -21,6 +25,20 @@ class ScanBloc extends Cubit<ScanState> {
     Timer.periodic(const Duration(seconds: period), (timer) {
       DateTime curDate = DateTime.now();
 
+      devicesTime.removeWhere((key, value) {
+        if ((curDate.difference(value).inSeconds) >= period) {
+          Set<DeviceInfo> foundDevices = state.foundDevices.toSet()
+          ..removeWhere((element) => element.id == key);
+          Set<ScanPairedDevice> pairedDevices = state.pairedDevices.toSet();
+          ScanPairedDevice scanPairedDevice = pairedDevices.firstWhere((element) => element.deviceInfo.id == key);
+          pairedDevices.remove(scanPairedDevice);
+          pairedDevices.add(scanPairedDevice.copyWith.call(available: false));
+          if(!isClosed)
+            emit(state.copyWith.call(foundDevices: foundDevices, pairedDevices: pairedDevices));
+        }
+        return false;
+      });
+
       Set<DeviceInfo> foundDevices = state.foundDevices.toSet()
         ..removeWhere((element) {
           if ((curDate.difference(devicesTime[element.id] ?? DateTime.now()).inSeconds) >= period) {
@@ -29,8 +47,18 @@ class ScanBloc extends Cubit<ScanState> {
           }
           return false;
         });
+      Set<ScanPairedDevice> pairedDevices = state.pairedDevices.toSet()
+        ..removeWhere((element) {
+          if ((curDate.difference(devicesTime[element.deviceInfo.id] ?? DateTime.now()).inSeconds) >= period) {
+            devicesTime.remove(element.deviceInfo.id);
+          }
+          return false;
+        });
       if (!isClosed)
-        emit(state.copyWith.call(foundDevices: foundDevices));
+        emit(state.copyWith.call(foundDevices: foundDevices,pairedDevices: pairedDevices));
+    });
+    _localStorage.getPairedDevices().then((value) {
+      if (!isClosed) emit(state.copyWith.call(pairedDevices: value.map((e) => ScanPairedDevice(deviceInfo: e)).toSet()));
     });
   }
 

@@ -11,13 +11,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../models/custom_message.dart';
 import '../../models/custom_server_socket.dart';
-import '../../models/pair_device_info.dart';
+import '../../models/device_info.dart';
 
 part 'device_actions_state.dart';
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
-  final PairDeviceInfo deviceInfo;
+  final DeviceInfo deviceInfo;
 
   ActionsBloc({required this.deviceInfo}) : super(const DeviceActionsState());
 
@@ -33,8 +33,8 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       if ((text ?? "").isEmpty)
         _mainBloc.emitDefaultError("Буфер не содержит текст");
       else {
-        Socket socket = await Socket.connect(deviceInfo.deviceInfo.ipAddress, port);
-        socket.add(SocketMessage(call: sendBufferCall, data: text, senderId: deviceInfo.senderId).toUInt8List());
+        Socket socket = await Socket.connect(deviceInfo.ipAddress, port);
+        socket.add(SocketMessage(call: sendBufferCall, data: text, deviceId: deviceInfo.id).toUInt8List());
         await socket.close();
         SocketMessage socketMessage = SocketMessage.fromUInt8List(await socket.single);
         socket.destroy();
@@ -74,11 +74,11 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       Uint8List bytes = await file.readAsBytes();
 
       emit(state.copyWith(inProcess: true, allFileBytes: bytes.lengthInBytes, sentBytes: 0));
-      Socket socket = await Socket.connect(deviceInfo.deviceInfo.ipAddress, port);
+      Socket socket = await Socket.connect(deviceInfo.ipAddress, port);
       String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator)+1);
 
       SocketMessage initialMessage = SocketMessage(
-          call: sendFileCall, senderId: deviceInfo.senderId, data: FileMessage(bytes: [], filename: fileName).toJsonString());
+          call: sendFileCall, deviceId: deviceInfo.id, data: FileMessage(bytes: [], filename: fileName).toJsonString());
       socket.add(initialMessage.toUInt8List());
       socket.listen((event) {
         emit(state.copyWith(sentBytes: event.lengthInBytes + state.sentBytes));

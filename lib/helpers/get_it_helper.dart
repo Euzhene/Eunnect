@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/repo/local_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,13 +27,14 @@ abstract class GetItHelper {
 
     DeviceInfo deviceInfo;
     String deviceIp = (await NetworkInfo().getWifiIP())!;
+    Size size = MediaQueryData.fromView(WidgetsBinding.instance.window).size;
 
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
-      deviceInfo = DeviceInfo(name: androidInfo.model, platform: androidPlatform, id: deviceId,ipAddress: deviceIp);
+      deviceInfo = DeviceInfo(name: androidInfo.model, platform: size.shortestSide < 550 ? phoneDeviceType : tabletDeviceType, id: deviceId,ipAddress: deviceIp);
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-      deviceInfo = DeviceInfo(name: windowsInfo.computerName, platform: windowsPlatform, id: deviceId,ipAddress: deviceIp);
+      deviceInfo = DeviceInfo(name: windowsInfo.computerName, platform: windowsDeviceType, id: deviceId,ipAddress: deviceIp);
     } else {
       deviceInfo = DeviceInfo(name: "Unknown", platform: "Unsupported", id: deviceId,ipAddress: deviceIp);
     }

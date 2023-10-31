@@ -17,7 +17,7 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$ScanState {
   Set<DeviceInfo> get foundDevices => throw _privateConstructorUsedError;
-  Set<DeviceInfo> get pairedDevices => throw _privateConstructorUsedError;
+  Set<ScanPairedDevice> get pairedDevices => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $ScanStateCopyWith<ScanState> get copyWith =>
@@ -29,7 +29,8 @@ abstract class $ScanStateCopyWith<$Res> {
   factory $ScanStateCopyWith(ScanState value, $Res Function(ScanState) then) =
       _$ScanStateCopyWithImpl<$Res, ScanState>;
   @useResult
-  $Res call({Set<DeviceInfo> foundDevices, Set<DeviceInfo> pairedDevices});
+  $Res call(
+      {Set<DeviceInfo> foundDevices, Set<ScanPairedDevice> pairedDevices});
 }
 
 /// @nodoc
@@ -56,7 +57,7 @@ class _$ScanStateCopyWithImpl<$Res, $Val extends ScanState>
       pairedDevices: null == pairedDevices
           ? _value.pairedDevices
           : pairedDevices // ignore: cast_nullable_to_non_nullable
-              as Set<DeviceInfo>,
+              as Set<ScanPairedDevice>,
     ) as $Val);
   }
 }
@@ -69,7 +70,8 @@ abstract class _$$ScanStateImplCopyWith<$Res>
       __$$ScanStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({Set<DeviceInfo> foundDevices, Set<DeviceInfo> pairedDevices});
+  $Res call(
+      {Set<DeviceInfo> foundDevices, Set<ScanPairedDevice> pairedDevices});
 }
 
 /// @nodoc
@@ -94,7 +96,7 @@ class __$$ScanStateImplCopyWithImpl<$Res>
       pairedDevices: null == pairedDevices
           ? _value._pairedDevices
           : pairedDevices // ignore: cast_nullable_to_non_nullable
-              as Set<DeviceInfo>,
+              as Set<ScanPairedDevice>,
     ));
   }
 }
@@ -104,7 +106,7 @@ class __$$ScanStateImplCopyWithImpl<$Res>
 class _$ScanStateImpl implements _ScanState {
   const _$ScanStateImpl(
       {final Set<DeviceInfo> foundDevices = const {},
-      final Set<DeviceInfo> pairedDevices = const {}})
+      final Set<ScanPairedDevice> pairedDevices = const {}})
       : _foundDevices = foundDevices,
         _pairedDevices = pairedDevices;
 
@@ -117,10 +119,10 @@ class _$ScanStateImpl implements _ScanState {
     return EqualUnmodifiableSetView(_foundDevices);
   }
 
-  final Set<DeviceInfo> _pairedDevices;
+  final Set<ScanPairedDevice> _pairedDevices;
   @override
   @JsonKey()
-  Set<DeviceInfo> get pairedDevices {
+  Set<ScanPairedDevice> get pairedDevices {
     if (_pairedDevices is EqualUnmodifiableSetView) return _pairedDevices;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableSetView(_pairedDevices);
@@ -158,12 +160,12 @@ class _$ScanStateImpl implements _ScanState {
 abstract class _ScanState implements ScanState {
   const factory _ScanState(
       {final Set<DeviceInfo> foundDevices,
-      final Set<DeviceInfo> pairedDevices}) = _$ScanStateImpl;
+      final Set<ScanPairedDevice> pairedDevices}) = _$ScanStateImpl;
 
   @override
   Set<DeviceInfo> get foundDevices;
   @override
-  Set<DeviceInfo> get pairedDevices;
+  Set<ScanPairedDevice> get pairedDevices;
   @override
   @JsonKey(ignore: true)
   _$$ScanStateImplCopyWith<_$ScanStateImpl> get copyWith =>

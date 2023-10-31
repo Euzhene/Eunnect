@@ -33,22 +33,22 @@ class ErrorMessage {
 const _callField = "call";
 const _errorMessageField = "error";
 const _dataField = "data";
-const _senderIdField = "sender_id";
+const _senderIdField = "device_id";
 
 class SocketMessage {
   final String call;
   final String? error;
   final String? data;
-  final String? senderId;
+  final String? deviceId;
 
-  SocketMessage({required this.call, this.data, this.error, this.senderId});
+  SocketMessage({required this.call, this.data, this.error,this.deviceId});
 
   String toJsonString() {
     Map<String, dynamic> json = {
       _callField: call,
       _dataField: data,
       _errorMessageField: error,
-      _senderIdField: senderId,
+      _senderIdField: deviceId,
     };
     return jsonEncode(json);
   }
@@ -59,7 +59,7 @@ class SocketMessage {
     Map<String, dynamic> json = jsonDecode(jsonString);
 
     return SocketMessage(
-        call: json[_callField], error: json[_errorMessageField], data: json[_dataField], senderId: json[_senderIdField]);
+        call: json[_callField], error: json[_errorMessageField], data: json[_dataField], deviceId: json[_senderIdField]);
   }
 
   factory SocketMessage.fromUInt8List(Uint8List data) => SocketMessage.fromJsonString(utf8.decode(data));
@@ -67,12 +67,9 @@ class SocketMessage {
 
 const _bytesField = "bytes";
 const _filenameField = "filename";
-const _extensionField = "extension";
-
 class FileMessage {
   final List<int> bytes;
   final String filename;
- // final String extension;
 
   FileMessage({required this.bytes, required this.filename});
 
@@ -81,7 +78,6 @@ class FileMessage {
   String toJsonString() => jsonEncode({
         _bytesField: bytes.toString(),
         _filenameField: filename,
-    //    _extensionField: extension,
       });
 
   List<int> toUInt8List() => utf8.encode(toJsonString());

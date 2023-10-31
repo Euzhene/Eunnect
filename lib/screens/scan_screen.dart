@@ -26,7 +26,7 @@ class ScanScreen extends StatelessWidget {
         if (state is SuccessState) showSuccessSnackBar(context, text: state.message);
         if (state is PairDialogState)
           showConfirmDialog(context,
-              title: "Устройство ${state.pairDeviceInfo.deviceInfo.name} хочет сделать сопряжение",
+              title: "Устройство ${state.pairDeviceInfo.name} хочет сделать сопряжение",
               onConfirm: () => bloc.onPairConfirmed(state.pairDeviceInfo),
               onCancel: () => bloc.onPairConfirmed(null));
       }, buildWhen: (prevS, curS) {
@@ -64,7 +64,7 @@ class ScanScreen extends StatelessWidget {
                                           ),
                                         ...state.pairedDevices
                                             .map((e) =>
-                                                _buildDeviceItem(e: e.deviceInfo, onPressed: () => bloc.onPairedDeviceChosen(e)))
+                                                _buildDeviceItem(e: e, onPressed: () => bloc.onPairedDeviceChosen(e)))
                                             .toList(),
                                         if (state.devices.isNotEmpty)
                                           CustomText(
@@ -118,11 +118,8 @@ class ScanScreen extends StatelessWidget {
   Widget _buildDeviceItem({required DeviceInfo e, required VoidCallback onPressed}) {
     IconData iconData;
     switch (e.platform) {
-      case windowsPlatform:
+      case windowsDeviceType:
         iconData = Icons.window_sharp;
-        break;
-      case androidPlatform:
-        iconData = Icons.android;
         break;
       default:
         iconData = Icons.question_mark;
