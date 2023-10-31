@@ -1,6 +1,6 @@
 import 'package:eunnect/blocs/device_actions_bloc/actions_bloc.dart';
 import 'package:eunnect/screens/actions_screen.dart';
-import 'package:eunnect/screens/scan_screen/new_scan_screen.dart';
+import 'package:eunnect/screens/scan_screen/scan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -18,15 +18,9 @@ class ScanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ScanBloc bloc = context.read<ScanBloc>();
     return Scaffold(
       appBar: AppBar(title: const Text("Подключение Устройств")),
       body: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
-        // if (state is PairDialogState)
-        //   showConfirmDialog(context,
-        //       title: "Устройство ${state.pairDeviceInfo.deviceInfo.name} хочет сделать сопряжение",
-        //       onConfirm: () => bloc.onPairConfirmed(state.pairDeviceInfo),
-        //       onCancel: () => bloc.onPairConfirmed(null));
       }, buildWhen: (prevS, curS) {
         return true;
       }, builder: (context, state) {

@@ -22,15 +22,26 @@ class Eunnect extends StatelessWidget {
       title: appName,
       theme: ThemeData(
         scaffoldBackgroundColor: scaffoldBackgroundColor,
-        appBarTheme: const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true,foregroundColor: Colors.black),
+        appBarTheme:
+            const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true, foregroundColor: Colors.black),
         useMaterial3: true,
       ),
       builder: (context, widget) {
+
         return BlocListener(
-          bloc: GetItHelper.i<MainBloc>(),
+            bloc: GetItHelper.i<MainBloc>(),
             listener: (context, state) {
-              if (state is ErrorMainState) showErrorSnackBar(context, text: state.error);
-              else if (state is SuccessMainState) showSuccessSnackBar(context, text: state.message);
+              if (state is ErrorMainState)
+                showErrorSnackBar(context, text: state.error);
+              else if (state is SuccessMainState)
+                showSuccessSnackBar(context, text: state.message);
+              else if (state is PairDialogState) {
+                MainBloc bloc = context.read<MainBloc>();
+                showConfirmDialog(context,
+                    title: "Устройство ${state.deviceInfo.name} хочет установить сопряжение",
+                    onConfirm: () => bloc.onPairConfirmed(state.deviceInfo),
+                    onCancel: () => bloc.onPairConfirmed(null));
+              }
             },
             child: widget ?? Container());
       },

@@ -19,5 +19,14 @@ class SuccessMainState extends MainState {
   SuccessMainState({required this.message});
 }
 
+class PairDialogState extends MainState {
+  final DeviceInfo deviceInfo;
+
+  PairDialogState({required this.deviceInfo});
+
+  @override
+  List<Object?> get props => [deviceInfo];
+}
+
 
 

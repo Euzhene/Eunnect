@@ -42,7 +42,7 @@ showConfirmDialog(BuildContext context,
                       Navigator.of(context).pop();
                       onCancel?.call();
                     },
-                    text: "Нет"),
+                    text: "Отказаться"),
               ],
           title: title,
           content: content,

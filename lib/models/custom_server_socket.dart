@@ -95,7 +95,7 @@ abstract class CustomServerSocket {
     try {
       DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
-      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single;
+      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 10),onTimeout: ()=>null);
       if (myPairDeviceInfo == null)
         return SocketMessage(call: pairDevicesCall, error: "Устройство не разрешило сопряжение");
       else
