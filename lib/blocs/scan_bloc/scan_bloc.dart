@@ -96,6 +96,11 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onSendLogs() async {
     File logs = await FLog.exportLogs();
+    if ( (await logs.length()) == 0 ) {
+      _mainBloc.emitDefaultSuccess("Лог пуст!");
+      return;
+    }
+
     ShareResult res = await Share.shareXFiles([XFile(logs.path)], text: "$appName ${dateFormat.format(DateTime.now())}");
     if (res.status == ShareResultStatus.success) {
       _mainBloc.emitDefaultSuccess("Логи очищены");
