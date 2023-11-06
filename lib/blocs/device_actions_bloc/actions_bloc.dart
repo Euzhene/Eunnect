@@ -18,7 +18,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final DeviceInfo deviceInfo;
 
-  ActionsBloc({required this.deviceInfo}) : super(UnreachableDeviceState()) {
+  ActionsBloc({required this.deviceInfo, required bool deviceAvailable}) : super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
     tryConnectDevice();
   }
 
@@ -27,6 +27,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       await (await Socket.connect(deviceInfo.ipAddress, port)).close(); //check we can work with another device
       emit(DeviceActionsState());
     } catch (e, st) {
+      emit(UnreachableDeviceState());
       FLog.error(text: e.toString(), stacktrace: st);
     }
   }
