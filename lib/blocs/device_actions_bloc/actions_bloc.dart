@@ -18,11 +18,21 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final DeviceInfo deviceInfo;
 
-  ActionsBloc({required this.deviceInfo}) : super(const DeviceActionsState());
+  ActionsBloc({required this.deviceInfo}) : super(DeviceActionsState()) {
+    tryConnectDevice();
+  }
+
+  Future<void> tryConnectDevice() async {
+    try {
+      await (await Socket.connect(deviceInfo.ipAddress, port)).close(); //check we can work with another device
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+    }
+  }
 
   void onSendBuffer() async {
     try {
-      if (state.inProcess) {
+      if (state.isSendingFile) {
         _mainBloc.emitDefaultError("Другой файл в процессе передачи");
         return;
       }
@@ -58,7 +68,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   void onSendFile() async {
     try {
-      if (state.inProcess) {
+      if (state.isSendingFile) {
         _mainBloc.emitDefaultError("Файл в процессе передачи");
         return;
       }
@@ -72,17 +82,18 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       File file = File(path);
       Uint8List bytes = await file.readAsBytes();
 
-      emit(state.copyWith(inProcess: true, allFileBytes: bytes.lengthInBytes, sentBytes: 0));
+      SendingFileState _state = SendingFileState(allFileBytes: bytes.lengthInBytes);
+      emit(_state);
       Socket socket = await Socket.connect(deviceInfo.ipAddress, port);
-      String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator)+1);
+      String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator) + 1);
 
       SocketMessage initialMessage = SocketMessage(
           call: sendFileCall, deviceId: deviceInfo.id, data: FileMessage(bytes: [], filename: fileName).toJsonString());
       socket.add(initialMessage.toUInt8List());
       socket.listen((event) {
-        emit(state.copyWith(sentBytes: event.lengthInBytes + state.sentBytes));
+        emit(_state.copyWith(sentBytes: event.lengthInBytes + _state.sentBytes));
       }, onDone: () {
-        emit(state.copyWith(inProcess: false));
+        emit(DeviceActionsState());
         _mainBloc.emitDefaultSuccess("Файл успешно передан");
       });
 
@@ -90,7 +101,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       socket.add(bytes);
       await socket.close();
     } catch (e, st) {
-      emit(state.copyWith(inProcess: false));
+      emit(DeviceActionsState());
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче файла");
     }

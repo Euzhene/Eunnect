@@ -20,48 +20,45 @@ class ActionsScreen extends StatelessWidget {
           title: Text("${deviceInfo.name} (${deviceInfo.ipAddress})"),
           centerTitle: true,
         ),
-        body: BlocBuilder<ActionsBloc,DeviceActionsState>(
-          builder: (context,state) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (state.inProcess) ...[
-                    CircularProgressIndicator(value: state.progressValue,color: Colors.lightBlueAccent),
-                    const VerticalSizedBox(),
-                    CustomText("${bloc.getFileSizeString(bytes: state.sentBytes)} / ${bloc.getFileSizeString(bytes: state.allFileBytes)}")
-                  ]
-                  else ...[
-                    InkWell(
-                      onTap: () =>bloc.onSendBuffer(),
-                      child: CustomCard(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 30),
-                          child: CustomText(
-                            "Передать буфер обмена",
-                            fontSize: 20,
-                          ),
+        body: BlocBuilder<ActionsBloc, DeviceActionsState>(builder: (context, state) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (state is SendingFileState) ...[
+                  CircularProgressIndicator(value: state.progressValue, color: Colors.lightBlueAccent),
+                  const VerticalSizedBox(),
+                  CustomText(
+                      "${bloc.getFileSizeString(bytes: state.sentBytes)} / ${bloc.getFileSizeString(bytes: state.allFileBytes)}")
+                ] else ...[
+                  InkWell(
+                    onTap: () => bloc.onSendBuffer(),
+                    child: CustomCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 30),
+                        child: CustomText(
+                          "Передать буфер обмена",
+                          fontSize: 20,
                         ),
                       ),
                     ),
-                    InkWell(
-                      onTap: () =>bloc.onSendFile(),
-                      child: CustomCard(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 30),
-                          child: CustomText(
-                            "Передать файл",
-                            fontSize: 20,
-                          ),
+                  ),
+                  InkWell(
+                    onTap: () => bloc.onSendFile(),
+                    child: CustomCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 30),
+                        child: CustomText(
+                          "Передать файл",
+                          fontSize: 20,
                         ),
                       ),
                     ),
-                  ]
-
-                ],
-              ),
-            );
-          }
-        ));
+                  ),
+                ]
+              ],
+            ),
+          );
+        }));
   }
 }

@@ -1,24 +1,25 @@
 part of 'actions_bloc.dart';
 
 class DeviceActionsState {
+  bool get isSendingFile => this is SendingFileState;
+}
+
+class SendingFileState extends DeviceActionsState {
+  SendingFileState({
+    this.sentBytes = 0,
+    this.allFileBytes = 0,
+  });
+
   final int sentBytes;
   final int allFileBytes;
 
-  final bool inProcess;
-
-
   double get progressValue => sentBytes / allFileBytes;
 
-  const DeviceActionsState({this.sentBytes = 0, this.inProcess = false,this.allFileBytes = 0,});
-
-  DeviceActionsState copyWith({
+  SendingFileState copyWith({
     int? sentBytes,
-    int? allFileBytes,
-    bool? inProcess,
   }) =>
-      DeviceActionsState(
+      SendingFileState(
         sentBytes: sentBytes ?? this.sentBytes,
-        inProcess: inProcess ?? this.inProcess,
-        allFileBytes: allFileBytes ?? this.allFileBytes,
+        allFileBytes: this.allFileBytes,
       );
 }
