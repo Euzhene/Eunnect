@@ -44,8 +44,8 @@ class ScanScreen extends StatelessWidget {
                             textAlign: TextAlign.start,
                             fontSize: 16,
                           ),
-                          ..._buildFoundDeviceList(devices: state.foundDevices, bloc: bloc),
-                          ..._buildPairedDeviceList(devices: state.pairedDevices, bloc: bloc, context: context),
+                          ..._buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
+                          ..._buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc, context: context),
                         ],
                       ),
                     ),
@@ -66,19 +66,19 @@ class ScanScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildFoundDeviceList({required Set<DeviceInfo> devices, required ScanBloc bloc}) => _buildBaseDeviceList(
+  List<Widget> _buildFoundDeviceList({required List<DeviceInfo> devices, required ScanBloc bloc}) => _buildBaseDeviceList(
       devices: devices,
       label: "Обнаруженные устройства",
       list: devices.map((e) => _buildFoundDeviceItem(e: e, bloc: bloc)).toList());
 
   List<Widget> _buildPairedDeviceList(
-          {required Set<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
+          {required List<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
       _buildBaseDeviceList(
           devices: devices,
           label: "Сопряженные устройства",
           list: devices.map((e) => _buildPairedDeviceItem(e: e, context: context)).toList());
 
-  List<Widget> _buildBaseDeviceList({required Set devices, required String label, required List<Widget> list}) {
+  List<Widget> _buildBaseDeviceList({required List devices, required String label, required List<Widget> list}) {
     return [
       const VerticalSizedBox(verticalPadding * 4),
       CustomText("$label ${devices.isNotEmpty ? "(${devices.length})" : ""}", fontSize: 17),

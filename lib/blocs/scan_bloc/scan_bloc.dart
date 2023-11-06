@@ -26,7 +26,10 @@ class ScanBloc extends Cubit<ScanState> {
   Isolate? _scanIsolate;
   ReceivePort _receivePort = ReceivePort();
 
-  ScanBloc() : super(const ScanState()) {
+  List<DeviceInfo> foundDevices = [];
+  List<ScanPairedDevice> pairedDevices = [];
+
+  ScanBloc() : super(ScanState()) {
     const int period = 6;
 
     Timer.periodic(const Duration(seconds: period), (timer) {
@@ -34,12 +37,14 @@ class ScanBloc extends Cubit<ScanState> {
 
       devicesTime.removeWhere((key, value) {
         if ((curDate.difference(value).inSeconds) >= period) {
-          Set<DeviceInfo> foundDevices = state.foundDevices.toSet()..removeWhere((element) => element.id == key);
-          Set<ScanPairedDevice> pairedDevices = state.pairedDevices.toSet();
-          ScanPairedDevice? scanPairedDevice = pairedDevices.where((element) => element.id == key).firstOrNull;
-          pairedDevices.remove(scanPairedDevice);
-          if (scanPairedDevice != null) pairedDevices.add(scanPairedDevice.copyWith(available: false));
-          if (!isClosed) emit(state.copyWith.call(foundDevices: foundDevices, pairedDevices: pairedDevices));
+          foundDevices.removeWhere((element) => element.id == key);
+          int index = pairedDevices.indexWhere((element) => element.id == key);
+
+          if (index >= 0) {
+            ScanPairedDevice pairedDevice = pairedDevices[index];
+            pairedDevices[index] = (pairedDevice.copyWith(available: false));
+          }
+          if (!isClosed) emit(ScanState());
         }
         return false;
       });
@@ -48,13 +53,16 @@ class ScanBloc extends Cubit<ScanState> {
 
     _mainBloc.onPairedDeviceChanged = (DeviceInfo deviceInfo) {
       _getSavedDevices();
-      if (!isClosed) emit(state.copyWith.call(foundDevices: state.foundDevices.toSet()..remove(deviceInfo)));
+      foundDevices.remove(deviceInfo);
+      if (!isClosed) emit(ScanState());
     };
   }
 
   void _getSavedDevices() {
     _localStorage.getPairedDevices().then((value) {
-      if (!isClosed) emit(state.copyWith.call(pairedDevices: value.map((e) => ScanPairedDevice.fromDeviceInfo(e)).toSet()));
+      pairedDevices.clear();
+      pairedDevices.addAll(value.map((e) => ScanPairedDevice.fromDeviceInfo(e)));
+      if (!isClosed) emit(ScanState());
     });
   }
 
@@ -76,10 +84,7 @@ class ScanBloc extends Cubit<ScanState> {
       DeviceInfo deviceInfo = message.data;
       devicesTime[deviceInfo.id] = DateTime.now();
 
-      Set<ScanPairedDevice> pairedDevices = state.pairedDevices.toSet();
-      Set<DeviceInfo> foundDevices = state.foundDevices.toSet();
-
-     ScanPairedDevice? pairedDevice = pairedDevices.where((element) => element.id == deviceInfo.id).firstOrNull;
+      ScanPairedDevice? pairedDevice = pairedDevices.where((element) => element.id == deviceInfo.id).firstOrNull;
       if (pairedDevice != null) {
         pairedDevices.remove(pairedDevice);
         pairedDevices.add(pairedDevice.copyWith(available: true));
@@ -87,7 +92,7 @@ class ScanBloc extends Cubit<ScanState> {
         foundDevices.add(deviceInfo);
       }
 
-      emit(state.copyWith.call(foundDevices: foundDevices,pairedDevices: pairedDevices));
+      emit(ScanState());
     });
 
     _scanIsolate =
@@ -96,7 +101,7 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onSendLogs() async {
     File logs = await FLog.exportLogs();
-    if ( (await logs.length()) == 0 ) {
+    if ((await logs.length()) == 0) {
       _mainBloc.emitDefaultSuccess("Лог пуст!");
       return;
     }
@@ -127,11 +132,14 @@ class ScanBloc extends Cubit<ScanState> {
       }
 
       await _localStorage.addPairedDevice(deviceInfo);
-      Set<ScanPairedDevice> pairedDevices = state.pairedDevices.toSet()..add(ScanPairedDevice.fromDeviceInfo(deviceInfo, true));
-
+      ScanPairedDevice scanPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
+      if (!pairedDevices.contains(scanPairedDevice)) {
+        pairedDevices.add(scanPairedDevice);
+      }
+      foundDevices.remove(deviceInfo);
       _mainBloc.emitDefaultSuccess("Успешно сопряжено");
 
-      emit(state.copyWith.call(pairedDevices: pairedDevices, foundDevices: state.foundDevices.toSet()..remove(deviceInfo)));
+      emit(ScanState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
