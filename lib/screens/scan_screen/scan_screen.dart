@@ -136,6 +136,7 @@ class ScanScreen extends StatelessWidget {
       children: [
         const VerticalSizedBox(),
         InkWell(
+          borderRadius: BorderRadius.circular(8),
           onTap: onPressed,
           child: Row(
             mainAxisSize: MainAxisSize.min,
