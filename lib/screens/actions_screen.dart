@@ -1,4 +1,5 @@
 import 'package:eunnect/blocs/device_actions_bloc/actions_bloc.dart';
+import 'package:eunnect/constants.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
@@ -22,41 +23,51 @@ class ActionsScreen extends StatelessWidget {
         ),
         body: BlocBuilder<ActionsBloc, DeviceActionsState>(builder: (context, state) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (state is SendingFileState) ...[
-                  CircularProgressIndicator(value: state.progressValue, color: Colors.lightBlueAccent),
-                  const VerticalSizedBox(),
-                  CustomText(
-                      "${bloc.getFileSizeString(bytes: state.sentBytes)} / ${bloc.getFileSizeString(bytes: state.allFileBytes)}")
-                ] else ...[
-                  InkWell(
-                    onTap: () => bloc.onSendBuffer(),
-                    child: CustomCard(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 30),
-                        child: CustomText(
-                          "Передать буфер обмена",
-                          fontSize: 20,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (state.isUnreachableDevice)  const Row(
+                    children: [
+                      Icon(Icons.error_outline,size: 40),
+                      HorizontalSizedBox(),
+                      Expanded(child: Text("Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",style: TextStyle(fontSize: 20),)),
+                    ],
+                  )
+                  else if (state is SendingFileState) ...[
+                    CircularProgressIndicator(value: state.progressValue, color: Colors.lightBlueAccent),
+                    const VerticalSizedBox(),
+                    CustomText(
+                        "${bloc.getFileSizeString(bytes: state.sentBytes)} / ${bloc.getFileSizeString(bytes: state.allFileBytes)}")
+                  ] else ...[
+                    InkWell(
+                      onTap: () => bloc.onSendBuffer(),
+                      child: CustomCard(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 30),
+                          child: CustomText(
+                            "Передать буфер обмена",
+                            fontSize: 20,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  InkWell(
-                    onTap: () => bloc.onSendFile(),
-                    child: CustomCard(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 30),
-                        child: CustomText(
-                          "Передать файл",
-                          fontSize: 20,
+                    InkWell(
+                      onTap: () => bloc.onSendFile(),
+                      child: CustomCard(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 30),
+                          child: CustomText(
+                            "Передать файл",
+                            fontSize: 20,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ]
-              ],
+                  ]
+                ],
+              ),
             ),
           );
         }));

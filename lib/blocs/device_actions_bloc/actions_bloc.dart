@@ -18,13 +18,14 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final DeviceInfo deviceInfo;
 
-  ActionsBloc({required this.deviceInfo}) : super(DeviceActionsState()) {
+  ActionsBloc({required this.deviceInfo}) : super(UnreachableDeviceState()) {
     tryConnectDevice();
   }
 
   Future<void> tryConnectDevice() async {
     try {
       await (await Socket.connect(deviceInfo.ipAddress, port)).close(); //check we can work with another device
+      emit(DeviceActionsState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
     }

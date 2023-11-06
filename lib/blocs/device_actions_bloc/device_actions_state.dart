@@ -2,6 +2,7 @@ part of 'actions_bloc.dart';
 
 class DeviceActionsState {
   bool get isSendingFile => this is SendingFileState;
+  bool get isUnreachableDevice => this is UnreachableDeviceState;
 }
 
 class SendingFileState extends DeviceActionsState {
@@ -23,3 +24,5 @@ class SendingFileState extends DeviceActionsState {
         allFileBytes: this.allFileBytes,
       );
 }
+
+class UnreachableDeviceState extends DeviceActionsState {}
