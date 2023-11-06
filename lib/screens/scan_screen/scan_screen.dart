@@ -54,7 +54,7 @@ class ScanScreen extends StatelessWidget {
                           bottom: 0,
                           right: 0,
                           child: CustomButton(
-                            onPressed: () =>bloc.onSendLogs(),
+                            onPressed: () => bloc.onSendLogs(),
                             text: "Отправить логи",
                             textColor: black,
                           ))
@@ -69,22 +69,14 @@ class ScanScreen extends StatelessWidget {
   List<Widget> _buildFoundDeviceList({required Set<DeviceInfo> devices, required ScanBloc bloc}) => _buildBaseDeviceList(
       devices: devices,
       label: "Обнаруженные устройства",
-      list: devices.map((e) => _buildFoundDeviceItem(e: e, onPressed: () async {bloc.onPairRequested(e);})).toList());
+      list: devices.map((e) => _buildFoundDeviceItem(e: e, bloc: bloc)).toList());
 
   List<Widget> _buildPairedDeviceList(
           {required Set<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
       _buildBaseDeviceList(
           devices: devices,
           label: "Сопряженные устройства",
-          list: devices
-              .map((e) => _buildPairedDeviceItem(
-                  e: e,
-                  onPressed: () async {
-                    await bloc
-                        .onPairedDeviceChosen(e)
-                        .then((value) => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e));
-                  }))
-              .toList());
+          list: devices.map((e) => _buildPairedDeviceItem(e: e, context: context)).toList());
 
   List<Widget> _buildBaseDeviceList({required Set devices, required String label, required List<Widget> list}) {
     return [
@@ -101,13 +93,18 @@ class ScanScreen extends StatelessWidget {
     ];
   }
 
-  Widget _buildPairedDeviceItem({required ScanPairedDevice e, required VoidCallback onPressed}) {
+  Widget _buildPairedDeviceItem({required ScanPairedDevice e, required BuildContext context}) {
     return _buildBaseDeviceItem(
-        deviceInfo: e, onPressed: onPressed, additionalText: e.available ? "" : "(не доступен)");
+        deviceInfo: e,
+        additionalText: e.available ? "" : "(не доступен)",
+        onPressed: () async => await context
+            .read<ScanBloc>()
+            .onPairedDeviceChosen(e)
+            .then((value) => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e)));
   }
 
-  Widget _buildFoundDeviceItem({required DeviceInfo e, required VoidCallback onPressed}) {
-    return _buildBaseDeviceItem(deviceInfo: e, onPressed: onPressed);
+  Widget _buildFoundDeviceItem({required DeviceInfo e, required ScanBloc bloc}) {
+    return _buildBaseDeviceItem(deviceInfo: e, onPressed: () => bloc.onPairRequested(e));
   }
 
   Widget _buildBaseDeviceItem({required DeviceInfo deviceInfo, required VoidCallback onPressed, String additionalText = ""}) {
