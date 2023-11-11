@@ -32,6 +32,10 @@ class ScanBloc extends Cubit<ScanState> {
   ScanBloc() : super(ScanState()) {
     const int period = 6;
 
+    /*
+      В этом таймере раз в 6 секунд происходит проверка: если инфа об устройстве не получена в течение 6 секунд - удаляем это устройство из списка обнаруженных устройств.
+      В случае, если это сопряженное устройство, - показываем юзеру что оно недоступно (цветом или надписью)
+     */
     Timer.periodic(const Duration(seconds: period), (timer) {
       DateTime curDate = DateTime.now();
 
@@ -44,7 +48,8 @@ class ScanBloc extends Cubit<ScanState> {
             ScanPairedDevice pairedDevice = pairedDevices[index];
             pairedDevices[index] = (pairedDevice.copyWith(available: false));
           }
-          if (!isClosed) emit(ScanState());
+          _emitScanState();
+          return true;
         }
         return false;
       });
@@ -54,15 +59,19 @@ class ScanBloc extends Cubit<ScanState> {
     _mainBloc.onPairedDeviceChanged = (DeviceInfo deviceInfo) {
       _getSavedDevices();
       foundDevices.remove(deviceInfo);
-      if (!isClosed) emit(ScanState());
+      _emitScanState();
     };
+  }
+
+  void _emitScanState() {
+    if (!isClosed) emit(ScanState());
   }
 
   void _getSavedDevices() {
     _localStorage.getPairedDevices().then((value) {
       pairedDevices.clear();
       pairedDevices.addAll(value.map((e) => ScanPairedDevice.fromDeviceInfo(e)));
-      if (!isClosed) emit(ScanState());
+      _emitScanState();
     });
   }
 
@@ -92,7 +101,7 @@ class ScanBloc extends Cubit<ScanState> {
         foundDevices.add(deviceInfo);
       }
 
-      emit(ScanState());
+      _emitScanState();
     });
 
     _scanIsolate =
@@ -139,7 +148,7 @@ class ScanBloc extends Cubit<ScanState> {
       foundDevices.remove(deviceInfo);
       _mainBloc.emitDefaultSuccess("Успешно сопряжено");
 
-      emit(ScanState());
+      _emitScanState();
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
