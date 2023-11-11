@@ -16,7 +16,7 @@ import '../../models/custom_server_socket.dart';
 part 'main_state.dart';
 
 class MainBloc extends Cubit<MainState> {
-  final LocalStorage _storage = LocalStorage();
+  final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   late Function(DeviceInfo) onPairedDeviceChanged;
 
   MainBloc() : super(MainState());

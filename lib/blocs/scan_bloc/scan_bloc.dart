@@ -19,7 +19,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../constants.dart';
 
 class ScanBloc extends Cubit<ScanState> {
-  final LocalStorage _localStorage = LocalStorage();
+  final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final DeviceInfo _myDeviceInfo = GetItHelper.i<DeviceInfo>();
 
@@ -49,7 +49,6 @@ class ScanBloc extends Cubit<ScanState> {
             pairedDevices[index] = (pairedDevice.copyWith(available: false));
           }
           _emitScanState();
-          return true;
         }
         return false;
       });
@@ -98,7 +97,7 @@ class ScanBloc extends Cubit<ScanState> {
         pairedDevices.remove(pairedDevice);
         pairedDevices.add(pairedDevice.copyWith(available: true));
       } else {
-        foundDevices.add(deviceInfo);
+        if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
       }
 
       _emitScanState();

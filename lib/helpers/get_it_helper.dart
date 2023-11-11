@@ -23,7 +23,7 @@ abstract class GetItHelper {
     if (i.isRegistered<DeviceInfo>()) await i.unregister<DeviceInfo>();
 
     DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
-    String deviceId = LocalStorage().getDeviceId();
+    String deviceId = i<LocalStorage>().getDeviceId();
 
     DeviceInfo deviceInfo;
     String deviceIp = (await NetworkInfo().getWifiIP())!;

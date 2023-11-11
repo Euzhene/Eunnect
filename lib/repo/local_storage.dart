@@ -53,6 +53,11 @@ class LocalStorage {
     return DeviceInfo.fromJsonList(listJsonString).toSet();
   }
 
+  Future<DeviceInfo?> getPairedDevice(String id) async {
+    Set<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toSet();
+    return devices.isEmpty? null : devices.first;
+  }
+
   Future<void> _savePairedDevices(Set<DeviceInfo> list) async {
     String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
     await _storage.write(key: _pairedDevicesKey, value: json);

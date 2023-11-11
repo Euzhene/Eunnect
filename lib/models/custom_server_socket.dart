@@ -96,7 +96,7 @@ abstract class CustomServerSocket {
       DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
       pairStream = StreamController();
-      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 30),onTimeout: ()=>null);
+      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 30), onTimeout: () => null);
       if (myPairDeviceInfo == null)
         return SocketMessage(call: pairDevicesCall, error: "Устройство не разрешило сопряжение");
       else
@@ -151,8 +151,8 @@ abstract class CustomServerSocket {
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (пустой ключ)");
     String myId = _localStorage.getDeviceId();
 
-    if (myId != receiveMessage.deviceId)
-      return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (неверный ключ)");
+    if ((await _localStorage.getPairedDevice(myId)==null))
+      return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (отсутствует сопряжение)");
 
     return null;
   }
