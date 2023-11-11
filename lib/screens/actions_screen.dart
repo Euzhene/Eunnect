@@ -20,6 +20,19 @@ class ActionsScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text("${deviceInfo.name} (${deviceInfo.ipAddress})"),
           centerTitle: true,
+          actions: [
+            PopupMenuButton<void Function()>(
+              itemBuilder: (context) {
+                return [
+                  PopupMenuItem(
+                    value: () =>bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
+                    child: const Text('Разорвать сопряжение'),
+                  ),
+                ];
+              },
+              onSelected: (fn) => fn(),
+            )
+          ],
         ),
         body: BlocBuilder<ActionsBloc, DeviceActionsState>(builder: (context, state) {
           return Center(
@@ -28,13 +41,18 @@ class ActionsScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (state.isUnreachableDevice)  const Row(
-                    children: [
-                      Icon(Icons.error_outline,size: 40),
-                      HorizontalSizedBox(),
-                      Expanded(child: Text("Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",style: TextStyle(fontSize: 20),)),
-                    ],
-                  )
+                  if (state.isUnreachableDevice)
+                    const Row(
+                      children: [
+                        Icon(Icons.error_outline, size: 40),
+                        HorizontalSizedBox(),
+                        Expanded(
+                            child: Text(
+                          "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
+                          style: TextStyle(fontSize: 20),
+                        )),
+                      ],
+                    )
                   else if (state is SendingFileState) ...[
                     CircularProgressIndicator(value: state.progressValue, color: Colors.lightBlueAccent),
                     const VerticalSizedBox(),

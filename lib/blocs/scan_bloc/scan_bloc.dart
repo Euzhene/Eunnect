@@ -54,10 +54,10 @@ class ScanBloc extends Cubit<ScanState> {
         return false;
       });
     });
-    _getSavedDevices();
+    getSavedDevices();
 
     _mainBloc.onPairedDeviceChanged = (DeviceInfo deviceInfo) {
-      _getSavedDevices();
+      getSavedDevices();
       foundDevices.remove(deviceInfo);
       _emitScanState();
     };
@@ -67,7 +67,7 @@ class ScanBloc extends Cubit<ScanState> {
     if (!isClosed) emit(ScanState());
   }
 
-  void _getSavedDevices() {
+  void getSavedDevices() {
     _localStorage.getPairedDevices().then((value) {
       pairedDevices.clear();
       pairedDevices.addAll(value.map((e) => ScanPairedDevice.fromDeviceInfo(e)));

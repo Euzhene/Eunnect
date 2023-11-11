@@ -97,7 +97,9 @@ class ScanScreen extends StatelessWidget {
     return _buildBaseDeviceItem(
         deviceInfo: e,
         additionalText: e.available ? "" : "(не доступен)",
-        onPressed: () => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e));
+        onPressed: () => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e).then((value) {
+              if (value == true) context.read<ScanBloc>().getSavedDevices();
+            }));
   }
 
   Widget _buildFoundDeviceItem({required DeviceInfo e, required ScanBloc bloc}) {

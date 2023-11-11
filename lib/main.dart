@@ -30,6 +30,7 @@ class Eunnect extends StatelessWidget {
         scaffoldBackgroundColor: scaffoldBackgroundColor,
         appBarTheme:
             const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true, foregroundColor: Colors.black),
+        popupMenuTheme: const PopupMenuThemeData(color: scaffoldBackgroundColor),
         useMaterial3: true,
       ),
       builder: (context, widget) {

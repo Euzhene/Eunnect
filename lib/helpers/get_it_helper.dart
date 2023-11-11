@@ -46,6 +46,12 @@ abstract class GetItHelper {
     if (i.isRegistered<SharedPreferences>()) await i.unregister<SharedPreferences>();
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     i.registerSingleton<SharedPreferences>(sharedPreferences);
+
+    //register localStorage
+
+    if (i.isRegistered<LocalStorage>()) await i.unregister<LocalStorage>();
+    LocalStorage storage = LocalStorage();
+    i.registerSingleton<LocalStorage>(storage);
   }
 
   static Future<void> _registerMainBloc() async {

@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
+import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ part 'device_actions_state.dart';
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
+  final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final DeviceInfo deviceInfo;
 
   ActionsBloc({required this.deviceInfo, required bool deviceAvailable}) : super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
@@ -25,9 +27,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   Future<void> tryConnectDevice() async {
     try {
       await (await Socket.connect(deviceInfo.ipAddress, port)).close(); //check we can work with another device
-      emit(DeviceActionsState());
+      if (!isClosed) emit(DeviceActionsState());
     } catch (e, st) {
-      emit(UnreachableDeviceState());
+      if (!isClosed) emit(UnreachableDeviceState());
       FLog.error(text: e.toString(), stacktrace: st);
     }
   }
@@ -107,5 +109,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче файла");
     }
+  }
+
+  Future<void> onBreakPairing() async {
+    await _storage.deletePairedDevice(deviceInfo);
   }
 }
