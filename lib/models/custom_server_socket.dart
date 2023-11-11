@@ -149,9 +149,8 @@ abstract class CustomServerSocket {
   static Future<SocketMessage?> _checkPairDevice(SocketMessage receiveMessage) async {
     if (receiveMessage.deviceId == null)
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (пустой ключ)");
-    String myId = _localStorage.getDeviceId();
 
-    if ((await _localStorage.getPairedDevice(myId)==null))
+    if ((await _localStorage.getPairedDevice(receiveMessage.deviceId) == null))
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (отсутствует сопряжение)");
 
     return null;

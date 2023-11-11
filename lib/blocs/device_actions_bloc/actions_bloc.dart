@@ -18,6 +18,7 @@ part 'device_actions_state.dart';
 class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
+  final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final DeviceInfo deviceInfo;
 
   ActionsBloc({required this.deviceInfo, required bool deviceAvailable}) : super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
@@ -47,7 +48,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
         _mainBloc.emitDefaultError("Буфер не содержит текст");
       else {
         Socket socket = await Socket.connect(deviceInfo.ipAddress, port);
-        socket.add(SocketMessage(call: sendBufferCall, data: text, deviceId: deviceInfo.id).toUInt8List());
+        socket.add(SocketMessage(call: sendBufferCall, data: text, deviceId: myDeviceInfo.id).toUInt8List());
         await socket.close();
         SocketMessage socketMessage = SocketMessage.fromUInt8List(await socket.single);
         socket.destroy();
@@ -92,7 +93,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator) + 1);
 
       SocketMessage initialMessage = SocketMessage(
-          call: sendFileCall, deviceId: deviceInfo.id, data: FileMessage(bytes: [], filename: fileName).toJsonString());
+          call: sendFileCall, deviceId: myDeviceInfo.id, data: FileMessage(bytes: [], filename: fileName).toJsonString());
       socket.add(initialMessage.toUInt8List());
       socket.listen((event) {
         emit(_state.copyWith(sentBytes: event.lengthInBytes + _state.sentBytes));

@@ -53,9 +53,10 @@ class LocalStorage {
     return DeviceInfo.fromJsonList(listJsonString).toSet();
   }
 
-  Future<DeviceInfo?> getPairedDevice(String id) async {
+  Future<DeviceInfo?> getPairedDevice(String? id) async {
+    if (id == null) return null;
     Set<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toSet();
-    return devices.isEmpty? null : devices.first;
+    return devices.isEmpty ? null : devices.first;
   }
 
   Future<void> _savePairedDevices(Set<DeviceInfo> list) async {
