@@ -42,8 +42,8 @@ class ScanBloc extends Cubit<ScanState> {
       devicesTime.removeWhere((key, value) {
         if ((curDate.difference(value).inSeconds) >= period) {
           foundDevices.removeWhere((element) => element.id == key);
-          int index = pairedDevices.indexWhere((element) => element.id == key);
 
+          int index = pairedDevices.indexWhere((element) => element.id == key);
           if (index >= 0) {
             ScanPairedDevice pairedDevice = pairedDevices[index];
             pairedDevices[index] = (pairedDevice.copyWith(available: false));
@@ -96,9 +96,7 @@ class ScanBloc extends Cubit<ScanState> {
       if (pairedDevice != null) {
         pairedDevices.remove(pairedDevice);
         pairedDevices.add(pairedDevice.copyWith(available: true));
-      } else {
-        if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
-      }
+      } else if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
 
       _emitScanState();
     });
