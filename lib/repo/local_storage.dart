@@ -47,34 +47,34 @@ class LocalStorage {
     await _preferences.clear();
   }
 
-  Future<Set<DeviceInfo>> getPairedDevices() async {
+  Future<List<DeviceInfo>> getPairedDevices() async {
     String? listJsonString = (await _storage.read(key: _pairedDevicesKey));
-    if (listJsonString == null) return {};
-    return DeviceInfo.fromJsonList(listJsonString).toSet();
+    if (listJsonString == null) return [];
+    return DeviceInfo.fromJsonList(listJsonString);
   }
 
   Future<DeviceInfo?> getPairedDevice(String? id) async {
     if (id == null) return null;
-    Set<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toSet();
+    List<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toList();
     return devices.isEmpty ? null : devices.first;
   }
 
-  Future<void> _savePairedDevices(Set<DeviceInfo> list) async {
+  Future<void> _savePairedDevices(List<DeviceInfo> list) async {
     String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
     await _storage.write(key: _pairedDevicesKey, value: json);
   }
 
-  Future<Set<DeviceInfo>> addPairedDevice(DeviceInfo pairDeviceInfo) async {
-    Set<DeviceInfo> pairDevices = await getPairedDevices();
+  Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {
+    List<DeviceInfo> pairDevices = await getPairedDevices();
+    if (!pairDevices.contains(pairDeviceInfo)) return;
+
     pairDevices.add(pairDeviceInfo);
     await _savePairedDevices(pairDevices);
-    return pairDevices;
   }
 
-  Future<Set<DeviceInfo>> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
-    Set<DeviceInfo> pairDevices = await getPairedDevices();
+  Future<void> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
+    List<DeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
     await _savePairedDevices(pairDevices);
-    return pairDevices;
   }
 }
