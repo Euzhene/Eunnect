@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_state.dart';
+import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/custom_server_socket.dart';
@@ -92,10 +93,11 @@ class ScanBloc extends Cubit<ScanState> {
       DeviceInfo deviceInfo = message.data;
       devicesTime[deviceInfo.id] = DateTime.now();
 
-      ScanPairedDevice? pairedDevice = pairedDevices.where((element) => element.id == deviceInfo.id).firstOrNull;
+      ScanPairedDevice? pairedDevice = pairedDevices.findWithSameDeviceId(deviceInfo);
       if (pairedDevice != null) {
         pairedDevices.remove(pairedDevice);
         pairedDevices.add(pairedDevice.copyWith(available: true));
+        _localStorage.updatePairedDevice(deviceInfo);
       } else if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
 
       _emitScanState();

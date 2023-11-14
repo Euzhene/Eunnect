@@ -108,7 +108,7 @@ class ScanScreen extends StatelessWidget {
 
   Widget _buildBaseDeviceItem({required DeviceInfo deviceInfo, required VoidCallback onPressed, String additionalText = ""}) {
     IconData iconData;
-    switch (deviceInfo.platform) {
+    switch (deviceInfo.deviceType) {
       case windowsDeviceType:
         iconData = FontAwesomeIcons.windows;
         break;

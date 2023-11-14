@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 const _idField = "id";
 const _nameField = "name";
-const _platformField = "platform";
+const _deviceTypeField = "deviceType";
 const _ipAddressField = "ip_address";
 
 const windowsDeviceType = "windows";
@@ -16,12 +16,12 @@ const tabletDeviceType = "tablet";
 class DeviceInfo extends Equatable {
   final String id;
   final String name;
-  final String platform;
+  final String deviceType;
   final String ipAddress;
 
   const DeviceInfo({
     required this.name,
-    required this.platform,
+    required this.deviceType,
     required this.ipAddress,
     required this.id,
   });
@@ -29,20 +29,20 @@ class DeviceInfo extends Equatable {
   DeviceInfo.fromJson(Map<String, dynamic> json)
       : id = json[_idField],
         name = json[_nameField],
-        platform = json[_platformField],
+        deviceType = json[_deviceTypeField],
         ipAddress = json[_ipAddressField];
 
   String toJsonString() => jsonEncode({
         _idField: id,
         _nameField: name,
-        _platformField: platform,
+        _deviceTypeField: deviceType,
         _ipAddressField: ipAddress,
       });
 
   factory DeviceInfo.fromJsonString(String jsonString) {
     Map<String, dynamic> json = jsonDecode(jsonString);
     return DeviceInfo(
-        id: json[_idField], name: json[_nameField], platform: json[_platformField], ipAddress: json[_ipAddressField]);
+        id: json[_idField], name: json[_nameField], deviceType: json[_deviceTypeField], ipAddress: json[_ipAddressField]);
   }
 
   factory DeviceInfo.fromUInt8List(Uint8List data) => DeviceInfo.fromJsonString(utf8.decode(data));
@@ -53,5 +53,5 @@ class DeviceInfo extends Equatable {
   }
 
   @override
-  List<Object?> get props => [name, platform, ipAddress, id];
+  List<Object?> get props => [name, deviceType, ipAddress, id];
 }

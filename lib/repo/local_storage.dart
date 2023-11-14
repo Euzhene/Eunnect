@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,6 +70,16 @@ class LocalStorage {
     if (!pairDevices.contains(pairDeviceInfo)) return;
 
     pairDevices.add(pairDeviceInfo);
+    await _savePairedDevices(pairDevices);
+  }
+
+  Future<void> updatePairedDevice(DeviceInfo pairDeviceInfo) async {
+    List<DeviceInfo> pairDevices = await getPairedDevices();
+    int deviceInfoIndex = pairDevices.findIndexWithSameDeviceId(pairDeviceInfo);
+    if (deviceInfoIndex < 0 || pairDevices[deviceInfoIndex] == pairDeviceInfo) return;
+
+    pairDevices[deviceInfoIndex] = pairDeviceInfo;
+
     await _savePairedDevices(pairDevices);
   }
 

@@ -5,7 +5,7 @@ class ScanPairedDevice extends DeviceInfo {
   final bool available;
 
   const ScanPairedDevice(
-      {required this.available, required super.name, required super.platform, required super.ipAddress, required super.id});
+      {required this.available, required super.name, required super.deviceType, required super.ipAddress, required super.id});
 
   ScanPairedDevice copyWith({
     bool? available
@@ -13,12 +13,12 @@ class ScanPairedDevice extends DeviceInfo {
       ScanPairedDevice(
           available: available ?? this.available,
           name: name,
-          platform: platform,
+          platform: deviceType,
           ipAddress: ipAddress,
           id: id);
 
   factory ScanPairedDevice.fromDeviceInfo(DeviceInfo deviceInfo,[bool available=false]) {
-    return ScanPairedDevice(available: available, name: deviceInfo.name, platform: deviceInfo.platform, ipAddress: deviceInfo.ipAddress, id: deviceInfo.id);
+    return ScanPairedDevice(available: available, name: deviceInfo.name, platform: deviceInfo.deviceType, ipAddress: deviceInfo.ipAddress, id: deviceInfo.id);
   }
 
   @override
