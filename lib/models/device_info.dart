@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 const _idField = "id";
 const _nameField = "name";
-const _deviceTypeField = "deviceType";
+const _deviceTypeField = "device_type";
 const _ipAddressField = "ip_address";
 
 const windowsDeviceType = "windows";
