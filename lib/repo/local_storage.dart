@@ -67,7 +67,7 @@ class LocalStorage {
 
   Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {
     List<DeviceInfo> pairDevices = await getPairedDevices();
-    if (!pairDevices.contains(pairDeviceInfo)) return;
+    if (pairDevices.containsSameDeviceId(pairDeviceInfo)) return;
 
     pairDevices.add(pairDeviceInfo);
     await _savePairedDevices(pairDevices);
@@ -75,7 +75,7 @@ class LocalStorage {
 
   Future<void> updatePairedDevice(DeviceInfo pairDeviceInfo) async {
     List<DeviceInfo> pairDevices = await getPairedDevices();
-    int deviceInfoIndex = pairDevices.findIndexWithSameDeviceId(pairDeviceInfo);
+    int deviceInfoIndex = pairDevices.findIndexWithDeviceId(pairDeviceInfo);
     if (deviceInfoIndex < 0 || pairDevices[deviceInfoIndex] == pairDeviceInfo) return;
 
     pairDevices[deviceInfoIndex] = pairDeviceInfo;

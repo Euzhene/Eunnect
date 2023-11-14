@@ -8,17 +8,17 @@ class ScanPairedDevice extends DeviceInfo {
       {required this.available, required super.name, required super.deviceType, required super.ipAddress, required super.id});
 
   ScanPairedDevice copyWith({
-    bool? available
+    bool? available,
   }) =>
       ScanPairedDevice(
           available: available ?? this.available,
           name: name,
-          platform: deviceType,
+          deviceType: deviceType,
           ipAddress: ipAddress,
           id: id);
 
   factory ScanPairedDevice.fromDeviceInfo(DeviceInfo deviceInfo,[bool available=false]) {
-    return ScanPairedDevice(available: available, name: deviceInfo.name, platform: deviceInfo.deviceType, ipAddress: deviceInfo.ipAddress, id: deviceInfo.id);
+    return ScanPairedDevice(available: available, name: deviceInfo.name, deviceType: deviceInfo.deviceType, ipAddress: deviceInfo.ipAddress, id: deviceInfo.id);
   }
 
   @override

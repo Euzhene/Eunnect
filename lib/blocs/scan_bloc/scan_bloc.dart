@@ -93,10 +93,9 @@ class ScanBloc extends Cubit<ScanState> {
       DeviceInfo deviceInfo = message.data;
       devicesTime[deviceInfo.id] = DateTime.now();
 
-      ScanPairedDevice? pairedDevice = pairedDevices.findWithSameDeviceId(deviceInfo);
-      if (pairedDevice != null) {
-        pairedDevices.remove(pairedDevice);
-        pairedDevices.add(pairedDevice.copyWith(available: true));
+      if (pairedDevices.containsSameDeviceId(deviceInfo)) {
+        ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
+        pairedDevices.updateWithDeviceId(updatedPairedDevice);
         _localStorage.updatePairedDevice(deviceInfo);
       } else if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
 
