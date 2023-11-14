@@ -184,7 +184,7 @@ void _scanDevices(List args) async {
     await const MethodChannel("multicast").invokeMethod("release");
     await const MethodChannel("multicast").invokeMethod("acquire");
   }
-  var internetAddress = InternetAddress("229.30.13.47");
+  var internetAddress = InternetAddress("224.0.0.1");
 
   RawDatagramSocket receiver = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
   receiver.joinMulticast(internetAddress);
