@@ -184,15 +184,18 @@ void _scanDevices(List args) async {
     await const MethodChannel("multicast").invokeMethod("release");
     await const MethodChannel("multicast").invokeMethod("acquire");
   }
-  var internetAddress = InternetAddress("224.0.0.1");
+  String ip = (myDeviceInfo.ipAddress.split(".")..removeLast()..add("255")).join(".");
+  var internetAddress = InternetAddress(ip);
 
   RawDatagramSocket receiver = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
-  receiver.joinMulticast(internetAddress);
+  receiver.broadcastEnabled = true;
+  //receiver.joinMulticast(internetAddress);
+
 
   RawDatagramSocket sender = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
-  sender.joinMulticast(internetAddress);
+  //sender.joinMulticast(internetAddress);
   sender.broadcastEnabled = true;
-  sender.multicastLoopback = false;
+//  sender.multicastLoopback = false;
 
   receiver.listen((e) {
     Datagram? datagram = receiver.receive();
