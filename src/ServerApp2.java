@@ -14,9 +14,12 @@ import classes.DeviceInfo;
 public class ServerApp2 extends JFrame {
     private JButton togglePowerBtn;
     private JPanel panel1;
+    private JLabel connectionState;
     private boolean isWorking = false;
     private boolean isServerRunning = false;
-    private final MulticastSocket[] multicastSocket = {null};
+    //    private final MulticastSocket[] multicastSocket = {null};
+    private final DatagramSocket[] datagramSocket = {null};
+
     private final ServerSocket[] serverSocket = {null};
     private final Thread[] serverThread = {null};
     private final Socket[] client = {null};
@@ -123,36 +126,52 @@ public class ServerApp2 extends JFrame {
 
     private void startServer() {
         try {
-            InetAddress groupAddress = InetAddress.getByName("224.0.0.1");
+/*            InetAddress groupAddress = InetAddress.getByName("224.0.0.1");
             multicastSocket[0] = new MulticastSocket(10242);
-            multicastSocket[0].joinGroup(groupAddress);
+            multicastSocket[0].joinGroup(groupAddress);*/
 
             System.out.println("Server is running on " + InetAddress.getLocalHost().getHostAddress());
             serverSocket[0] = new ServerSocket(10242);
 
+            InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
+            datagramSocket[0] = new DatagramSocket();
+            datagramSocket[0].setBroadcast(true);
+
+            Gson gson = new Gson();
             ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
             scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
-/*                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    String jsonDeviceInfo = gson.toJson(deviceInfo);
+
+                    byte[] data = jsonDeviceInfo.getBytes();
+                    DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, 10242);
+                    datagramSocket[0].send(packet);
+                    System.out.println(packet);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 0, 3, TimeUnit.SECONDS);
+
+            /*try {
+             *//*                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                     ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
                     objectOutputStream.writeObject(deviceInfo);
 
                     byte[] data = byteArrayOutputStream.toByteArray();
                     DatagramPacket packet = new DatagramPacket(data, data.length, groupAddress, 10242);
                     multicastSocket[0].send(packet);
-                    System.out.println(packet);*/
-                    Gson gson = new Gson();
+                    System.out.println(packet);*//*
+             *//*                    Gson gson = new Gson();
                     String json = gson.toJson(deviceInfo);
 
                     byte[] data = json.getBytes();
                     DatagramPacket packet = new DatagramPacket(data, data.length, groupAddress, 10242);
                     multicastSocket[0].send(packet);
-                    System.out.println(packet);
+                    System.out.println(packet);*//*
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
-                }
-            }, 0, 3, TimeUnit.SECONDS);
+                }*/
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -165,8 +184,12 @@ public class ServerApp2 extends JFrame {
                 isServerRunning = false;
 
                 // Отключаемся от мультивещательной группы
-                multicastSocket[0].leaveGroup(InetAddress.getByName("224.0.0.1"));
-                multicastSocket[0].close();
+/*                multicastSocket[0].leaveGroup(InetAddress.getByName("224.0.0.1"));
+                multicastSocket[0].close();*/
+
+                if (datagramSocket[0] != null && !datagramSocket[0].isClosed()) {
+                    datagramSocket[0].close();
+                }
 
                 // Закрываем клиентский сокет
                 if (client[0] != null && !client[0].isClosed()) {

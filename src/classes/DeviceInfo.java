@@ -19,6 +19,13 @@ public class DeviceInfo implements Serializable {
         this.id = UUID.randomUUID().toString();
     }
 
+    public DeviceInfo(String device_type, String name, String ip_address, String id) {
+        this.device_type = device_type;
+        this.name = name;
+        this.ip_address = ip_address;
+        this.id = id;
+    }
+
     public String getDeviceType() {
         return device_type;
     }
