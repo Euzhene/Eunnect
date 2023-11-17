@@ -19,7 +19,8 @@ public class ServerApp2 extends JFrame {
     private boolean isServerRunning = false;
     //    private final MulticastSocket[] multicastSocket = {null};
     private final DatagramSocket[] datagramSocket = {null};
-
+    private ScheduledExecutorService scheduledExecutorService;
+    private ScheduledExecutorService scheduledConnectorService;
     private final ServerSocket[] serverSocket = {null};
     private final Thread[] serverThread = {null};
     private final Socket[] client = {null};
@@ -71,13 +72,8 @@ public class ServerApp2 extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!isWorking) {
-                    togglePowerBtn.setText("Turn Off");
-                    isWorking = true;
-                    isServerRunning = true;
                     startServerAsync();
                 } else {
-                    isWorking = false;
-                    togglePowerBtn.setText("Turn On");
                     stopServerAsync();
                 }
             }
@@ -126,9 +122,9 @@ public class ServerApp2 extends JFrame {
 
     private void startServer() {
         try {
-/*            InetAddress groupAddress = InetAddress.getByName("224.0.0.1");
-            multicastSocket[0] = new MulticastSocket(10242);
-            multicastSocket[0].joinGroup(groupAddress);*/
+            togglePowerBtn.setText("Turn Off");
+            isWorking = true;
+            isServerRunning = true;
 
             System.out.println("Server is running on " + InetAddress.getLocalHost().getHostAddress());
             serverSocket[0] = new ServerSocket(10242);
@@ -138,7 +134,18 @@ public class ServerApp2 extends JFrame {
             datagramSocket[0].setBroadcast(true);
 
             Gson gson = new Gson();
-            ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+            scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+            scheduledConnectorService = Executors.newSingleThreadScheduledExecutor();
+
+            scheduledConnectorService.scheduleAtFixedRate(() -> {
+                if (!isInternetConnectionAvailable()) {
+                    connectionState.setText("Нет подключения к интернету");
+                    stopServer();
+                }else {
+                    connectionState.setText("Подключение установлено");
+                }
+            }, 0, 3, TimeUnit.SECONDS);
+
 
             scheduledExecutorService.scheduleAtFixedRate(() -> {
                 try {
@@ -153,25 +160,6 @@ public class ServerApp2 extends JFrame {
                 }
             }, 0, 3, TimeUnit.SECONDS);
 
-            /*try {
-             *//*                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-                    objectOutputStream.writeObject(deviceInfo);
-
-                    byte[] data = byteArrayOutputStream.toByteArray();
-                    DatagramPacket packet = new DatagramPacket(data, data.length, groupAddress, 10242);
-                    multicastSocket[0].send(packet);
-                    System.out.println(packet);*//*
-             *//*                    Gson gson = new Gson();
-                    String json = gson.toJson(deviceInfo);
-
-                    byte[] data = json.getBytes();
-                    DatagramPacket packet = new DatagramPacket(data, data.length, groupAddress, 10242);
-                    multicastSocket[0].send(packet);
-                    System.out.println(packet);*//*
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }*/
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -181,11 +169,9 @@ public class ServerApp2 extends JFrame {
     private void stopServer() {
         try {
             if (serverSocket[0] != null) {
+                isWorking = false;
+                togglePowerBtn.setText("Turn On");
                 isServerRunning = false;
-
-                // Отключаемся от мультивещательной группы
-/*                multicastSocket[0].leaveGroup(InetAddress.getByName("224.0.0.1"));
-                multicastSocket[0].close();*/
 
                 if (datagramSocket[0] != null && !datagramSocket[0].isClosed()) {
                     datagramSocket[0].close();
@@ -203,6 +189,11 @@ public class ServerApp2 extends JFrame {
                     bufferedReader[0].close();
                 }
 
+                System.out.println("scheduledExecutorService closed");
+                scheduledExecutorService.shutdownNow();
+                System.out.println("scheduledConnectorService closed");
+                scheduledConnectorService.shutdownNow();
+
                 // Закрываем серверный сокет
                 serverSocket[0].close();
 
@@ -213,6 +204,15 @@ public class ServerApp2 extends JFrame {
         } catch (IOException ex) {
         }
     }
+
+    private boolean isInternetConnectionAvailable() {
+        try (Socket socket = new Socket("www.google.com", 80)) {
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
 
     private DeviceInfo createDeviceInfo() throws UnknownHostException {
         String platform = System.getProperty("os.name").toLowerCase();
