@@ -13,8 +13,7 @@ void main() async {
   await Permission.manageExternalStorage.request();
 
   await GetItHelper.registerAll();
-  GetItHelper.i<MainBloc>().startServer();
-  runApp(Eunnect());
+  runApp(BlocProvider(create: (_)=>GetItHelper.i<MainBloc>(), child: Eunnect()));
 }
 
 class Eunnect extends StatelessWidget {
@@ -34,9 +33,8 @@ class Eunnect extends StatelessWidget {
         useMaterial3: true,
       ),
       builder: (context, widget) {
-       MainBloc bloc = GetItHelper.i<MainBloc>();
-        return BlocListener(
-            bloc: bloc,
+        MainBloc bloc = context.read<MainBloc>();
+        return BlocListener<MainBloc,MainState>(
             listener: (context, state) {
               if (state is ErrorMainState)
                 showErrorSnackBar(context, text: state.error);

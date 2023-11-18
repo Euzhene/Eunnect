@@ -29,6 +29,8 @@ abstract class CustomServerSocket {
 
   static final LocalStorage _localStorage = LocalStorage();
 
+  static bool get isInitialized => _server != null;
+
   static Future<void> initServer(String ipAddress) async {
     await _server?.close();
     _server = await ServerSocket.bind(ipAddress, port);

@@ -26,6 +26,9 @@ class DeviceInfo extends Equatable {
     required this.id,
   });
 
+
+  DeviceInfo copyWith({required String ipAddress}) => DeviceInfo(name: name, deviceType: deviceType, ipAddress: ipAddress, id: id);
+
   DeviceInfo.fromJson(Map<String, dynamic> json)
       : id = json[_idField],
         name = json[_nameField],

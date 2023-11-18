@@ -22,7 +22,6 @@ import '../../constants.dart';
 class ScanBloc extends Cubit<ScanState> {
   final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
-  final DeviceInfo _myDeviceInfo = GetItHelper.i<DeviceInfo>();
 
   Isolate? _scanIsolate;
   ReceivePort _receivePort = ReceivePort();
@@ -47,7 +46,7 @@ class ScanBloc extends Cubit<ScanState> {
           int index = pairedDevices.indexWhere((element) => element.id == key);
           if (index >= 0) {
             ScanPairedDevice pairedDevice = pairedDevices[index];
-            pairedDevices[index] = (pairedDevice.copyWith(available: false));
+            pairedDevices[index] = (pairedDevice.scanCopyWith(available: false));
           }
           _emitScanState();
         }
@@ -78,6 +77,9 @@ class ScanBloc extends Cubit<ScanState> {
   Map<String, DateTime> devicesTime = {};
 
   void onScanDevices() async {
+    DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
+    if (myDeviceInfo.ipAddress.isEmpty) return;
+
     _scanIsolate?.kill();
     _receivePort.close();
     _receivePort = ReceivePort();
@@ -103,7 +105,7 @@ class ScanBloc extends Cubit<ScanState> {
     });
 
     _scanIsolate =
-        await Isolate.spawn(_scanDevices, [_receivePort.sendPort, GetItHelper.i<DeviceInfo>(), RootIsolateToken.instance]);
+        await Isolate.spawn(_scanDevices, [_receivePort.sendPort,myDeviceInfo, RootIsolateToken.instance]);
   }
 
   Future<void> onSendLogs() async {
@@ -131,7 +133,7 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
-      SocketMessage socketMessage = await compute<List, SocketMessage>(pair, [_myDeviceInfo, deviceInfo]);
+      SocketMessage socketMessage = await compute<List, SocketMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);
 
       if (socketMessage.error != null) {
         _mainBloc.emitDefaultError(socketMessage.error!);

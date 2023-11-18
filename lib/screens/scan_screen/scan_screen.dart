@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/routes.dart';
@@ -20,49 +21,55 @@ class ScanScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ScanBloc bloc = context.read<ScanBloc>();
+    MainBloc mainBloc = context.read<MainBloc>();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Подключение Устройств")),
-      body: BlocConsumer<ScanBloc, ScanState>(
-          listener: (context, state) {},
-          buildWhen: (prevS, curS) {
-            return true;
-          },
-          builder: (context, state) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          CustomText(
-                            "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
-                            textAlign: TextAlign.start,
-                            fontSize: 16,
+    return BlocBuilder<MainBloc,MainState>(
+      builder: (context,state) {
+        return Scaffold(
+          appBar: AppBar(title: const Text("Подключение Устройств")),
+          body: BlocConsumer<ScanBloc, ScanState>(
+              listener: (context, state) {},
+              buildWhen: (prevS, curS) {
+                return true;
+              },
+              builder: (context, state) {
+                if (!mainBloc.hasConnection) return _buildNoConnectionWidget();
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              CustomText(
+                                "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
+                                textAlign: TextAlign.start,
+                                fontSize: 16,
+                              ),
+                              ..._buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
+                              ..._buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc, context: context),
+                            ],
                           ),
-                          ..._buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
-                          ..._buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc, context: context),
-                        ],
-                      ),
+                        ),
+                        if (!Platform.isWindows)
+                          Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: CustomButton(
+                                onPressed: () => bloc.onSendLogs(),
+                                text: "Отправить логи",
+                                textColor: black,
+                              ))
+                      ],
                     ),
-                    if (!Platform.isWindows)
-                      Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: CustomButton(
-                            onPressed: () => bloc.onSendLogs(),
-                            text: "Отправить логи",
-                            textColor: black,
-                          ))
-                  ],
-                ),
-              ),
-            );
-          }),
+                  ),
+                );
+              }),
+        );
+      }
     );
   }
 
@@ -144,6 +151,12 @@ class ScanScreen extends StatelessWidget {
           ),
         )
       ],
+    );
+  }
+
+  Widget _buildNoConnectionWidget() {
+    return const Center(
+      child: Text("Нет подключения к сети"),
     );
   }
 }

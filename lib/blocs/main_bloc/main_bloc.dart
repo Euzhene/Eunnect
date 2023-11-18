@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:equatable/equatable.dart';
+import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
@@ -12,17 +12,35 @@ import 'package:path_provider/path_provider.dart';
 import '../../helpers/get_it_helper.dart';
 import '../../models/custom_message.dart';
 import '../../models/custom_server_socket.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 part 'main_state.dart';
 
 class MainBloc extends Cubit<MainState> {
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
+
   late Function(DeviceInfo) onPairedDeviceChanged;
+  bool hasConnection = false;
 
   MainBloc() : super(MainState());
 
-  Future<void> checkFirstLaunch() async {
+  void initNetworkListener() {
+    ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
+    Connectivity().onConnectivityChanged.listen((event) {
+      bool prevConnectionState = hasConnection;
+      hasConnection = event == ConnectivityResult.ethernet || event == ConnectivityResult.mobile || event == ConnectivityResult.wifi;
+      if (hasConnection && hasConnection != prevConnectionState) {
+        Future.sync(() async {
+          await GetItHelper.registerDeviceInfo();
+          await startServer();
+          _scanBloc.onScanDevices();
+        });
+      }
+      emit(MainState());
+    });
+  }
 
+  Future<void> checkFirstLaunch() async {
     try {
       if (!_storage.isFirstLaunch()) return;
 
@@ -30,7 +48,6 @@ class MainBloc extends Cubit<MainState> {
       await _storage.setSecretKey();
       await _storage.setDeviceId();
       await _storage.setFirstLaunch();
-
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       emit(ErrorMainState(error: "Критическая ошибка при чтении из БД. Обратитесь в службу поддержки"));
@@ -38,7 +55,10 @@ class MainBloc extends Cubit<MainState> {
   }
 
   Future<void> startServer() async {
-    await CustomServerSocket.initServer(GetItHelper.i<DeviceInfo>().ipAddress);
+    String? myIp = GetItHelper.i<DeviceInfo>().ipAddress;
+    if (myIp.isEmpty || CustomServerSocket.isInitialized) return;
+
+    await CustomServerSocket.initServer(myIp);
     CustomServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
       emit(PairDialogState(deviceInfo: deviceInfo));
       emit(MainState());
@@ -54,15 +74,13 @@ class MainBloc extends Cubit<MainState> {
       try {
         if (!Platform.isAndroid) {
           docDir = await getApplicationDocumentsDirectory();
-          if (!docDir.path.endsWith(Platform.pathSeparator)) docDir = Directory(docDir.path+Platform.pathSeparator);
-        }
-        else {
+          if (!docDir.path.endsWith(Platform.pathSeparator)) docDir = Directory(docDir.path + Platform.pathSeparator);
+        } else {
           docDir = Directory("/storage/emulated/0/Download/");
 
           if (!await docDir.exists()) {
             docDir = Directory("/storage/emulated/0/Downloads/");
           }
-
         }
 
         File file = File("${docDir.path}${message.filename}");
@@ -85,8 +103,10 @@ class MainBloc extends Cubit<MainState> {
 
   Future<void> onPairConfirmed(DeviceInfo? pairDeviceInfo) async {
     try {
-      if (pairDeviceInfo == null) CustomServerSocket.pairStream.sink.add(null);
-      else CustomServerSocket.pairStream.sink.add(pairDeviceInfo);
+      if (pairDeviceInfo == null)
+        CustomServerSocket.pairStream.sink.add(null);
+      else
+        CustomServerSocket.pairStream.sink.add(pairDeviceInfo);
 
       await CustomServerSocket.pairStream.close();
       if (pairDeviceInfo != null) {
@@ -109,5 +129,4 @@ class MainBloc extends Cubit<MainState> {
     emit(SuccessMainState(message: message));
     emit(MainState());
   }
-
 }

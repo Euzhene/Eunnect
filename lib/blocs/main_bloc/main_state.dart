@@ -1,12 +1,7 @@
-
 part of 'main_bloc.dart';
 
-class MainState extends Equatable {
+class MainState {}
 
-  @override
-  List<Object?> get props => [];
-
-}
 class ErrorMainState extends MainState {
   final String error;
 
@@ -23,10 +18,4 @@ class PairDialogState extends MainState {
   final DeviceInfo deviceInfo;
 
   PairDialogState({required this.deviceInfo});
-
-  @override
-  List<Object?> get props => [deviceInfo];
 }
-
-
-
