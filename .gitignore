@@ -2,7 +2,7 @@
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-src/device_info.json
+device_info.json
 
 ### Eclipse ###
 .apt_generated
