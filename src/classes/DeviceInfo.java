@@ -7,7 +7,7 @@ public class DeviceInfo implements Serializable {
     private String device_type;
     private final String name;
     public final String id;
-    private final String ip_address;
+    private String ip_address;
 
     public DeviceInfo(String device_type, String name, String ip_address) {
         if (device_type.contains("windows"))
@@ -20,22 +20,35 @@ public class DeviceInfo implements Serializable {
     }
 
     public DeviceInfo(String device_type, String name, String ip_address, String id) {
-        this.device_type = device_type;
+        if (device_type.contains("windows"))
+            this.device_type = "windows";
+        else if (device_type.contains("linux"))
+            this.device_type = "linux";
         this.name = name;
         this.ip_address = ip_address;
         this.id = id;
     }
 
-    public String getDeviceType() {
-        return device_type;
-    }
 
     public String getName() {
         return name;
     }
 
-    public String getIpAddress() {
+
+    public String getDevice_type() {
+        return device_type;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getIp_address() {
         return ip_address;
+    }
+
+    public void setIp_address(String ip_address) {
+        this.ip_address = ip_address;
     }
 
     @Override
