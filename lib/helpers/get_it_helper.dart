@@ -16,8 +16,9 @@ abstract class GetItHelper {
 
   static Future<void> registerAll() async {
     await _registerSharedPreferences();
-    await registerDeviceInfo();
     await _registerBlocs();
+    await registerDeviceInfo();
+    i<MainBloc>().initNetworkListener();
   }
 
   static Future<void> registerDeviceInfo() async {
@@ -65,6 +66,5 @@ abstract class GetItHelper {
     ScanBloc scanBloc = ScanBloc();
     i.registerSingleton<ScanBloc>(scanBloc);
 
-    mainBloc.initNetworkListener();
   }
 }
