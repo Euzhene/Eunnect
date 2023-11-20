@@ -7,6 +7,7 @@ import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../helpers/get_it_helper.dart';
@@ -26,17 +27,20 @@ class MainBloc extends Cubit<MainState> {
 
   void initNetworkListener() {
     ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
-    Connectivity().onConnectivityChanged.listen((event) {
-      bool prevConnectionState = hasConnection;
-      hasConnection = event == ConnectivityResult.ethernet || event == ConnectivityResult.mobile || event == ConnectivityResult.wifi;
-      if (hasConnection && hasConnection != prevConnectionState) {
-        Future.sync(() async {
-          await GetItHelper.registerDeviceInfo();
+    Connectivity().onConnectivityChanged.listen((event) async {
+      try {
+        bool prevConnectionState = hasConnection;
+        hasConnection =
+            event == ConnectivityResult.ethernet || event == ConnectivityResult.mobile || event == ConnectivityResult.wifi;
+        if (hasConnection && hasConnection != prevConnectionState) {
+          await updateDeviceInfo();
           await startServer();
           _scanBloc.onScanDevices();
-        });
+        }
+        emit(MainState());
+      }catch(e,st) {
+        FLog.error(text: e.toString(),stacktrace: st);
       }
-      emit(MainState());
     });
   }
 
@@ -56,7 +60,7 @@ class MainBloc extends Cubit<MainState> {
 
   Future<void> startServer() async {
     String? myIp = GetItHelper.i<DeviceInfo>().ipAddress;
-    if (myIp.isEmpty || CustomServerSocket.isInitialized) return;
+    if (myIp.isEmpty) return;
 
     await CustomServerSocket.initServer(myIp);
     CustomServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
@@ -128,5 +132,15 @@ class MainBloc extends Cubit<MainState> {
   void emitDefaultSuccess(String message) {
     emit(SuccessMainState(message: message));
     emit(MainState());
+  }
+
+  Future<void> updateDeviceInfo() async {
+
+    DeviceInfo deviceInfo= GetItHelper.i<DeviceInfo>();
+    String deviceIp = (await NetworkInfo().getWifiIP()) ?? "";
+    deviceInfo = deviceInfo.copyWith(ipAddress: deviceIp);
+
+    await GetItHelper.i.unregister<DeviceInfo>();
+    GetItHelper.i.registerSingleton<DeviceInfo>(deviceInfo);
   }
 }

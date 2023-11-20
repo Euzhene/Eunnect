@@ -22,7 +22,7 @@ class DeviceInfo extends Equatable {
   const DeviceInfo({
     required this.name,
     required this.deviceType,
-    required this.ipAddress,
+    this.ipAddress = "",
     required this.id,
   });
 

@@ -16,8 +16,8 @@ abstract class GetItHelper {
 
   static Future<void> registerAll() async {
     await _registerSharedPreferences();
-    await _registerBlocs();
     await registerDeviceInfo();
+    await _registerBlocs();
   }
 
   static Future<void> registerDeviceInfo() async {
@@ -27,19 +27,19 @@ abstract class GetItHelper {
     String deviceId = i<LocalStorage>().getDeviceId();
 
     DeviceInfo deviceInfo;
-    String deviceIp = (await NetworkInfo().getWifiIP())!;
+
     Size size = MediaQueryData.fromView(WidgetsBinding.instance.window).size;
 
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
-      deviceInfo = DeviceInfo(name: androidInfo.model, deviceType: size.shortestSide < 550 ? phoneDeviceType : tabletDeviceType, id: deviceId,ipAddress: deviceIp);
+      deviceInfo = DeviceInfo(name: androidInfo.model, deviceType: size.shortestSide < 550 ? phoneDeviceType : tabletDeviceType, id: deviceId);
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-      deviceInfo = DeviceInfo(name: windowsInfo.computerName, deviceType: windowsDeviceType, id: deviceId,ipAddress: deviceIp);
+      deviceInfo = DeviceInfo(name: windowsInfo.computerName, deviceType: windowsDeviceType, id: deviceId);
     } else {
-      deviceInfo = DeviceInfo(name: "Unknown", deviceType: "Unsupported", id: deviceId,ipAddress: deviceIp);
+      deviceInfo = DeviceInfo(name: "Unknown", deviceType: "Unsupported", id: deviceId);
     }
-print(deviceIp);
+
     i.registerSingleton<DeviceInfo>(deviceInfo);
   }
 
