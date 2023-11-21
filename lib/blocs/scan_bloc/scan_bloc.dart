@@ -29,7 +29,14 @@ class ScanBloc extends Cubit<ScanState> {
   List<DeviceInfo> foundDevices = [];
   List<ScanPairedDevice> pairedDevices = [];
 
-  ScanBloc() : super(ScanState()) {
+  bool isFoundDeviceListExpanded = true;
+  bool isPairedDeviceListExpanded = true;
+
+  ScanBloc():super(ScanState()) {
+
+    isFoundDeviceListExpanded= _localStorage.getFoundDeviceListExpanded();
+    isPairedDeviceListExpanded= _localStorage.getPairedDeviceListExpanded();
+
     const int period = 6;
 
     /*
@@ -153,6 +160,14 @@ class ScanBloc extends Cubit<ScanState> {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
+  }
+
+  void onFoundDeviceExpansionChanged(bool expanded) {
+    _localStorage.setFoundDeviceListExpanded(expanded);
+  }
+
+  void onPairedDeviceExpansionChanged(bool expanded) {
+    _localStorage.setPairedDeviceListExpanded(expanded);
   }
 }
 

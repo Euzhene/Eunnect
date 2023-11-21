@@ -9,6 +9,10 @@ import 'package:uuid/uuid.dart';
 import '../models/device_info.dart';
 
 const _isFirstLaunchKey = "is_first_launch";
+
+const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
+const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
+
 const _secretKey = "secret_key";
 const _deviceIdKey = "device_id";
 const _pairedDevicesKey = "paired_devices";
@@ -17,6 +21,24 @@ class LocalStorage {
   final SharedPreferences _preferences = GetItHelper.i<SharedPreferences>();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
+  bool getFoundDeviceListExpanded() {
+    return _preferences.getBool(_isFoundDeviceListExpanded) ?? true;
+  }
+
+  Future<void> setFoundDeviceListExpanded(bool expanded) async {
+    await _preferences.setBool(_isFoundDeviceListExpanded, expanded);
+  }
+
+  bool getPairedDeviceListExpanded() {
+    return _preferences.getBool(_isPairedDeviceListExpanded) ?? true;
+  }
+
+  Future<void> setPairedDeviceListExpanded(bool expanded) async {
+    await _preferences.setBool(_isPairedDeviceListExpanded, expanded);
+  }
+
+
+
   bool isFirstLaunch() {
     return _preferences.getBool(_isFirstLaunchKey) ?? true;
   }
@@ -24,6 +46,8 @@ class LocalStorage {
   Future<void> setFirstLaunch() async {
     await _preferences.setBool(_isFirstLaunchKey, false);
   }
+
+
 
   Future<void> setSecretKey() async {
     String secretKey = const Uuid().v4();
@@ -47,6 +71,8 @@ class LocalStorage {
     await _storage.deleteAll();
     await _preferences.clear();
   }
+
+
 
   Future<List<DeviceInfo>> getPairedDevices() async {
     String? listJsonString = (await _storage.read(key: _pairedDevicesKey));
