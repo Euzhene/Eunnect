@@ -59,9 +59,10 @@ class ActionsScreen extends StatelessWidget {
                     CustomText(
                         "${bloc.getFileSizeString(bytes: state.sentBytes)} / ${bloc.getFileSizeString(bytes: state.allFileBytes)}")
                   ] else ...[
-                    InkWell(
-                      onTap: () => bloc.onSendBuffer(),
-                      child: CustomCard(
+                    CustomCard(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => bloc.onSendBuffer(),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 30),
                           child: CustomText(
@@ -71,9 +72,10 @@ class ActionsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    InkWell(
-                      onTap: () => bloc.onSendFile(),
-                      child: CustomCard(
+                    CustomCard(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => bloc.onSendFile(),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 30),
                           child: CustomText(

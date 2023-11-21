@@ -11,7 +11,7 @@ const double horizontalPadding = 8;
 
 const Color scaffoldBackgroundColor = Color(0xffF2F2F2);
 const Color cardTitleColor = Color(0xff014E6A);
-const Color cardContentBackground = Color(0xff197279);
+const Color cardContentBackground = Color(0xffd3faff);
 
 
 const Color white = Colors.white;
