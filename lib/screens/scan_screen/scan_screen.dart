@@ -103,7 +103,8 @@ class ScanScreen extends StatelessWidget {
   Widget _buildPairedDeviceItem({required ScanPairedDevice e, required BuildContext context}) {
     return _buildBaseDeviceItem(
         deviceInfo: e,
-        additionalText: e.available ? "" : "(не доступен)",
+        additionalText: e.available ? "" : "(не доступно)",
+        highlightDevice: e.available,
         onPressed: () => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e).then((value) {
               if (value == true) context.read<ScanBloc>().getSavedDevices();
             }));
@@ -113,7 +114,7 @@ class ScanScreen extends StatelessWidget {
     return _buildBaseDeviceItem(deviceInfo: e, onPressed: () => bloc.onPairRequested(e));
   }
 
-  Widget _buildBaseDeviceItem({required DeviceInfo deviceInfo, required VoidCallback onPressed, String additionalText = ""}) {
+  Widget _buildBaseDeviceItem({required DeviceInfo deviceInfo, required VoidCallback onPressed, String additionalText = "", bool highlightDevice = false}) {
     IconData iconData;
     switch (deviceInfo.deviceType) {
       case windowsDeviceType:
@@ -137,17 +138,19 @@ class ScanScreen extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const VerticalSizedBox(),
         InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: onPressed,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(iconData, color: Colors.black),
-              const HorizontalSizedBox(horizontalPadding / 2),
-              CustomText("${deviceInfo.name} $additionalText", fontSize: 20),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(verticalPadding),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(iconData, color: highlightDevice ? Colors.green : Colors.black),
+                const HorizontalSizedBox(horizontalPadding / 2),
+                CustomText("${deviceInfo.name} $additionalText", fontSize: 20,color: highlightDevice ? Colors.green : Colors.black,),
+              ],
+            ),
           ),
         )
       ],

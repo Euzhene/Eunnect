@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -13,7 +14,6 @@ import 'package:path_provider/path_provider.dart';
 import '../../helpers/get_it_helper.dart';
 import '../../models/custom_message.dart';
 import '../../models/custom_server_socket.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
 part 'main_state.dart';
 
