@@ -6,7 +6,6 @@ public class RequestDialog extends JDialog {
     public RequestDialog(JFrame parent, String deviceInfo) {
         super(parent, "Запрос на сопряжение", true);
 
-        // Установка размеров и макета
         setSize(400, 200);
         setLayout(new BorderLayout());
 

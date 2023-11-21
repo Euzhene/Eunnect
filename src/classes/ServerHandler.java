@@ -5,36 +5,37 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.prefs.Preferences;
 import java.net.Socket;
 
 public class ServerHandler {
-    private static final DatagramSocket[] datagramSocket = {null};
+    private static DatagramSocket datagramSocket;
     private static ScheduledExecutorService scheduledExecutorService;
-    private static ScheduledExecutorService scheduledConnectorService;
-    private static final ServerSocket[] serverSocket = {null};
-    //    private static final BufferedReader[] bufferedReader = {null};
+    private static ExecutorService executorService;
+    private static ServerSocket serverSocket;
     private static boolean isFirstLaunch;
 
     //    private final Thread[] serverThread = {null};
 //    private static final Socket[] client = {null};
     private static final String FIRST_LAUNCH_KEY = "firstLaunch";
     private static JsonArray jsonArray;
-
     private static JLabel connectionState;
     private static DeviceInfo deviceInfo;
     private static String deviceId;
-    private static boolean isPairAllowed = false;
+    private static final Object lock = new Object();
+    private static Gson gson;
+    private static volatile boolean isServerRunning = true;
 
     public static void initialization() {
         Preferences prefs = Preferences.userNodeForPackage(ServerHandler.class);
         isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
+        gson = new Gson();
 
         if (isFirstLaunch) {
             System.out.println("First launch!");
@@ -66,61 +67,58 @@ public class ServerHandler {
 
     public static void startServer() throws IOException {
         System.out.println("Server is running on " + InetAddress.getLocalHost().getHostAddress());
-        serverSocket[0] = new ServerSocket(10242);
-
+        serverSocket = new ServerSocket(10242);
+        isServerRunning = true;
 
         InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
-        datagramSocket[0] = new DatagramSocket();
-        datagramSocket[0].setBroadcast(true);
+        datagramSocket = new DatagramSocket();
+        datagramSocket.setBroadcast(true);
 
-        Gson gson = new Gson();
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        scheduledConnectorService = Executors.newSingleThreadScheduledExecutor();
 
-        scheduledConnectorService.scheduleAtFixedRate(() -> {
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+/*        scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!isInternetConnectionAvailable()) {
-                connectionState.setText("Нет подключения к интернету");
+                System.out.println("Нет подключения к интернету");
                 try {
                     stopServer();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             } else {
-                connectionState.setText("Есть подключение к интернету");
-            }
-        }, 0, 3, TimeUnit.SECONDS);
-
-
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
+                System.out.println("Есть подключение к интернету");
+            }*/
             try {
-//                    String jsonDeviceInfo = gson.toJson(deviceInfo);
-//                    byte[] data = jsonDeviceInfo.getBytes();
-                /*JsonObject jsonObject = new JsonObject();
-                jsonObject.addProperty("device_type", "linux");
-                jsonObject.addProperty("name", System.getProperty("user.name"));
-                jsonObject.addProperty("id", deviceId);
-                jsonObject.addProperty("ip_address", InetAddress.getLocalHost().getHostAddress());
-                System.out.println(jsonObject);
-                byte[] data = jsonObject.toString().getBytes();*/
                 deviceInfo.setIp_address(InetAddress.getLocalHost().getHostAddress());
                 String jsonDeviceInfo = gson.toJson(deviceInfo);
 //                System.out.println(jsonDeviceInfo);
                 byte[] data = jsonDeviceInfo.getBytes();
                 DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, 10242);
-                datagramSocket[0].send(packet);
+//                datagramSocket[0].send(packet);
+                datagramSocket.send(packet);
 //                System.out.println(packet);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, 0, 3, TimeUnit.SECONDS);
 
-        while (true) {
-            /*Socket clientSocket = serverSocket[0].accept();
+        while (isServerRunning) {
+            Socket clientSocket = serverSocket.accept();
+            handleClient(clientSocket);
+            clientSocket.close();
+        }
 
-            bufferedReader[0] = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            String jsonInput = bufferedReader[0].readLine();
+    }
+
+    private static void handleClient(Socket clientSocket) throws IOException {
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
+            String jsonInput = bufferedReader.readLine();
+            if (jsonInput == null || jsonInput.isBlank()) return ;
+
             SocketMessage socketMessage = gson.fromJson(jsonInput, SocketMessage.class);
-            System.out.println(jsonInput);
+//                System.out.println(jsonInput);
+//            System.out.println(socketMessage.getCall());
             SocketMessage responseMessage;
             if (socketMessage.getCall().equals("pair_devices")) {
                 JsonObject dataObject = gson.fromJson(socketMessage.getData(), JsonObject.class);
@@ -137,125 +135,71 @@ public class ServerHandler {
                     else
                         responseMessage = new SocketMessage("pair_devices", null, "device_id is null", null);
                 } else {
-                    responseMessage = new SocketMessage("pair_devices", null, "rejectPairRequest", deviceId);
+                    responseMessage = new SocketMessage("pair_devices", null, "Отклонено сопряжение", deviceId);
                     System.out.println("Отклонено сопряжение");
                 }
                 String jsonResponse = gson.toJson(responseMessage);
                 System.out.println(jsonResponse);
-                try (DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
-                    dos.write(jsonResponse.getBytes());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                dos.write(jsonResponse.getBytes());
             } else if (socketMessage.getCall().equals("buffer")) {
-                JsonObject dataObject = gson.fromJson(socketMessage.getData(), JsonObject.class);
-                System.out.println("Buffer: " + dataObject.get("data").getAsString());
+                //   JsonObject dataObject = gson.fromJson(socketMessage.getData(), JsonObject.class);
+                String dataObject = socketMessage.getData();
+                System.out.println("Buffer: " + dataObject);
 
-                StringSelection buf = new StringSelection("heht");
-
+                StringSelection buf = new StringSelection(dataObject);
+                Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clip.setContents(buf, null);
                 responseMessage = new SocketMessage("buffer", null, null, deviceId);
                 String jsonResponse = gson.toJson(responseMessage);
 
-                try (DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
-                    dos.write(jsonResponse.getBytes());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                dos.write(jsonResponse.getBytes());
             } else if (socketMessage.getCall().equals("file")) {
-
-            }*/
-            Socket clientSocket = serverSocket[0].accept();
-            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                 DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
-
-                String jsonInput = bufferedReader.readLine();
-                SocketMessage socketMessage = gson.fromJson(jsonInput, SocketMessage.class);
-//                System.out.println(jsonInput);
-                System.out.println(socketMessage.getCall());
-                SocketMessage responseMessage;
-                if (socketMessage.getCall().equals("pair_devices")) {
-                    JsonObject dataObject = gson.fromJson(socketMessage.getData(), JsonObject.class);
-                    System.out.println(socketMessage.getData());
-
-                    JFrame frame = new JFrame();
-                    String deviceInfo = dataObject.get("device_type").getAsString() + " " + dataObject.get("name").getAsString();
-                    RequestDialog dialog = new RequestDialog(frame, deviceInfo);
-                    dialog.setVisible(true);
-                    if (dialog.isPairAllowed()) {
-                        System.out.println("Разрешено сопряжение");
-                        if (deviceId != null)
-                            responseMessage = new SocketMessage("pair_devices", null, null, deviceId);
-                        else
-                            responseMessage = new SocketMessage("pair_devices", null, "device_id is null", null);
-                    } else {
-                        responseMessage = new SocketMessage("pair_devices", null, "rejectPairRequest", deviceId);
-                        System.out.println("Отклонено сопряжение");
-                    }
-                    String jsonResponse = gson.toJson(responseMessage);
-                    System.out.println(jsonResponse);
-                    dos.write(jsonResponse.getBytes());
-                    clientSocket.close();
-                } else if (socketMessage.getCall().equals("buffer")) {
-                    JsonObject dataObject = gson.fromJson(socketMessage.getData(), JsonObject.class);
-                    System.out.println("Buffer: " + dataObject.get("data").getAsString());
-
-                    StringSelection buf = new StringSelection("heht");
-
-                    responseMessage = new SocketMessage("buffer", null, null, deviceId);
-                    String jsonResponse = gson.toJson(responseMessage);
-
-                    dos.write(jsonResponse.getBytes());
-                    clientSocket.close();
-                } else if (socketMessage.getCall().equals("file")) {
-
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
 
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
     }
 
     public static void stopServer() throws IOException {
-        if (serverSocket[0] != null) {
-
-            if (datagramSocket[0] != null && !datagramSocket[0].isClosed()) {
-                datagramSocket[0].close();
+        /*if (serverSocket != null) {
+            if (datagramSocket != null && !datagramSocket.isClosed()) {
+                datagramSocket.close();
             }
-
-/*            // Закрываем клиентский сокет
-            if (client[0] != null && !client[0].isClosed()) {
-                System.out.println("Client is closed");
-                client[0].close();
-            }
-
-            // Закрываем BufferedReader
-            if (bufferedReader[0] != null) {
-                System.out.println("Buffer is closed");
-                bufferedReader[0].close();
-            }*/
-
             System.out.println("scheduledExecutorService closed");
+            executorService.shutdownNow();
             scheduledExecutorService.shutdownNow();
-            System.out.println("scheduledConnectorService closed");
-            scheduledConnectorService.shutdownNow();
-
-            // Закрываем серверный сокет
-            serverSocket[0].close();
-
-            if (serverSocket[0].isClosed()) {
+            serverSocket.close();
+            if (serverSocket.isClosed()) {
                 System.out.println("Server is closed");
             }
+        }*/
+        isServerRunning = false;
+
+        if (serverSocket != null && !serverSocket.isClosed()) {
+            System.out.println("server is closed");
+            serverSocket.close();
+        }
+
+        if (datagramSocket != null && !datagramSocket.isClosed()) {
+            System.out.println("datagramSocket is closed");
+            datagramSocket.close();
+        }
+
+        if (scheduledExecutorService != null) {
+            System.out.println("scheduledExecutorService is closed");
+            scheduledExecutorService.shutdownNow();
         }
     }
 
     private static boolean isInternetConnectionAvailable() {
         try (Socket socket = new Socket("www.google.com", 80)) {
             return true;
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             return false;
         }
+
     }
 
     private static DeviceInfo createDeviceInfo() throws UnknownHostException {
@@ -269,5 +213,4 @@ public class ServerHandler {
         String name = System.getProperty("user.name");
         return new DeviceInfo(platform, name, InetAddress.getLocalHost().getHostAddress(), deviceId);
     }
-
 }
