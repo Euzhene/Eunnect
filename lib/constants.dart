@@ -1,7 +1,7 @@
-import 'package:intl/intl.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 bool get isDesktop => Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 bool get isMobile => Platform.isAndroid || Platform.isIOS;

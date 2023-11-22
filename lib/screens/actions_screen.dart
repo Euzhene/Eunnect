@@ -25,7 +25,7 @@ class ActionsScreen extends StatelessWidget {
               itemBuilder: (context) {
                 return [
                   PopupMenuItem(
-                    value: () =>bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
+                    value: () => bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
                     child: const Text('Разорвать сопряжение'),
                   ),
                 ];
@@ -53,43 +53,32 @@ class ActionsScreen extends StatelessWidget {
                         )),
                       ],
                     )
-                  else if (state is SendingFileState) ...[
-                    CircularProgressIndicator(value: state.progressValue, color: Colors.lightBlueAccent),
-                    const VerticalSizedBox(),
-                    CustomText(
-                        "${bloc.getFileSizeString(bytes: state.sentBytes)} / ${bloc.getFileSizeString(bytes: state.allFileBytes)}")
-                  ] else ...[
-                    CustomCard(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () => bloc.onSendBuffer(),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 30),
-                          child: CustomText(
-                            "Передать буфер обмена",
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    CustomCard(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () => bloc.onSendFile(),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 30),
-                          child: CustomText(
-                            "Передать файл",
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
+                  else ...[
+                    _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
+                    _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
+                    if (!bloc.isMobileDeviceType) ...[
+                      _buildActionButton(text: "Перезапустить ПК", onPressed: () => bloc.onSendRestartCommand()),
+                      _buildActionButton(text: "Выключить ПК", onPressed: () => bloc.onSendShutDownCommand()),
+                      _buildActionButton(text: "Включить спящий режим", onPressed: () => bloc.onSendSleepCommand()),
+                    ]
                   ]
                 ],
               ),
             ),
           );
         }));
+  }
+
+  Widget _buildActionButton({required String text, required VoidCallback onPressed}) {
+    return CustomCard(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 30),
+          child: CustomText(text, fontSize: 20),
+        ),
+      ),
+    );
   }
 }

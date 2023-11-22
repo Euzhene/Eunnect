@@ -17,6 +17,11 @@ const pairDevicesCall = "pair_devices";
 const sendBufferCall = "buffer";
 const sendFileCall = "file";
 
+const changePcStateCall = "pc_state";
+const pcRestartState = "restart";
+const pcShutDownState = "shut_down";
+const pcSleepState = "sleep";
+
 abstract class CustomServerSocket {
   static ServerSocket? _server;
 
@@ -50,7 +55,6 @@ abstract class CustomServerSocket {
         if (bytes.isEmpty) return;
 
         bytesBuilder.add(bytes);
-        socket.add(bytes);
       }, onDone: () {
         if (receiveMessage!.call != sendFileCall) return;
 
@@ -58,6 +62,7 @@ abstract class CustomServerSocket {
           fileMessage = fileMessage!.copyWith(bytes: bytesBuilder.takeBytes());
           onFileCall?.call(fileMessage!);
         }
+        socket.add(SocketMessage(call: sendFileCall).toUInt8List());
         socket.destroy();
       }, onError: (e, st) {
         FLog.error(text: e.toString(), stacktrace: st);
@@ -76,7 +81,6 @@ abstract class CustomServerSocket {
           break;
         case sendFileCall:
           fileMessage = FileMessage.fromJsonString(receiveMessage.data!);
-          //   sendMessage = await _sendFileHandler(receiveMessage, s,socket);
           return;
         default:
           sendMessage = _defaultHandler(receiveMessage.call);
@@ -123,28 +127,6 @@ abstract class CustomServerSocket {
     await onBufferCall?.call(buffer);
     return SocketMessage(call: receiveMessage.call);
   }
-
-  // static Future<SocketMessage> _sendFileHandler(SocketMessage receiveMessage, Stream<Uint8List> stream, Socket socket) async {
-  //   SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
-  //   if (checkRes != null) return checkRes;
-  //   var bytesBuilder = BytesBuilder();
-  //
-  //   stream.listen((bytes) async {
-  //     if (bytes.isEmpty) return;
-  //
-  //     bytesBuilder.add(bytes);
-  //     socket.add(bytes);
-  //     print("listen");
-  //   }, onDone: () {
-  //     print("done");
-  //     if (bytesBuilder.isEmpty) return;
-  //
-  //     onFileCall?.call(bytesBuilder.takeBytes());
-  //     socket.close();
-  //   });
-  //
-  //   return SocketMessage(call: receiveMessage.call);
-  // }
 
   static Future<SocketMessage?> _checkPairDevice(SocketMessage receiveMessage) async {
     if (receiveMessage.deviceId == null)

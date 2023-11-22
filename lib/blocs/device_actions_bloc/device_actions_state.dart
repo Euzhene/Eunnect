@@ -5,24 +5,6 @@ class DeviceActionsState {
   bool get isUnreachableDevice => this is UnreachableDeviceState;
 }
 
-class SendingFileState extends DeviceActionsState {
-  SendingFileState({
-    this.sentBytes = 0,
-    this.allFileBytes = 0,
-  });
-
-  final int sentBytes;
-  final int allFileBytes;
-
-  double get progressValue => sentBytes / allFileBytes;
-
-  SendingFileState copyWith({
-    int? sentBytes,
-  }) =>
-      SendingFileState(
-        sentBytes: sentBytes ?? this.sentBytes,
-        allFileBytes: this.allFileBytes,
-      );
-}
+class SendingFileState extends DeviceActionsState {}
 
 class UnreachableDeviceState extends DeviceActionsState {}

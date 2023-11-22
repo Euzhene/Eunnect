@@ -41,7 +41,7 @@ class SocketMessage {
   final String? data;
   final String? deviceId;
 
-  SocketMessage({required this.call, this.data, this.error,this.deviceId});
+  SocketMessage({required this.call, this.data, this.error, this.deviceId});
 
   String toJsonString() {
     Map<String, dynamic> json = {
@@ -66,18 +66,23 @@ class SocketMessage {
 }
 
 const _bytesField = "bytes";
-const _filenameField = "filename";
+const _filenameField = "name";
+const _fileSizeField = "size";
+
 class FileMessage {
   final List<int> bytes;
   final String filename;
+  final int fileSize;
 
-  FileMessage({required this.bytes, required this.filename});
+  FileMessage({this.bytes = const [], required this.filename, required this.fileSize});
 
-  FileMessage copyWith({List<int>? bytes}) => FileMessage(bytes: bytes ?? this.bytes,  filename: filename);
+  FileMessage copyWith({List<int>? bytes}) => FileMessage(bytes: bytes ?? this.bytes, filename: filename, fileSize: fileSize);
 
-  String toJsonString() => jsonEncode({
-        _bytesField: bytes.toString(),
-        _filenameField: filename,
+  String toJsonString() =>
+      jsonEncode({
+      _bytesField: bytes.toString(),
+      _filenameField: filename,
+      _fileSizeField:fileSize
       });
 
   List<int> toUInt8List() => utf8.encode(toJsonString());
@@ -86,9 +91,9 @@ class FileMessage {
     Map<String, dynamic> json = jsonDecode(jsonString);
 
     return FileMessage(
-      bytes: jsonDecode(json[_bytesField]).cast<int>().toList(),
+      bytes: jsonDecode(json[_bytesField]).cast<int>(),
       filename: json[_filenameField],
-   //   extension: json[_extensionField],
+      fileSize: json[_fileSizeField],
     );
   }
 }

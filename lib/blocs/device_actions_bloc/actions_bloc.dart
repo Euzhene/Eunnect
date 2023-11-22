@@ -16,16 +16,22 @@ import '../../models/device_info.dart';
 part 'device_actions_state.dart';
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
+  ActionsBloc({required this.deviceInfo, required bool deviceAvailable})
+  //todo использовать enum для deviceInfo.deviceType
+      : isMobileDeviceType = deviceInfo.deviceType == phoneDeviceType || deviceInfo.deviceType == tabletDeviceType,
+        super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
+    tryConnectToDevice();
+  }
+
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final DeviceInfo deviceInfo;
 
-  ActionsBloc({required this.deviceInfo, required bool deviceAvailable}) : super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
-    tryConnectDevice();
-  }
+  final bool isMobileDeviceType;
 
-  Future<void> tryConnectDevice() async {
+
+  Future<void> tryConnectToDevice() async {
     try {
       await (await Socket.connect(deviceInfo.ipAddress, port)).close(); //check we can work with another device
       if (!isClosed) emit(DeviceActionsState());
@@ -51,7 +57,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
         socket.add(SocketMessage(call: sendBufferCall, data: text, deviceId: myDeviceInfo.id).toUInt8List());
         await socket.close();
         SocketMessage socketMessage = SocketMessage.fromUInt8List(await socket.single);
-        socket.destroy();
         if (socketMessage.error != null) {
           _mainBloc.emitDefaultError(socketMessage.error!);
           return;
@@ -64,11 +69,33 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     }
   }
 
-  String getFileSizeString({required int bytes, int decimals = 0}) {
-    const suffixes = ["Б", "КБ", "МБ", "ГБ"];
-    if (bytes == 0) return '0${suffixes[0]}';
-    var i = (log(bytes) / log(1024)).floor();
-    return ((bytes / pow(1024, i)).toStringAsFixed(decimals)) + suffixes[i];
+  void onSendRestartCommand() {
+    _onSendCommand(commandName: pcRestartState);
+  }
+
+  void onSendSleepCommand() {
+    _onSendCommand(commandName: pcSleepState);
+  }
+
+  void onSendShutDownCommand() {
+    _onSendCommand(commandName: pcShutDownState);
+  }
+
+  void _onSendCommand({required String commandName}) async {
+    try {
+      Socket socket = await Socket.connect(deviceInfo.ipAddress, port);
+      socket.add(SocketMessage(call: changePcStateCall, data: commandName, deviceId: myDeviceInfo.id).toUInt8List());
+      await socket.close();
+      SocketMessage socketMessage = SocketMessage.fromUInt8List(await socket.single);
+      if (socketMessage.error != null) {
+        _mainBloc.emitDefaultError(socketMessage.error!);
+        return;
+      }
+      _mainBloc.emitDefaultSuccess("Команда выполнена");
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      _mainBloc.emitDefaultError("Ошибка во время передачи команды");
+    }
   }
 
   void onSendFile() async {
@@ -80,35 +107,37 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: false);
       if (result == null) return;
-
       String? path = result.files.single.path;
       if (path == null) return;
 
       File file = File(path);
       Uint8List bytes = await file.readAsBytes();
 
-      SendingFileState _state = SendingFileState(allFileBytes: bytes.lengthInBytes);
-      emit(_state);
+      emit(SendingFileState());
+
       Socket socket = await Socket.connect(deviceInfo.ipAddress, port);
       String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator) + 1);
 
       SocketMessage initialMessage = SocketMessage(
-          call: sendFileCall, deviceId: myDeviceInfo.id, data: FileMessage(bytes: [], filename: fileName).toJsonString());
+          call: sendFileCall,
+          deviceId: myDeviceInfo.id,
+          data: FileMessage(fileSize: bytes.length, filename: fileName).toJsonString());
       socket.add(initialMessage.toUInt8List());
-      socket.listen((event) {
-        emit(_state.copyWith(sentBytes: event.lengthInBytes + _state.sentBytes));
-      }, onDone: () {
-        emit(DeviceActionsState());
-        _mainBloc.emitDefaultSuccess("Файл успешно передан");
-      });
 
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(seconds: 1)); //дает возможность успеть серверу получить только начальное сообщение
       socket.add(bytes);
       await socket.close();
+
+      SocketMessage resultMessage = SocketMessage.fromUInt8List(await socket.single);
+      if (resultMessage.error != null)
+        _mainBloc.emitDefaultError(resultMessage.error!);
+      else
+        _mainBloc.emitDefaultSuccess("Файл успешно передан");
     } catch (e, st) {
-      emit(DeviceActionsState());
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче файла");
+    }finally{
+      emit(DeviceActionsState());
     }
   }
 
