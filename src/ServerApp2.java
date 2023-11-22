@@ -10,6 +10,7 @@ public class ServerApp2 extends JFrame {
     private JButton togglePowerBtn;
     private JPanel panel1;
     private boolean isWorking = false;
+    private ServerHandler serverHandler;
 
 
     public static void main(String[] args) {
@@ -26,8 +27,8 @@ public class ServerApp2 extends JFrame {
     }
 
     public ServerApp2() {
-//        initialization();
-        ServerHandler.initialization();
+        serverHandler = new ServerHandler();
+        serverHandler.initialization();
         startServerAsync();
         togglePowerBtn.addActionListener(new ActionListener() {
             @Override
@@ -51,7 +52,7 @@ public class ServerApp2 extends JFrame {
                     togglePowerBtn.setText("Turn On");
 
 //                    stopServer();
-                    ServerHandler.stopServer();
+                    serverHandler.stopServer();
                 } catch (IOException ex) {
                 }
                 return null;
@@ -69,7 +70,7 @@ public class ServerApp2 extends JFrame {
                     isWorking = true;
                     togglePowerBtn.setText("Turn Off");
 
-                    ServerHandler.startServer();
+                    serverHandler.startServer();
 //                    startServer();
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);

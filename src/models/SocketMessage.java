@@ -1,16 +1,30 @@
-package classes;
+package models;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SocketMessage {
+    @JsonProperty("call")
     private String call;
+    @JsonProperty("data")
     private String data;
+    @JsonProperty("error")
     private String error;
+    @JsonProperty("device_id")
     private String device_id;
 
-    public SocketMessage(String call, String data, String error, String device_id) {
+    public SocketMessage() {
+    }
+
+    @JsonCreator
+    public SocketMessage(@JsonProperty("call") String call,
+                         @JsonProperty("data") String data,
+                         @JsonProperty("error") String error,
+                         @JsonProperty("device_id") String deviceId) {
         this.call = call;
         this.data = data;
         this.error = error;
-        this.device_id = device_id;
+        this.device_id = deviceId;
     }
 
     public String getCall() {
@@ -39,4 +53,3 @@ public class SocketMessage {
                 '}';
     }
 }
-
