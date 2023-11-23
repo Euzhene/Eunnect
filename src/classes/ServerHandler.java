@@ -23,8 +23,6 @@ public class ServerHandler {
     private ServerSocket serverSocket;
     private boolean isFirstLaunch;
 
-    //    private final Thread[] serverThread = {null};
-//    private static final Socket[] client = {null};
     private final String FIRST_LAUNCH_KEY = "firstLaunch";
     private SocketMessage responseMessage;
     //    private JsonArray jsonArray;
@@ -83,31 +81,17 @@ public class ServerHandler {
         datagramSocket.setBroadcast(true);
 
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-
         scheduledExecutorService.scheduleAtFixedRate(() -> {
-/*        scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            if (!isInternetConnectionAvailable()) {
-                System.out.println("Нет подключения к интернету");
-                try {
-                    stopServer();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                System.out.println("Есть подключение к интернету");
-            }*/
             try {
-                deviceInfo.setIpAddress(InetAddress.getLocalHost().getHostAddress());
-//                String jsonDeviceInfo = gson.toJson(deviceInfo);
-                String jsonDeviceInfo = objectMapper.writeValueAsString(deviceInfo);
-//                System.out.println(jsonDeviceInfo);
-                byte[] data = jsonDeviceInfo.getBytes();
-                DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, 10242);
-//                datagramSocket[0].send(packet);
-                datagramSocket.send(packet);
-//                System.out.println(packet);
+                if (isInternetConnectionAvailable()) {
+                    deviceInfo.setIpAddress(InetAddress.getLocalHost().getHostAddress());
+                    String jsonDeviceInfo = objectMapper.writeValueAsString(deviceInfo);
+                    byte[] data = jsonDeviceInfo.getBytes();
+                    DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, 10242);
+                    datagramSocket.send(packet);
+                }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
         }, 0, 3, TimeUnit.SECONDS);
 
@@ -116,7 +100,6 @@ public class ServerHandler {
             handleClient(clientSocket);
             clientSocket.close();
         }
-
     }
 
     private void handleClient(Socket clientSocket) throws IOException {
@@ -129,8 +112,21 @@ public class ServerHandler {
 
             SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
 
+            switch (socketMessage.getCall()) {
+                case "pair_devices":
+                    DeviceAction.pairDevices(socketMessage, dos, jsonArray, objectMapper, deviceId);
+                    break;
+                case "buffer":
+                    DeviceAction.buffer(socketMessage, dos, objectMapper);
+                    break;
+                default:
+                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
+                    String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+                    dos.write(jsonResponse.getBytes());
+                    break;
+            }
 
-            if (socketMessage.getCall().equals("pair_devices")) {
+            /*if (socketMessage.getCall().equals("pair_devices")) {
                 JsonNode data = objectMapper.readTree(socketMessage.getData());
                 System.out.println("data - " + data);
 
@@ -182,8 +178,8 @@ public class ServerHandler {
                 String jsonResponse = objectMapper.writeValueAsString(responseMessage);
                 dos.write(jsonResponse.getBytes());
 
-/*                Thread progressThread = new Thread(() -> reportProgress(clientSocket, fileInfo.getSize()));
-                progressThread.start();*/
+*//*                Thread progressThread = new Thread(() -> reportProgress(clientSocket, fileInfo.getSize()));
+                progressThread.start();*//*
 
                 byte[] fileBytes = new byte[fileInfo.getSize()];
                 int bytesRead;
@@ -191,17 +187,17 @@ public class ServerHandler {
                     System.out.println("Принято " + bytesRead + " байт файла");
                 }
 
-/*                try {
+*//*                try {
                     progressThread.join();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
-                }*/
+                }*//*
 
                 responseMessage = new SocketMessage("file", null, null, deviceId);
                 jsonResponse = objectMapper.writeValueAsString(responseMessage);
                 dos.write(jsonResponse.getBytes());
             } else if (socketMessage.getCall().equals("pc_state")) {
-            }
+            }*/
 
 
         } catch (IOException e) {
@@ -224,18 +220,6 @@ public class ServerHandler {
     }*/
 
     public void stopServer() throws IOException {
-        /*if (serverSocket != null) {
-            if (datagramSocket != null && !datagramSocket.isClosed()) {
-                datagramSocket.close();
-            }
-            System.out.println("scheduledExecutorService closed");
-            executorService.shutdownNow();
-            scheduledExecutorService.shutdownNow();
-            serverSocket.close();
-            if (serverSocket.isClosed()) {
-                System.out.println("Server is closed");
-            }
-        }*/
         isServerRunning = false;
 
         if (serverSocket != null && !serverSocket.isClosed()) {
@@ -261,7 +245,15 @@ public class ServerHandler {
                 IOException e) {
             return false;
         }
-
+/*        try {
+            URL url = new URL("http://www.google.com");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("HEAD");
+            int responseCode = connection.getResponseCode();
+            return responseCode == HttpURLConnection.HTTP_OK;
+        } catch (IOException e) {
+            return false;
+        }*/
     }
 
     private DeviceInfo createDeviceInfo() throws UnknownHostException {
