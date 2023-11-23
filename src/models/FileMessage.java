@@ -3,19 +3,19 @@ package models;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class FileInfo {
+public class FileMessage {
     @JsonProperty("name")
     private String name;
 
     @JsonProperty("size")
     private int size;
 
-    public FileInfo() {
+    public FileMessage() {
     }
 
     @JsonCreator
-    public FileInfo(@JsonProperty("name") String name,
-                    @JsonProperty("size") int size) {
+    public FileMessage(@JsonProperty("name") String name,
+                       @JsonProperty("size") int size) {
         this.name = name;
         this.size = size;
     }

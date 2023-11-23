@@ -1,16 +1,12 @@
 package classes;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import models.DeviceInfo;
-import models.FileInfo;
+import models.FileMessage;
 import models.SocketMessage;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
@@ -117,88 +113,41 @@ public class ServerHandler {
                     DeviceAction.pairDevices(socketMessage, dos, jsonArray, objectMapper, deviceId);
                     break;
                 case "buffer":
-                    DeviceAction.buffer(socketMessage, dos, objectMapper);
+                    DeviceAction.getBuffer(socketMessage, dos, objectMapper);
                     break;
-                default:
-                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
+                case "file":
+                    FileMessage fileMessage = objectMapper.readValue(socketMessage.getData(), FileMessage.class);
+
+                    // Создаем файл на сервере, куда будем записывать данные
+                    File receivedFile = new File("путь_к_папке_на_сервере/" + fileMessage.getName());
+
+                    try (FileOutputStream fos = new FileOutputStream(receivedFile);
+                         InputStream is = clientSocket.getInputStream()) {
+
+                        // Создаем буфер для чтения данных
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+
+                        // Читаем данные из InputStream и записываем в файл
+                        while ((bytesRead = is.read(buffer)) != -1) {
+                            fos.write(buffer, 0, bytesRead);
+                        }
+                    }
+
+                    // Отправляем клиенту подтверждение
+                    SocketMessage responseMessage = new SocketMessage("file", null, null, deviceId);
                     String jsonResponse = objectMapper.writeValueAsString(responseMessage);
                     dos.write(jsonResponse.getBytes());
                     break;
+                case "pc_state":
+                    DeviceAction.executeCommand(socketMessage);
+                    break;
+                default:
+/*                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
+                    String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+                    dos.write(jsonResponse.getBytes());*/
+                    break;
             }
-
-            /*if (socketMessage.getCall().equals("pair_devices")) {
-                JsonNode data = objectMapper.readTree(socketMessage.getData());
-                System.out.println("data - " + data);
-
-                JFrame frame = new JFrame();
-                String deviceInfo = data.get("device_type").asText() + " " + data.get("name").asText();
-                RequestDialog dialog = new RequestDialog(frame, deviceInfo);
-                dialog.setVisible(true);
-
-                SocketMessage responseMessage;
-
-                if (dialog.isPairAllowed()) {
-                    if (deviceId != null) {
-                        JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
-                        responseMessage = new SocketMessage("pair_devices", null, null, null);
-                        jsonArray.add(data);
-                        JsonHandler.saveJsonToFile(jsonArray);
-                        new Notification("Разрешено сопряжение");
-                        System.out.println("JsonArray pair - " + jsonArray);
-                    } else {
-                        responseMessage = new SocketMessage("pair_devices", null, "4", null);
-                        new Notification("Сопряжение отклонено");
-                    }
-                } else {
-                    responseMessage = new SocketMessage("pair_devices", null, "2", null);
-                    new Notification("Сопряжение отклонено");
-                }
-
-                String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                dos.write(jsonResponse.getBytes());
-            } else if (socketMessage.getCall().equals("buffer")) {
-                String dataObject = socketMessage.getData();
-
-                StringSelection buf = new StringSelection(dataObject);
-                Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
-                clip.setContents(buf, null);
-
-                responseMessage = new SocketMessage("buffer", null, null, null);
-                String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                dos.write(jsonResponse.getBytes());
-                new Notification("Буфер получен");
-            } else if (socketMessage.getCall().equals("file")) {
-                System.out.println("JsonInput - " + jsonInput);
-                FileInfo fileInfo = objectMapper.readValue(socketMessage.getData(), FileInfo.class);
-                System.out.println("FileInfo - " + fileInfo);
-
-                System.out.println("Принят файл: " + fileInfo.getName() + ", размер: " + fileInfo.getSize() + " байт");
-
-                SocketMessage responseMessage = new SocketMessage("file", null, null, deviceId);
-                String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                dos.write(jsonResponse.getBytes());
-
-*//*                Thread progressThread = new Thread(() -> reportProgress(clientSocket, fileInfo.getSize()));
-                progressThread.start();*//*
-
-                byte[] fileBytes = new byte[fileInfo.getSize()];
-                int bytesRead;
-                while ((bytesRead = clientSocket.getInputStream().read(fileBytes)) != -1) {
-                    System.out.println("Принято " + bytesRead + " байт файла");
-                }
-
-*//*                try {
-                    progressThread.join();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }*//*
-
-                responseMessage = new SocketMessage("file", null, null, deviceId);
-                jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                dos.write(jsonResponse.getBytes());
-            } else if (socketMessage.getCall().equals("pc_state")) {
-            }*/
-
 
         } catch (IOException e) {
             e.printStackTrace();
