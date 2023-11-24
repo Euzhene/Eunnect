@@ -199,10 +199,6 @@ void _scanDevices(List args) async {
   RootIsolateToken token = args[2];
 
   BackgroundIsolateBinaryMessenger.ensureInitialized(token);
-  if (Platform.isAndroid) {
-    await const MethodChannel("multicast").invokeMethod("release");
-    await const MethodChannel("multicast").invokeMethod("acquire");
-  }
 
   _receiveDeviceInfo(myDeviceInfo, sendPort);
 
