@@ -1,5 +1,4 @@
 import 'dart:io' hide SocketMessage;
-import 'dart:math';
 
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
@@ -17,8 +16,7 @@ part 'device_actions_state.dart';
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
   ActionsBloc({required this.deviceInfo, required bool deviceAvailable})
-  //todo использовать enum для deviceInfo.deviceType
-      : isMobileDeviceType = deviceInfo.deviceType == phoneDeviceType || deviceInfo.deviceType == tabletDeviceType,
+      : isAndroidDeviceType = deviceInfo.type == DeviceType.phone || deviceInfo.type == DeviceType.tablet,
         super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
     tryConnectToDevice();
   }
@@ -28,7 +26,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final DeviceInfo deviceInfo;
 
-  final bool isMobileDeviceType;
+  final bool isAndroidDeviceType;
 
 
   Future<void> tryConnectToDevice() async {

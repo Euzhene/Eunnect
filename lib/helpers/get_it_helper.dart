@@ -32,12 +32,12 @@ abstract class GetItHelper {
 
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
-      deviceInfo = DeviceInfo(name: androidInfo.model, deviceType: size.shortestSide < 550 ? phoneDeviceType : tabletDeviceType, id: deviceId);
+      deviceInfo = DeviceInfo(name: androidInfo.model, type: size.shortestSide < 550 ? DeviceType.phone : DeviceType.tablet, id: deviceId);
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-      deviceInfo = DeviceInfo(name: windowsInfo.computerName, deviceType: windowsDeviceType, id: deviceId);
+      deviceInfo = DeviceInfo(name: windowsInfo.computerName, type: DeviceType.windows, id: deviceId);
     } else {
-      deviceInfo = DeviceInfo(name: "Unknown", deviceType: "Unsupported", id: deviceId);
+      deviceInfo = DeviceInfo(name: "Unknown", type: DeviceType.unknown, id: deviceId);
     }
 
     i.registerSingleton<DeviceInfo>(deviceInfo);

@@ -124,17 +124,17 @@ class ScanScreen extends StatelessWidget {
       String additionalText = "",
       bool highlightDevice = false}) {
     IconData iconData;
-    switch (deviceInfo.deviceType) {
-      case windowsDeviceType:
+    switch (deviceInfo.type) {
+      case DeviceType.windows:
         iconData = FontAwesomeIcons.windows;
         break;
-      case linuxDeviceType:
+      case DeviceType.linux:
         iconData = FontAwesomeIcons.linux;
         break;
-      case phoneDeviceType:
+      case DeviceType.phone:
         iconData = Icons.phone_android;
         break;
-      case tabletDeviceType:
+      case DeviceType.tablet:
         iconData = Icons.tablet_mac_sharp;
         break;
       default:
