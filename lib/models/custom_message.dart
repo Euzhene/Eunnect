@@ -80,7 +80,6 @@ class FileMessage {
 
   String toJsonString() =>
       jsonEncode({
-      _bytesField: bytes.toString(),
       _filenameField: filename,
       _fileSizeField:fileSize
       });
