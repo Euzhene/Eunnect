@@ -14,8 +14,7 @@ public class FileMessage {
     }
 
     @JsonCreator
-    public FileMessage(@JsonProperty("name") String name,
-                       @JsonProperty("size") int size) {
+    public FileMessage(@JsonProperty("name") String name,@JsonProperty("size") int size) {
         this.name = name;
         this.size = size;
     }

@@ -9,6 +9,8 @@ import models.SocketMessage;
 import javax.swing.*;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.prefs.Preferences;
 import java.net.Socket;
@@ -18,23 +20,16 @@ public class ServerHandler {
     private ScheduledExecutorService scheduledExecutorService;
     private ServerSocket serverSocket;
     private boolean isFirstLaunch;
-
     private final String FIRST_LAUNCH_KEY = "firstLaunch";
-    private SocketMessage responseMessage;
-    //    private JsonArray jsonArray;
-//    private JsonNode jsonArray;
     private ArrayNode jsonArray;
-    private JLabel connectionState;
     private DeviceInfo deviceInfo;
     private ObjectMapper objectMapper;
     private String deviceId;
-    //    private Gson gson;
     private volatile boolean isServerRunning = true;
 
     public void initialization() {
         Preferences prefs = Preferences.userNodeForPackage(ServerHandler.class);
         isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
-//        gson = new Gson();
         objectMapper = new ObjectMapper();
 
         if (isFirstLaunch) {
@@ -46,12 +41,15 @@ public class ServerHandler {
                 deviceId = prefs.get("deviceId", null);
                 JsonHandler.createInitialJsonFile();
                 jsonArray = JsonHandler.loadJsonFromFile();
-/*                jsonArray = new JsonArray();
-                JsonHandler.saveJsonToFile(jsonArray);*/
             } catch (UnknownHostException e) {
                 throw new RuntimeException(e);
             }
             System.out.println("DeviceInfo initialized: " + deviceInfo);
+            try {
+                deviceInfo = getDeviceInfo();
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
 
             prefs.putBoolean(FIRST_LAUNCH_KEY, false);
             isFirstLaunch = false;
@@ -63,7 +61,6 @@ public class ServerHandler {
                 throw new RuntimeException(e);
             }
             jsonArray = JsonHandler.loadJsonFromFile();
-//            jsonArray = JsonHandler.loadJsonFromFile();
             System.out.println("JsonArray start - " + jsonArray);
         }
     }
@@ -99,15 +96,15 @@ public class ServerHandler {
     }
 
     private void handleClient(Socket clientSocket) throws IOException {
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
+        /*try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+             DataInputStream dis = new DataInputStream(clientSocket.getInputStream())) {
 
             String jsonInput = bufferedReader.readLine();
             System.out.println("JsonInput - " + jsonInput);
             if (jsonInput == null || jsonInput.isBlank()) return;
 
             SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
-
             switch (socketMessage.getCall()) {
                 case "pair_devices":
                     DeviceAction.pairDevices(socketMessage, dos, jsonArray, objectMapper, deviceId);
@@ -117,35 +114,50 @@ public class ServerHandler {
                     break;
                 case "file":
                     FileMessage fileMessage = objectMapper.readValue(socketMessage.getData(), FileMessage.class);
-
-                    // Создаем файл на сервере, куда будем записывать данные
-                    File receivedFile = new File("путь_к_папке_на_сервере/" + fileMessage.getName());
-
-                    try (FileOutputStream fos = new FileOutputStream(receivedFile);
-                         InputStream is = clientSocket.getInputStream()) {
-
-                        // Создаем буфер для чтения данных
-                        byte[] buffer = new byte[1024];
-                        int bytesRead;
-
-                        // Читаем данные из InputStream и записываем в файл
-                        while ((bytesRead = is.read(buffer)) != -1) {
-                            fos.write(buffer, 0, bytesRead);
-                        }
-                    }
-
-                    // Отправляем клиенту подтверждение
-                    SocketMessage responseMessage = new SocketMessage("file", null, null, deviceId);
-                    String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                    dos.write(jsonResponse.getBytes());
+                    DeviceAction.getFile(socketMessage, dos, objectMapper, *//*isr*//*dis, fileMessage);
                     break;
                 case "pc_state":
                     DeviceAction.executeCommand(socketMessage);
                     break;
                 default:
-/*                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
+                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
                     String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                    dos.write(jsonResponse.getBytes());*/
+                    dos.write(jsonResponse.getBytes());
+                    break;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+        try (DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
+
+            byte[] jsonBytes = new byte[4096];
+            int bytesRead = dis.read(jsonBytes);
+            if (bytesRead == -1) return;
+
+            String jsonInput = new String(jsonBytes, 0, bytesRead);
+            System.out.println("JsonInput - " + jsonInput);
+
+            SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
+            switch (socketMessage.getCall()) {
+                case "pair_devices":
+                    DeviceAction.pairDevices(socketMessage, dos, jsonArray, objectMapper, deviceId);
+                    break;
+                case "buffer":
+                    DeviceAction.getBuffer(socketMessage, dos, objectMapper);
+                    break;
+                case "file":
+                    FileMessage fileMessage = objectMapper.readValue(socketMessage.getData(), FileMessage.class);
+                    DeviceAction.getFile(socketMessage, dos, objectMapper, dis, fileMessage);
+                    break;
+                case "pc_state":
+                    DeviceAction.executeCommand(socketMessage);
+                    break;
+                default:
+                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
+                    String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+                    dos.write(jsonResponse.getBytes());
                     break;
             }
 
@@ -153,20 +165,6 @@ public class ServerHandler {
             e.printStackTrace();
         }
     }
-
-    /*private static void reportProgress(Socket clientSocket, int fileSize) {
-        try (DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
-            int progress = 0;
-            while (progress < fileSize) {
-//                String progressJson = gson.toJson(new ProgressMessage(progress, fileSize));
-*//*                dos.write(progressJson.getBytes());
-                dos.flush();*//*
-
-            }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-    }*/
 
     public void stopServer() throws IOException {
         isServerRunning = false;
@@ -194,15 +192,6 @@ public class ServerHandler {
                 IOException e) {
             return false;
         }
-/*        try {
-            URL url = new URL("http://www.google.com");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("HEAD");
-            int responseCode = connection.getResponseCode();
-            return responseCode == HttpURLConnection.HTTP_OK;
-        } catch (IOException e) {
-            return false;
-        }*/
     }
 
     private DeviceInfo createDeviceInfo() throws UnknownHostException {

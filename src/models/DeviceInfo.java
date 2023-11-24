@@ -37,7 +37,8 @@ public class DeviceInfo implements Serializable {
     }
 
     @JsonCreator
-    public DeviceInfo(String deviceType, String name, String ipAddress, String id) {
+    public DeviceInfo(@JsonProperty("device_type") String deviceType, @JsonProperty("name") String name,
+                      @JsonProperty("ip_address") String ipAddress, @JsonProperty("id") String id) {
         if (deviceType.contains("windows"))
             this.deviceType = "windows";
         else if (deviceType.contains("linux"))
@@ -47,12 +48,10 @@ public class DeviceInfo implements Serializable {
         this.id = id;
     }
 
-    @JsonIgnore
     public String getName() {
         return name;
     }
 
-    @JsonIgnore
     public String getDeviceType() {
         return deviceType;
     }

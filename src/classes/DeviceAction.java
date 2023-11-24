@@ -12,14 +12,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 
 public class DeviceAction {
     public static void pairDevices(SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
@@ -40,22 +39,18 @@ public class DeviceAction {
                     responseMessage = new SocketMessage(socketMessage.getCall(), null, null, null);
                     jsonArray.add(data);
                     JsonHandler.saveJsonToFile(jsonArray);
-                    new Notification("Разрешено сопряжение");
                     System.out.println("JsonArray pair - " + jsonArray);
                 } else {
                     responseMessage = new SocketMessage(socketMessage.getCall(), null, "4", null);
-                    new Notification("Сопряжение отклонено");
                 }
             } else {
                 responseMessage = new SocketMessage(socketMessage.getCall(), null, "2", null);
-                new Notification("Сопряжение отклонено");
             }
 
             String jsonResponse = objectMapper.writeValueAsString(responseMessage);
             dos.write(jsonResponse.getBytes());
         } finally {
             if (dos != null) {
-                System.out.println("dos closed");
                 dos.close();
             }
         }
@@ -75,14 +70,32 @@ public class DeviceAction {
             new Notification("Буфер получен");
         } finally {
             if (dos != null) {
-                System.out.println("dos closed");
                 dos.close();
             }
         }
     }
 
-    public static void getFile(SocketMessage socketMessage, DataOutputStream dos, ObjectMapper objectMapper, Socket clientSocket, FileMessage fileMessage) {
+    public static void getFile(SocketMessage socketMessage, DataOutputStream dos, ObjectMapper objectMapper, /*InputStream inputStream*/DataInputStream dis, FileMessage fileMessage) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(fileMessage.getName())) {
+            int bytesRead;
+            byte[] buffer = new byte[1024];
+            long size = fileMessage.getSize();
 
+            while (size > 0 && (bytesRead = dis.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                fos.write(buffer, 0, bytesRead);
+                size -= bytesRead;
+            }
+
+            System.out.println("File is Received");
+
+            SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, null, null);
+            String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+            dos.write(jsonResponse.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            dos.close(); // Закрывайте DataOutputStream после использования
+        }
     }
 
     public static void executeCommand(SocketMessage socketMessage) throws IOException {
@@ -108,7 +121,7 @@ public class DeviceAction {
 
     private static String getRestartCommand(String os) {
         if (os.contains("win")) {
-            return "shutdown /r /t 0";
+            return "shutdown /r /f /t 0";
         } else if (os.contains("nix") || os.contains("nux")) {
             return "sudo reboot";
         } else {
@@ -118,7 +131,7 @@ public class DeviceAction {
 
     private static String getShutdownCommand(String os) {
         if (os.contains("win")) {
-            return "shutdown /s /t 0";
+            return "shutdown /s /f /t 0";
         } else if (os.contains("nix") || os.contains("nux")) {
             return "sudo shutdown -h now";
         } else {
@@ -128,7 +141,7 @@ public class DeviceAction {
 
     private static String getSleepCommand(String os) {
         if (os.contains("win")) {
-            return "shutdown.exe -s -t 0";
+            return "shutdown /h";
         } else if (os.contains("nix") || os.contains("nux")) {
             return "systemctl suspend";
         } else {
@@ -145,11 +158,4 @@ public class DeviceAction {
             throw e;
         }
     }
-
-    private static FileMessage parseFileInfo(String initialMessage) {
-        // Здесь реализуйте ваш код для извлечения информации о файле из начального сообщения
-        // Пример: разбор JSON или другого формата
-        return new FileMessage("example.txt", 1024); // Пример, замените на реальные значения
-    }
 }
-
