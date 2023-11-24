@@ -32,10 +32,9 @@ class ScanBloc extends Cubit<ScanState> {
   bool isFoundDeviceListExpanded = true;
   bool isPairedDeviceListExpanded = true;
 
-  ScanBloc():super(ScanState()) {
-
-    isFoundDeviceListExpanded= _localStorage.getFoundDeviceListExpanded();
-    isPairedDeviceListExpanded= _localStorage.getPairedDeviceListExpanded();
+  ScanBloc() : super(ScanState()) {
+    isFoundDeviceListExpanded = _localStorage.getFoundDeviceListExpanded();
+    isPairedDeviceListExpanded = _localStorage.getPairedDeviceListExpanded();
 
     const int period = 6;
 
@@ -87,9 +86,7 @@ class ScanBloc extends Cubit<ScanState> {
     DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
     if (myDeviceInfo.ipAddress.isEmpty) return;
 
-    _scanIsolate?.kill();
-    _receivePort.close();
-    _receivePort = ReceivePort();
+    _resetIsolate();
 
     _receivePort.listen((message) {
       message as IsolateMessage;
@@ -102,17 +99,26 @@ class ScanBloc extends Cubit<ScanState> {
       DeviceInfo deviceInfo = message.data;
       devicesTime[deviceInfo.id] = DateTime.now();
 
-      if (pairedDevices.containsSameDeviceId(deviceInfo)) {
-        ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
-        pairedDevices.updateWithDeviceId(updatedPairedDevice);
-        _localStorage.updatePairedDevice(deviceInfo);
-      } else if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
+      _updateDeviceLists(deviceInfo);
 
       _emitScanState();
     });
 
-    _scanIsolate =
-        await Isolate.spawn(_scanDevices, [_receivePort.sendPort,myDeviceInfo, RootIsolateToken.instance]);
+    _scanIsolate = await Isolate.spawn(_scanDevices, [_receivePort.sendPort, myDeviceInfo, RootIsolateToken.instance]);
+  }
+
+  void _updateDeviceLists(DeviceInfo deviceInfo) {
+    if (pairedDevices.containsSameDeviceId(deviceInfo)) {
+      ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
+      pairedDevices.updateWithDeviceId(updatedPairedDevice);
+      _localStorage.updatePairedDevice(deviceInfo);
+    } else if (!foundDevices.contains(deviceInfo)) foundDevices.add(deviceInfo);
+  }
+
+  void _resetIsolate() {
+    _scanIsolate?.kill();
+    _receivePort.close();
+    _receivePort = ReceivePort();
   }
 
   Future<void> onSendLogs() async {
@@ -139,11 +145,9 @@ class ScanBloc extends Cubit<ScanState> {
       }
 
       await _localStorage.addPairedDevice(deviceInfo);
-      ScanPairedDevice scanPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
-      if (!pairedDevices.contains(scanPairedDevice)) {
-        pairedDevices.add(scanPairedDevice);
-      }
-      foundDevices.remove(deviceInfo);
+
+      _updateNewPairedDevice(deviceInfo);
+
       _mainBloc.emitDefaultSuccess("Успешно сопряжено");
 
       _emitScanState();
@@ -151,6 +155,13 @@ class ScanBloc extends Cubit<ScanState> {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
+  }
+
+  void _updateNewPairedDevice(DeviceInfo deviceInfo) {
+    ScanPairedDevice scanPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
+    if (!pairedDevices.contains(scanPairedDevice)) pairedDevices.add(scanPairedDevice);
+
+    foundDevices.remove(deviceInfo);
   }
 
   void onFoundDeviceExpansionChanged(bool expanded) {
@@ -165,21 +176,21 @@ class ScanBloc extends Cubit<ScanState> {
 FutureOr<SocketMessage> pair(List args) async {
   DeviceInfo myDeviceInfo = args[0];
   DeviceInfo deviceInfo = args[1];
-  return await Socket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
-          timeout: const Duration(seconds: 2))
-      .then((value) async {
-    Socket socket = value;
+  try {
+    Socket socket = await Socket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
+        timeout: const Duration(seconds: 2));
 
     socket.add(SocketMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString()).toUInt8List());
     await socket.close();
 
     final bytes = await socket.single;
     SocketMessage socketMessage = SocketMessage.fromUInt8List(bytes);
+
     return socketMessage;
-  }, onError: (e, st) {
+  } catch (e, st) {
     FLog.error(text: e.toString(), stacktrace: st);
     return SocketMessage(call: pairDevicesCall, error: "Ошибка при сопряжении");
-  });
+  }
 }
 
 void _scanDevices(List args) async {
@@ -192,18 +203,15 @@ void _scanDevices(List args) async {
     await const MethodChannel("multicast").invokeMethod("release");
     await const MethodChannel("multicast").invokeMethod("acquire");
   }
-  String ip = (myDeviceInfo.ipAddress.split(".")..removeLast()..add("255")).join(".");
-  var internetAddress = InternetAddress(ip);
 
+  _receiveDeviceInfo(myDeviceInfo, sendPort);
+
+  _sendDeviceInfo(myDeviceInfo, sendPort);
+}
+
+Future<void> _receiveDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) async {
   RawDatagramSocket receiver = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
   receiver.broadcastEnabled = true;
-  //receiver.joinMulticast(internetAddress);
-
-
-  RawDatagramSocket sender = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
-  //sender.joinMulticast(internetAddress);
-  sender.broadcastEnabled = true;
-//  sender.multicastLoopback = false;
 
   receiver.listen((e) {
     Datagram? datagram = receiver.receive();
@@ -216,6 +224,14 @@ void _scanDevices(List args) async {
   }, onError: (e, st) {
     sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: "Error in receiver", error: e, stackTrace: st)));
   });
+}
+
+Future<void> _sendDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) async {
+  String ip = (myDeviceInfo.ipAddress.split(".")..removeLast()..add("255")).join(".");
+  var internetAddress = InternetAddress(ip);
+
+  RawDatagramSocket sender = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
+  sender.broadcastEnabled = true;
 
   Timer.periodic(const Duration(seconds: 3), (timer) async {
     try {
