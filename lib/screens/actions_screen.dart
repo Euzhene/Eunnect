@@ -56,7 +56,7 @@ class ActionsScreen extends StatelessWidget {
                   else ...[
                     _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
                     _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
-                    if (!bloc.isMobileDeviceType) ...[
+                    if (!bloc.isAndroidDeviceType) ...[
                       _buildActionButton(text: "Перезапустить ПК", onPressed: () => bloc.onSendRestartCommand()),
                       _buildActionButton(text: "Выключить ПК", onPressed: () => bloc.onSendShutDownCommand()),
                       _buildActionButton(text: "Включить спящий режим", onPressed: () => bloc.onSendSleepCommand()),

@@ -26,19 +26,30 @@ abstract class GetItHelper {
     DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
     String deviceId = i<LocalStorage>().getDeviceId();
 
-    DeviceInfo deviceInfo;
-
-    Size size = MediaQueryData.fromView(WidgetsBinding.instance.window).size;
+    String name;
+    DeviceType type;
 
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
-      deviceInfo = DeviceInfo(name: androidInfo.model, type: size.shortestSide < 550 ? DeviceType.phone : DeviceType.tablet, id: deviceId);
+
+      type = MediaQueryData.fromView(WidgetsBinding.instance.window).size.shortestSide < 550 ? DeviceType.phone : DeviceType.tablet;
+      name = androidInfo.model;
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-      deviceInfo = DeviceInfo(name: windowsInfo.computerName, type: DeviceType.windows, id: deviceId);
+
+      type = DeviceType.windows;
+      name = windowsInfo.computerName;
+    } else if (Platform.isLinux) {
+      final linuxInfo = await _deviceInfoPlugin.linuxInfo;
+
+      type = DeviceType.linux;
+      name = linuxInfo.name;
     } else {
-      deviceInfo = DeviceInfo(name: "Unknown", type: DeviceType.unknown, id: deviceId);
+      type = DeviceType.unknown;
+      name = "Unknown";
     }
+
+    DeviceInfo deviceInfo = DeviceInfo(name: name, type: type, id: deviceId);
 
     i.registerSingleton<DeviceInfo>(deviceInfo);
   }
@@ -64,6 +75,5 @@ abstract class GetItHelper {
     if (i.isRegistered<ScanBloc>()) await i.unregister<ScanBloc>();
     ScanBloc scanBloc = ScanBloc();
     i.registerSingleton<ScanBloc>(scanBloc);
-
   }
 }
