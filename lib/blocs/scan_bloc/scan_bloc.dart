@@ -129,15 +129,6 @@ class ScanBloc extends Cubit<ScanState> {
     }
   }
 
-  Future<void> onPairedDeviceChosen(ScanPairedDevice pairDeviceInfo) async {
-    try {
-      await (await Socket.connect(pairDeviceInfo.ipAddress, port)).close(); //check we can work with another device
-    } catch (e, st) {
-      FLog.error(text: e.toString(), stacktrace: st);
-      _mainBloc.emitDefaultError("Не удалось подключиться");
-    }
-  }
-
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
       SocketMessage socketMessage = await compute<List, SocketMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);

@@ -33,7 +33,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   Future<void> tryConnectToDevice() async {
     try {
-      await (await Socket.connect(deviceInfo.ipAddress, port)).close(); //check we can work with another device
+      (await Socket.connect(deviceInfo.ipAddress, port)).destroy(); //check we can work with another device
       if (!isClosed) emit(DeviceActionsState());
     } catch (e, st) {
       if (!isClosed) emit(UnreachableDeviceState());
