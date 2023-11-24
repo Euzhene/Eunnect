@@ -90,7 +90,7 @@ class FileMessage {
     Map<String, dynamic> json = jsonDecode(jsonString);
 
     return FileMessage(
-      bytes: jsonDecode(json[_bytesField]).cast<int>(),
+      bytes: [],
       filename: json[_filenameField],
       fileSize: json[_fileSizeField],
     );
