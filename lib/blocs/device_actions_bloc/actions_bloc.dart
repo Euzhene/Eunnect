@@ -122,7 +122,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       if (resultMessage.error != null)
         _mainBloc.emitDefaultError(resultMessage.error!);
       else
-        _mainBloc.emitDefaultSuccess("Фа  йл успешно передан");
+        _mainBloc.emitDefaultSuccess("Файл успешно передан");
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче файла");

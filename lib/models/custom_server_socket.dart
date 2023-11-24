@@ -42,58 +42,39 @@ abstract class CustomServerSocket {
 
   static void start() {
     _server?.listen((socket) async {
-      SocketMessage? receiveMessage;
-      SocketMessage? sendMessage;
-      var bytesBuilder = BytesBuilder();
       Stream<Uint8List> stream = socket.asBroadcastStream();
-      FileMessage? fileMessage;
 
-      Uint8List bytes = await stream.first;
-      receiveMessage = SocketMessage.fromUInt8List(bytes);
+      Uint8List bytes = await stream.first.then((value) => value, onError: (e, st) => Uint8List(0));
+      if (bytes.isEmpty) return;
 
-      stream.listen((bytes) async {
-        if (bytes.isEmpty) return;
+      SocketMessage receiveMessage = SocketMessage.fromUInt8List(bytes);
 
-        bytesBuilder.add(bytes);
-      }, onDone: () {
-        if (receiveMessage!.call != sendFileCall) return;
-
-        if (bytesBuilder.isNotEmpty) {
-          fileMessage = fileMessage!.copyWith(bytes: bytesBuilder.takeBytes());
-          onFileCall?.call(fileMessage!);
-        }
-        socket.add(SocketMessage(call: sendFileCall).toUInt8List());
-        socket.destroy();
-      }, onError: (e, st) {
-        FLog.error(text: e.toString(), stacktrace: st);
-        socket.destroy();
-      });
-
+      SocketMessage sendMessage;
       switch (receiveMessage.call) {
         case deviceInfoCall:
           sendMessage = await _deviceCallHandler();
           break;
         case pairDevicesCall:
-          sendMessage = await _pairDevicesHandler(receiveMessage.data);
+          sendMessage = await _handlePairCall(receiveMessage.data);
           break;
         case sendBufferCall:
-          sendMessage = await _sendBufferHandler(receiveMessage);
+          sendMessage = await _handleBufferCall(receiveMessage);
           break;
         case sendFileCall:
-          fileMessage = FileMessage.fromJsonString(receiveMessage.data!);
-          return;
+          sendMessage = await _handleFileCall(stream, receiveMessage, socket);
+          break;
         default:
-          sendMessage = _defaultHandler(receiveMessage.call);
+          sendMessage = _handleUnknownCall(receiveMessage.call);
           break;
       }
-      socket.add(sendMessage!.toUInt8List());
+      socket.add(sendMessage.toUInt8List());
       socket.destroy();
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
     });
   }
 
-  static Future<SocketMessage?> _pairDevicesHandler(String? data) async {
+  static Future<SocketMessage> _handlePairCall(String? data) async {
     if (data == null) return SocketMessage(call: pairDevicesCall, error: "Нет разрешения на вызов (пустой ключ)");
 
     try {
@@ -111,15 +92,15 @@ abstract class CustomServerSocket {
     }
   }
 
-  static Future<SocketMessage?> _deviceCallHandler() async {
+  static Future<SocketMessage> _deviceCallHandler() async {
     DeviceInfo? deviceInfo = await onDeviceInfoCall?.call();
     return SocketMessage(call: deviceInfoCall, data: deviceInfo?.toJsonString());
   }
 
-  static SocketMessage _defaultHandler(String call) =>
+  static SocketMessage _handleUnknownCall(String call) =>
       SocketMessage(call: call, error: "Вызов $call не поддерживается в данной версии приложения");
 
-  static Future<SocketMessage> _sendBufferHandler(SocketMessage receiveMessage) async {
+  static Future<SocketMessage> _handleBufferCall(SocketMessage receiveMessage) async {
     SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
     if (checkRes != null) return checkRes;
 
@@ -136,5 +117,30 @@ abstract class CustomServerSocket {
       return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (отсутствует сопряжение)");
 
     return null;
+  }
+
+  static Future<SocketMessage> _handleFileCall(Stream<Uint8List> stream, SocketMessage receiveMessage, Socket socket) async {
+    String? error;
+    try {
+      SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
+      if (checkRes != null) return checkRes;
+
+      FileMessage fileMessage = FileMessage.fromJsonString(receiveMessage.data!);
+
+      var bytesBuilder = BytesBuilder();
+
+      await for (Uint8List bytes in stream) {
+        bytesBuilder.add(bytes);
+      }
+
+      if (bytesBuilder.isNotEmpty) {
+        fileMessage = fileMessage.copyWith(bytes: bytesBuilder.takeBytes());
+        onFileCall?.call(fileMessage);
+      }
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      error = e.toString();
+    }
+    return SocketMessage(call: sendFileCall, error: error);
   }
 }
