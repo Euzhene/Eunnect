@@ -1,4 +1,3 @@
-
 import 'dart:io' hide SocketMessage;
 import 'dart:typed_data';
 
@@ -31,7 +30,8 @@ abstract class CustomClientSocket {
     await socket.close();
   }
 
-  static Future<void> sendFile({required Socket socket, required Uint8List bytes, required String fileName}) async {
+  ///возвращает false, если не получилось отправить файл из-за отсутствия сопряжения
+  static Future<ServerMessage?> sendFile({required Socket socket, required Uint8List bytes, required String fileName}) async {
     ClientMessage initialMessage = ClientMessage(
         call: sendFileCall,
         deviceId: myDeviceInfo.id,
@@ -39,9 +39,13 @@ abstract class CustomClientSocket {
 
     socket.add(initialMessage.toUInt8List());
     await Future.delayed(const Duration(seconds: 1)); //дает возможность успеть серверу получить только начальное сообщение
-
-    socket.add(bytes);
+    try {
+      socket.add(bytes);
+      await socket.flush();
+    } catch (e, st) {
+      return ServerMessage(status: 101);
+    }
     await socket.close();
+    return null;
   }
-
 }

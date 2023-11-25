@@ -123,9 +123,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
       Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
 
-      await CustomClientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
+      ServerMessage? resultMessage = await CustomClientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
 
-      ServerMessage resultMessage = ServerMessage.fromUInt8List(await socket.single);
+      resultMessage ??= ServerMessage.fromUInt8List(await socket.single);
       await _handleServerResponse(serverMessage: resultMessage, successMessage: "Файл успешно передан");
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);

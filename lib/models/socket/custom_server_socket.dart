@@ -109,7 +109,7 @@ abstract class CustomServerSocket {
   }
 
   static Future<ServerMessage> _handleFileCall(Stream<Uint8List> stream, ClientMessage receiveMessage, Socket socket) async {
-    int error = 200;
+    int status = 200;
     try {
       ServerMessage? checkRes = await _checkPairDevice(receiveMessage);
       if (checkRes != null) return checkRes;
@@ -128,8 +128,8 @@ abstract class CustomServerSocket {
       }
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      error = 105;
+      status = 105;
     }
-    return ServerMessage(status: error);
+    return ServerMessage(status: status);
   }
 }
