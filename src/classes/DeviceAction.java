@@ -36,15 +36,15 @@ public class DeviceAction {
             if (dialog.isPairAllowed()) {
                 if (deviceId != null) {
                     JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
-                    responseMessage = new SocketMessage(socketMessage.getCall(), null, null, null);
+                    responseMessage = new SocketMessage(socketMessage.getCall(), null, 200, null);
                     jsonArray.add(data);
                     JsonHandler.saveJsonToFile(jsonArray);
                     System.out.println("JsonArray pair - " + jsonArray);
                 } else {
-                    responseMessage = new SocketMessage(socketMessage.getCall(), null, "4", null);
+                    responseMessage = new SocketMessage(socketMessage.getCall(), null, 105, null);
                 }
             } else {
-                responseMessage = new SocketMessage(socketMessage.getCall(), null, "2", null);
+                responseMessage = new SocketMessage(socketMessage.getCall(), null, 103, null);
             }
 
             String jsonResponse = objectMapper.writeValueAsString(responseMessage);
@@ -64,10 +64,10 @@ public class DeviceAction {
             Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
             clip.setContents(buf, null);
 
-            SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, null, null);
+            SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, 200, null);
             String jsonResponse = objectMapper.writeValueAsString(responseMessage);
             dos.write(jsonResponse.getBytes());
-            new Notification("Буфер получен");
+            new Notification("Получен буфер от устройства ");
         } finally {
             if (dos != null) {
                 dos.close();
@@ -78,23 +78,32 @@ public class DeviceAction {
     public static void getFile(SocketMessage socketMessage, DataOutputStream dos, ObjectMapper objectMapper, /*InputStream inputStream*/DataInputStream dis, FileMessage fileMessage) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(fileMessage.getName())) {
             int bytesRead;
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[8 * 1024];
             long size = fileMessage.getSize();
+            long totalBytesRead = 0;
 
+            long start = System.currentTimeMillis();
             while (size > 0 && (bytesRead = dis.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
                 fos.write(buffer, 0, bytesRead);
                 size -= bytesRead;
+                totalBytesRead += bytesRead;
+
             }
+            long end = System.currentTimeMillis();
+            System.out.println("TIME - " + (end - start));
 
             System.out.println("File is Received");
 
-            SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, null, null);
+            SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, 200, null);
             String jsonResponse = objectMapper.writeValueAsString(responseMessage);
             dos.write(jsonResponse.getBytes());
         } catch (IOException e) {
+            SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, 105, null);
+            String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+            dos.write(jsonResponse.getBytes());
             e.printStackTrace();
         } finally {
-            dos.close(); // Закрывайте DataOutputStream после использования
+            dos.close();
         }
     }
 

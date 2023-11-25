@@ -8,8 +8,10 @@ public class SocketMessage {
     private String call;
     @JsonProperty("data")
     private String data;
-    @JsonProperty("error")
-    private String error;
+    @JsonProperty("status")
+    private int status;
+    /*    @JsonProperty("error")
+        private String error;*/
     @JsonProperty("device_id")
     private String device_id;
 
@@ -19,11 +21,13 @@ public class SocketMessage {
     @JsonCreator
     public SocketMessage(@JsonProperty("call") String call,
                          @JsonProperty("data") String data,
-                         @JsonProperty("error") String error,
+                         @JsonProperty("status") int status,
+//                         @JsonProperty("error") String error,
                          @JsonProperty("device_id") String deviceId) {
         this.call = call;
         this.data = data;
-        this.error = error;
+        this.status = status;
+//        this.error = error;
         this.device_id = deviceId;
     }
 
@@ -35,9 +39,12 @@ public class SocketMessage {
         return data;
     }
 
-    public String getError() {
-        return error;
+    public int getStatus() {
+        return status;
     }
+/*    public String getError() {
+        return error;
+    }*/
 
     public String getDevice_id() {
         return device_id;
@@ -48,7 +55,7 @@ public class SocketMessage {
         return "SocketMessage{" +
                 "call='" + call + '\'' +
                 ", data='" + data + '\'' +
-                ", error='" + error + '\'' +
+                ", status='" + status + '\'' +
                 ", device_id='" + device_id + '\'' +
                 '}';
     }

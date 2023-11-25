@@ -140,25 +140,32 @@ public class ServerHandler {
             System.out.println("JsonInput - " + jsonInput);
 
             SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
-            switch (socketMessage.getCall()) {
-                case "pair_devices":
-                    DeviceAction.pairDevices(socketMessage, dos, jsonArray, objectMapper, deviceId);
-                    break;
-                case "buffer":
-                    DeviceAction.getBuffer(socketMessage, dos, objectMapper);
-                    break;
-                case "file":
-                    FileMessage fileMessage = objectMapper.readValue(socketMessage.getData(), FileMessage.class);
-                    DeviceAction.getFile(socketMessage, dos, objectMapper, dis, fileMessage);
-                    break;
-                case "pc_state":
-                    DeviceAction.executeCommand(socketMessage);
-                    break;
-                default:
-                    SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, "1", null);
-                    String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                    dos.write(jsonResponse.getBytes());
-                    break;
+            String id = socketMessage.getDevice_id();
+            if (socketMessage.getCall().equals("pair_devices") || JsonHandler.isIdInArray(id, jsonArray)) {
+                switch (socketMessage.getCall()) {
+                    case "pair_devices":
+                        DeviceAction.pairDevices(socketMessage, dos, jsonArray, objectMapper, deviceId);
+                        break;
+                    case "buffer":
+                        DeviceAction.getBuffer(socketMessage, dos, objectMapper);
+                        break;
+                    case "file":
+                        FileMessage fileMessage = objectMapper.readValue(socketMessage.getData(), FileMessage.class);
+                        DeviceAction.getFile(socketMessage, dos, objectMapper, dis, fileMessage);
+                        break;
+                    case "pc_state":
+                        DeviceAction.executeCommand(socketMessage);
+                        break;
+                    default:
+                        SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, 102, null);
+                        String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+                        dos.write(jsonResponse.getBytes());
+                        break;
+                }
+            } else {
+                SocketMessage responseMessage = new SocketMessage(socketMessage.getCall(), null, 101, null);
+                String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+                dos.write(jsonResponse.getBytes());
             }
 
         } catch (IOException e) {
