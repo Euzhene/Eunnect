@@ -34,7 +34,9 @@ class ActionsScreen extends StatelessWidget {
             )
           ],
         ),
-        body: BlocBuilder<ActionsBloc, DeviceActionsState>(builder: (context, state) {
+        body: BlocConsumer<ActionsBloc, DeviceActionsState>(listener: (context, state) {
+          if (state is DeletedDeviceState) bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true));
+        }, builder: (context, state) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),

@@ -8,3 +8,5 @@ class DeviceActionsState {
 class SendingFileState extends DeviceActionsState {}
 
 class UnreachableDeviceState extends DeviceActionsState {}
+
+class DeletedDeviceState extends DeviceActionsState {}

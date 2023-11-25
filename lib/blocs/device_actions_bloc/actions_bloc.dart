@@ -29,7 +29,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   final bool isAndroidDeviceType;
 
-
   Future<void> tryConnectToDevice() async {
     try {
       await CustomClientSocket.checkConnection(deviceInfo.ipAddress);
@@ -55,11 +54,8 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
         Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
         await CustomClientSocket.sendBuffer(socket: socket, text: text!);
         ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
-        if (socketMessage.isErrorStatus) {
-          _mainBloc.emitDefaultError(socketMessage.getError!);
-          return;
-        }
-        _mainBloc.emitDefaultSuccess("Буфер успешно передан");
+
+        await _handleServerResponse(serverMessage: socketMessage, successMessage: "Буфер успешно передан");
       }
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
@@ -84,15 +80,26 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
       await CustomClientSocket.sendCommand(socket: socket, commandName: commandName);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
-      if (socketMessage.isErrorStatus) {
-        _mainBloc.emitDefaultError(socketMessage.getError!);
-        return;
-      }
-      _mainBloc.emitDefaultSuccess("Команда выполнена");
+
+      await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка во время передачи команды");
     }
+  }
+
+  ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
+  Future<bool> _handleServerResponse({required ServerMessage serverMessage, required String successMessage}) async {
+    if (!serverMessage.isErrorStatus) {
+      _mainBloc.emitDefaultSuccess(successMessage);
+      return false;
+    }
+
+    _mainBloc.emitDefaultError(serverMessage.getError!);
+
+    if (serverMessage.status == 101) emit(DeletedDeviceState());
+
+    return true;
   }
 
   void onSendFile() async {
@@ -119,14 +126,11 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       await CustomClientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
 
       ServerMessage resultMessage = ServerMessage.fromUInt8List(await socket.single);
-      if (resultMessage.isErrorStatus)
-        _mainBloc.emitDefaultError(resultMessage.getError!);
-      else
-        _mainBloc.emitDefaultSuccess("Файл успешно передан");
+      await _handleServerResponse(serverMessage: resultMessage, successMessage: "Файл успешно передан");
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче файла");
-    }finally{
+    } finally {
       emit(DeviceActionsState());
     }
   }
