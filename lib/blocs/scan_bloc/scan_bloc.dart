@@ -7,7 +7,6 @@ import 'package:eunnect/blocs/scan_bloc/scan_state.dart';
 import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/custom_message.dart';
-import 'package:eunnect/models/custom_server_socket.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
@@ -18,6 +17,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../constants.dart';
+import '../../models/socket/custom_server_socket.dart';
+import '../../models/socket/socket_message.dart';
 
 class ScanBloc extends Cubit<ScanState> {
   final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
@@ -137,10 +138,10 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
-      SocketMessage socketMessage = await compute<List, SocketMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);
+      ServerMessage socketMessage = await compute<List, ServerMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);
 
-      if (socketMessage.error != null) {
-        _mainBloc.emitDefaultError(socketMessage.error!);
+      if (socketMessage.isErrorStatus) {
+        _mainBloc.emitDefaultError(socketMessage.getError!);
         return;
       }
 
@@ -173,23 +174,23 @@ class ScanBloc extends Cubit<ScanState> {
   }
 }
 
-FutureOr<SocketMessage> pair(List args) async {
+FutureOr<ServerMessage> pair(List args) async {
   DeviceInfo myDeviceInfo = args[0];
   DeviceInfo deviceInfo = args[1];
   try {
     Socket socket = await Socket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
         timeout: const Duration(seconds: 2));
 
-    socket.add(SocketMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString()).toUInt8List());
+    socket.add(ClientMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString(), deviceId: deviceInfo.id).toUInt8List());
     await socket.close();
 
     final bytes = await socket.single;
-    SocketMessage socketMessage = SocketMessage.fromUInt8List(bytes);
+    ServerMessage socketMessage = ServerMessage.fromUInt8List(bytes);
 
     return socketMessage;
   } catch (e, st) {
     FLog.error(text: e.toString(), stacktrace: st);
-    return SocketMessage(call: pairDevicesCall, error: "Ошибка при сопряжении");
+    return ServerMessage(status: 105);
   }
 }
 
@@ -213,9 +214,8 @@ Future<void> _receiveDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) asyn
     Datagram? datagram = receiver.receive();
     if (datagram != null) {
       DeviceInfo deviceInfo = DeviceInfo.fromUInt8List(datagram.data);
-      if (deviceInfo.id != myDeviceInfo.id) {
-        sendPort.send(IsolateMessage(data: deviceInfo));
-      }
+      if (deviceInfo.id != myDeviceInfo.id) sendPort.send(IsolateMessage(data: deviceInfo));
+
     }
   }, onError: (e, st) {
     sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: "Error in receiver", error: e, stackTrace: st)));

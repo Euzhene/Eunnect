@@ -2,16 +2,16 @@ import 'dart:io' hide SocketMessage;
 
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
-import 'package:eunnect/models/custom_client_socket.dart';
+import 'package:eunnect/models/socket/custom_client_socket.dart';
+import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/custom_message.dart';
-import '../../models/custom_server_socket.dart';
 import '../../models/device_info.dart';
+import '../../models/socket/custom_server_socket.dart';
 
 part 'device_actions_state.dart';
 
@@ -32,7 +32,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   Future<void> tryConnectToDevice() async {
     try {
-      (await Socket.connect(deviceInfo.ipAddress, port)).destroy(); //check we can work with another device
+      await CustomClientSocket.checkConnection(deviceInfo.ipAddress);
       if (!isClosed) emit(DeviceActionsState());
     } catch (e, st) {
       if (!isClosed) emit(UnreachableDeviceState());
@@ -54,9 +54,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       else {
         Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
         await CustomClientSocket.sendBuffer(socket: socket, text: text!);
-        SocketMessage socketMessage = SocketMessage.fromUInt8List(await socket.single);
-        if (socketMessage.error != null) {
-          _mainBloc.emitDefaultError(socketMessage.error!);
+        ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
+        if (socketMessage.isErrorStatus) {
+          _mainBloc.emitDefaultError(socketMessage.getError!);
           return;
         }
         _mainBloc.emitDefaultSuccess("Буфер успешно передан");
@@ -83,9 +83,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     try {
       Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
       await CustomClientSocket.sendCommand(socket: socket, commandName: commandName);
-      SocketMessage socketMessage = SocketMessage.fromUInt8List(await socket.single);
-      if (socketMessage.error != null) {
-        _mainBloc.emitDefaultError(socketMessage.error!);
+      ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
+      if (socketMessage.isErrorStatus) {
+        _mainBloc.emitDefaultError(socketMessage.getError!);
         return;
       }
       _mainBloc.emitDefaultSuccess("Команда выполнена");
@@ -118,9 +118,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
       await CustomClientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
 
-      SocketMessage resultMessage = SocketMessage.fromUInt8List(await socket.single);
-      if (resultMessage.error != null)
-        _mainBloc.emitDefaultError(resultMessage.error!);
+      ServerMessage resultMessage = ServerMessage.fromUInt8List(await socket.single);
+      if (resultMessage.isErrorStatus)
+        _mainBloc.emitDefaultError(resultMessage.getError!);
       else
         _mainBloc.emitDefaultSuccess("Файл успешно передан");
     } catch (e, st) {

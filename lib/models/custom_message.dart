@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-
 class IsolateMessage {
   final ErrorMessage? errorMessage;
   final bool done;
@@ -30,42 +28,7 @@ class ErrorMessage {
   }
 }
 
-const _callField = "call";
-const _errorMessageField = "error";
-const _dataField = "data";
-const _senderIdField = "device_id";
 
-class SocketMessage {
-  final String call;
-  final String? error;
-  final String? data;
-  final String? deviceId;
-
-  SocketMessage({required this.call, this.data, this.error, this.deviceId});
-
-  String toJsonString() {
-    Map<String, dynamic> json = {
-      _callField: call,
-      _dataField: data,
-      _errorMessageField: error,
-      _senderIdField: deviceId,
-    };
-    return jsonEncode(json);
-  }
-
-  List<int> toUInt8List() => utf8.encode(toJsonString());
-
-  factory SocketMessage.fromJsonString(String jsonString) {
-    Map<String, dynamic> json = jsonDecode(jsonString);
-
-    return SocketMessage(
-        call: json[_callField], error: json[_errorMessageField], data: json[_dataField], deviceId: json[_senderIdField]);
-  }
-
-  factory SocketMessage.fromUInt8List(Uint8List data) => SocketMessage.fromJsonString(utf8.decode(data));
-}
-
-const _bytesField = "bytes";
 const _filenameField = "name";
 const _fileSizeField = "size";
 
@@ -78,11 +41,7 @@ class FileMessage {
 
   FileMessage copyWith({List<int>? bytes}) => FileMessage(bytes: bytes ?? this.bytes, filename: filename, fileSize: fileSize);
 
-  String toJsonString() =>
-      jsonEncode({
-      _filenameField: filename,
-      _fileSizeField:fileSize
-      });
+  String toJsonString() => jsonEncode({_filenameField: filename, _fileSizeField: fileSize});
 
   List<int> toUInt8List() => utf8.encode(toJsonString());
 

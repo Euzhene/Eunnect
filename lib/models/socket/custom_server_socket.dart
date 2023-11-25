@@ -4,15 +4,15 @@ import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
 import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/foundation.dart';
 
-import 'custom_message.dart';
+import '../custom_message.dart';
 
 int port = 10242;
 
-const deviceInfoCall = "device_info";
 const pairDevicesCall = "pair_devices";
 const sendBufferCall = "buffer";
 const sendFileCall = "file";
@@ -25,7 +25,6 @@ const pcSleepState = "sleep";
 abstract class CustomServerSocket {
   static ServerSocket? _server;
 
-  static FutureOr<DeviceInfo> Function()? onDeviceInfoCall;
   static Function(DeviceInfo)? onPairDeviceCall;
   static Function(String)? onBufferCall;
   static Function(FileMessage)? onFileCall;
@@ -41,19 +40,18 @@ abstract class CustomServerSocket {
   }
 
   static void start() {
-    _server?.listen((socket) async {
+    late Socket socket;
+    _server?.listen((s) async {
+      socket = s;
       Stream<Uint8List> stream = socket.asBroadcastStream();
 
       Uint8List bytes = await stream.first.then((value) => value, onError: (e, st) => Uint8List(0));
       if (bytes.isEmpty) return;
 
-      SocketMessage receiveMessage = SocketMessage.fromUInt8List(bytes);
+      ClientMessage receiveMessage = ClientMessage.fromUInt8List(bytes);
 
-      SocketMessage sendMessage;
+      ServerMessage sendMessage;
       switch (receiveMessage.call) {
-        case deviceInfoCall:
-          sendMessage = await _deviceCallHandler();
-          break;
         case pairDevicesCall:
           sendMessage = await _handlePairCall(receiveMessage.data);
           break;
@@ -71,61 +69,52 @@ abstract class CustomServerSocket {
       socket.destroy();
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
+      socket.add(ServerMessage(status: 105).toUInt8List());
+      socket.destroy();
     });
   }
 
-  static Future<SocketMessage> _handlePairCall(String? data) async {
-    if (data == null) return SocketMessage(call: pairDevicesCall, error: "Нет разрешения на вызов (пустой ключ)");
-
+  static Future<ServerMessage> _handlePairCall(String data) async {
     try {
       DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
       pairStream = StreamController();
       DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 30), onTimeout: () => null);
       if (myPairDeviceInfo == null)
-        return SocketMessage(call: pairDevicesCall, error: "Устройство не разрешило сопряжение");
+        return ServerMessage(status: 103);
       else
-        return SocketMessage(call: pairDevicesCall, data: myPairDeviceInfo.toJsonString());
+        return ServerMessage(status: 200, data: myPairDeviceInfo.toJsonString());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      return SocketMessage(call: pairDevicesCall, error: "Произошла ошибка на сервере при чтении полученных данных");
+      return ServerMessage(status: 104);
     }
   }
 
-  static Future<SocketMessage> _deviceCallHandler() async {
-    DeviceInfo? deviceInfo = await onDeviceInfoCall?.call();
-    return SocketMessage(call: deviceInfoCall, data: deviceInfo?.toJsonString());
-  }
+  static ServerMessage _handleUnknownCall(String call) => ServerMessage(status: 102);
 
-  static SocketMessage _handleUnknownCall(String call) =>
-      SocketMessage(call: call, error: "Вызов $call не поддерживается в данной версии приложения");
-
-  static Future<SocketMessage> _handleBufferCall(SocketMessage receiveMessage) async {
-    SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
+  static Future<ServerMessage> _handleBufferCall(ClientMessage receiveMessage) async {
+    ServerMessage? checkRes = await _checkPairDevice(receiveMessage);
     if (checkRes != null) return checkRes;
 
-    String buffer = receiveMessage.data!;
+    String buffer = receiveMessage.data;
     await onBufferCall?.call(buffer);
-    return SocketMessage(call: receiveMessage.call);
+    return ServerMessage(status: 200);
   }
 
-  static Future<SocketMessage?> _checkPairDevice(SocketMessage receiveMessage) async {
-    if (receiveMessage.deviceId == null)
-      return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (пустой ключ)");
-
-    if ((await _localStorage.getPairedDevice(receiveMessage.deviceId) == null))
-      return SocketMessage(call: receiveMessage.call, error: "Нет разрешения на вызов (отсутствует сопряжение)");
+  static Future<ServerMessage?> _checkPairDevice(ClientMessage clientMessage) async {
+    if ((await _localStorage.getPairedDevice(clientMessage.deviceId) == null))
+      return ServerMessage(status: 101);
 
     return null;
   }
 
-  static Future<SocketMessage> _handleFileCall(Stream<Uint8List> stream, SocketMessage receiveMessage, Socket socket) async {
-    String? error;
+  static Future<ServerMessage> _handleFileCall(Stream<Uint8List> stream, ClientMessage receiveMessage, Socket socket) async {
+    int error = 200;
     try {
-      SocketMessage? checkRes = await _checkPairDevice(receiveMessage);
+      ServerMessage? checkRes = await _checkPairDevice(receiveMessage);
       if (checkRes != null) return checkRes;
 
-      FileMessage fileMessage = FileMessage.fromJsonString(receiveMessage.data!);
+      FileMessage fileMessage = FileMessage.fromJsonString(receiveMessage.data);
 
       var bytesBuilder = BytesBuilder();
 
@@ -139,8 +128,8 @@ abstract class CustomServerSocket {
       }
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      error = e.toString();
+      error = 105;
     }
-    return SocketMessage(call: sendFileCall, error: error);
+    return ServerMessage(status: error);
   }
 }

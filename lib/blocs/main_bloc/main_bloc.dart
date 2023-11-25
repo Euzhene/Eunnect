@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../helpers/get_it_helper.dart';
 import '../../models/custom_message.dart';
-import '../../models/custom_server_socket.dart';
+import '../../models/socket/custom_server_socket.dart';
 
 part 'main_state.dart';
 
