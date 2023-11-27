@@ -82,7 +82,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
       await CustomClientSocket.sendCommand(socket: socket, commandName: commandName);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
-
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
 
     } catch (e, st) {
@@ -100,6 +99,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   Future<bool> _handleServerResponse({required ServerMessage serverMessage, required String successMessage}) async {
     if (!serverMessage.isErrorStatus) {
       _mainBloc.emitDefaultSuccess(successMessage);
+      emit(DeviceActionsState());
       return false;
     }
 
