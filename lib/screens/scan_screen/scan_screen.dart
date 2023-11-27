@@ -32,7 +32,6 @@ class ScanScreen extends StatelessWidget {
               return true;
             },
             builder: (context, state) {
-              if (!mainBloc.hasConnection) return _buildNoConnectionWidget();
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
@@ -48,7 +47,7 @@ class ScanScreen extends StatelessWidget {
                               textAlign: TextAlign.start,
                               fontSize: 16,
                             ),
-                            _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
+                            if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
                             _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc, context: context),
                           ],
                         ),

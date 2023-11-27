@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
+import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
+import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -69,8 +71,10 @@ abstract class CustomServerSocket {
       socket.destroy();
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      socket.add(ServerMessage(status: 105).toUInt8List());
-      socket.destroy();
+      if (e is! SocketException){
+        socket.add(ServerMessage(status: 105).toUInt8List());
+        socket.destroy();
+      }
     });
   }
 
