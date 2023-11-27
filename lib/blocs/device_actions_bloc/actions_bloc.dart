@@ -41,10 +41,8 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   void onSendBuffer() async {
     try {
-      if (state.isSendingFile) {
-        _mainBloc.emitDefaultError("Другой файл в процессе передачи");
-        return;
-      }
+      if (checkLoadingState()) return;
+      emit(LoadingState());
 
       String type = Clipboard.kTextPlain;
       String? text = (await Clipboard.getData(type))?.text;
@@ -60,6 +58,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче буфера");
+      emit(DeviceActionsState());
     }
   }
 
@@ -77,17 +76,26 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   void _onSendCommand({required String commandName}) async {
     try {
+      if (checkLoadingState()) return;
+      emit(LoadingState());
+
       Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress);
       await CustomClientSocket.sendCommand(socket: socket, commandName: commandName);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
 
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
+
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка во время передачи команды");
+      emit(DeviceActionsState());
     }
   }
-
+  bool checkLoadingState() {
+    bool res = state.isLoading;
+    if (res) _mainBloc.emitDefaultError("Другая команда в процессе выполнения");
+    return res;
+  }
   ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
   Future<bool> _handleServerResponse({required ServerMessage serverMessage, required String successMessage}) async {
     if (!serverMessage.isErrorStatus) {
@@ -104,10 +112,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   void onSendFile() async {
     try {
-      if (state.isSendingFile) {
-        _mainBloc.emitDefaultError("Файл в процессе передачи");
-        return;
-      }
+      if (checkLoadingState()) return;
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: false);
       if (result == null) return;
@@ -117,7 +122,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       File file = File(path);
       Uint8List bytes = await file.readAsBytes();
 
-      emit(SendingFileState());
+      emit(LoadingState());
 
       String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator) + 1);
 
@@ -130,7 +135,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError("Ошибка при передаче файла");
-    } finally {
       emit(DeviceActionsState());
     }
   }
