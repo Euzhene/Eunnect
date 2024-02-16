@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="900.0" style="-fx-background-color: #242424;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.makukujavafx.MainController">
+<top>
+    <AnchorPane fx:id="banner" prefHeight="100.0" prefWidth="200.0" style="-fx-background-color: #3fd051; -fx-background-radius: 10;" BorderPane.alignment="CENTER">
+        <BorderPane.margin>
+            <Insets left="50.0" right="50.0" top="20.0" />
+        </BorderPane.margin>
+        <children>
+            <ProgressBar fx:id="progressBar" layoutX="250.0" layoutY="70.0" nodeOrientation="LEFT_TO_RIGHT" progress="0.12" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="250.0" AnchorPane.rightAnchor="250.0" AnchorPane.topAnchor="70.0" />
+            <Text fx:id="mainFilenameLabel" fill="WHITE" layoutX="338.0" layoutY="54.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Название файла" wrappingWidth="124.4619140625">
+                <font>
+                    <Font name="Calibri" size="18.0" />
+                </font>
+            </Text>
+            <Label fx:id="mainDeviceLabel" layoutX="369.0" layoutY="5.0" text="Label" textFill="WHITE">
+                <font>
+                    <Font name="Calibri Bold" size="28.0" />
+                </font>
+            </Label>
+        </children>
+    </AnchorPane>
+</top>
+<center>
+    <Accordion maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="800.0" BorderPane.alignment="CENTER">
+        <panes>
+            <TitledPane text="Обнаруженные устройства" textFill="WHITE">
+                <content>
+                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                </content>
+                <font>
+                    <Font size="18.0" />
+                </font>
+            </TitledPane>
+            <TitledPane text="Сопряженные устройства" textFill="WHITE">
+                <content>
+                    <AnchorPane minHeight="0.0" minWidth="0.0" pickOnBounds="false" prefHeight="180.0" prefWidth="200.0" />
+                </content>
+                <font>
+                    <Font size="18.0" />
+                </font>
+            </TitledPane>
+        </panes>
+    </Accordion>
+</center>
+</BorderPane>

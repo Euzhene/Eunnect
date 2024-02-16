@@ -1,0 +1,11 @@
+.accordion .titled-pane > *.content {
+    -fx-background-color: null;
+}
+
+.accordion .titled-pane .title {
+    -fx-background-color: null;
+}
+
+.titled-pane > *.content {
+    -fx-border-color: transparent;
+}
