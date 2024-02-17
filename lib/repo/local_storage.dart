@@ -13,7 +13,6 @@ const _isFirstLaunchKey = "is_first_launch";
 const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
 const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
 
-const _secretKey = "secret_key";
 const _deviceIdKey = "device_id";
 const _pairedDevicesKey = "paired_devices";
 const _privateKeyField = "private_key";
@@ -72,16 +71,6 @@ class LocalStorage {
     await _preferences.setBool(_isFirstLaunchKey, false);
   }
 
-
-
-  Future<void> setSecretKey() async {
-    String secretKey = const Uuid().v4();
-    await _storage.write(key: _secretKey, value: secretKey);
-  }
-
-  Future<String> getSecretKey() async {
-    return (await _storage.read(key: _secretKey))!;
-  }
 
   Future<void> setDeviceId() async {
     String deviceId = const Uuid().v4();

@@ -49,7 +49,6 @@ class MainBloc extends Cubit<MainState> {
       if (!_storage.isFirstLaunch()) return;
 
       await _storage.clearAll();
-      await _storage.setSecretKey();
       await _storage.setDeviceId();
       await _storage.setFirstLaunch();
     } catch (e, st) {
