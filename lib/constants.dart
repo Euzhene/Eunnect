@@ -25,3 +25,5 @@ const Color warnColor = Colors.yellow;
 final DateFormat dateFormat = DateFormat("dd-MM-y");
 
 const String appName = "MaKuKu Connect";
+
+const int port = 10242;

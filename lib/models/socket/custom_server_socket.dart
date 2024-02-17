@@ -3,17 +3,17 @@
 import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
-import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/foundation.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 
+import '../../constants.dart';
 import '../../helpers/ssl_helper.dart';
 import '../custom_message.dart';
 
-int port = 10242;
 
 const pairDevicesCall = "pair_devices";
 const sendBufferCall = "buffer";
@@ -24,27 +24,31 @@ const pcRestartState = "restart";
 const pcShutDownState = "shut_down";
 const pcSleepState = "sleep";
 
-//todo передавать localStorage через конструктор
-abstract class CustomServerSocket {
-  static SecureServerSocket? _server;
+class CustomServerSocket {
+  SecureServerSocket? _server;
 
-  static Function(DeviceInfo)? onPairDeviceCall;
-  static Function(String)? onBufferCall;
-  static Function(FileMessage)? onFileCall;
+  Function(DeviceInfo)? onPairDeviceCall;
+  Function(String)? onBufferCall;
+  Function(FileMessage)? onFileCall;
 
-  static late StreamController<DeviceInfo?> pairStream;
+  late StreamController<DeviceInfo?> pairStream;
 
-  static final LocalStorage _localStorage = LocalStorage();
+  final LocalStorage storage;
 
-  static Future<void> initServer(String ipAddress) async {
+  CustomServerSocket({required this.storage});
+
+  Future<void> initServer() async {
     await _server?.close();
-    SslHelper sslHelper = SslHelper(_localStorage, GetItHelper.i<DeviceInfo>().id);
+    String? ipAddress = await NetworkInfo().getWifiIP();
+    if (ipAddress == null) return;
+    SslHelper sslHelper = SslHelper(storage, storage.getDeviceId());
     SecurityContext context = await sslHelper.getServerSecurityContext();
     _server = await SecureServerSocket.bind(ipAddress, port, context);
-    FLog.info(text: "Сервер иницилизирован. Адрес - $ipAddress");
+    FLog.info(text: "Server is initiated. Address - $ipAddress");
+    _start();
   }
 
-  static void start() {
+  void _start() {
     late SecureSocket socket;
     _server?.listen((s) async {
       socket = s;
@@ -81,7 +85,7 @@ abstract class CustomServerSocket {
     });
   }
 
-  static Future<ServerMessage> _handlePairCall(String data) async {
+  Future<ServerMessage> _handlePairCall(String data) async {
     try {
       DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
@@ -99,7 +103,7 @@ abstract class CustomServerSocket {
 
   static ServerMessage _handleUnknownCall(String call) => ServerMessage(status: 102);
 
-  static Future<ServerMessage> _handleBufferCall(ClientMessage receiveMessage) async {
+  Future<ServerMessage> _handleBufferCall(ClientMessage receiveMessage) async {
     ServerMessage? checkRes = await _checkPairDevice(receiveMessage);
     if (checkRes != null) return checkRes;
 
@@ -108,14 +112,14 @@ abstract class CustomServerSocket {
     return ServerMessage(status: 200);
   }
 
-  static Future<ServerMessage?> _checkPairDevice(ClientMessage clientMessage) async {
-    if ((await _localStorage.getPairedDevice(clientMessage.deviceId) == null))
+  Future<ServerMessage?> _checkPairDevice(ClientMessage clientMessage) async {
+    if ((await storage.getPairedDevice(clientMessage.deviceId) == null))
       return ServerMessage(status: 101);
 
     return null;
   }
 
-  static Future<ServerMessage> _handleFileCall(Stream<Uint8List> stream, ClientMessage receiveMessage, Socket socket) async {
+  Future<ServerMessage> _handleFileCall(Stream<Uint8List> stream, ClientMessage receiveMessage, Socket socket) async {
     int status = 200;
     try {
       ServerMessage? checkRes = await _checkPairDevice(receiveMessage);

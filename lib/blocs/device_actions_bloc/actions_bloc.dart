@@ -31,7 +31,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   Future<void> tryConnectToDevice() async {
     try {
-      await CustomClientSocket.checkConnection(deviceInfo.ipAddress);
+      await CustomClientSocket.checkConnection(deviceInfo.ipAddress, _storage);
       if (!isClosed) emit(DeviceActionsState());
     } catch (e, st) {
       if (!isClosed) emit(UnreachableDeviceState());

@@ -19,11 +19,51 @@ part 'main_state.dart';
 
 class MainBloc extends Cubit<MainState> {
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
+  final CustomServerSocket customServerSocket = GetItHelper.i<CustomServerSocket>();
 
   late Function(DeviceInfo) onPairedDeviceChanged;
   bool hasConnection = false;
 
-  MainBloc() : super(MainState());
+  MainBloc():  super(MainState()) {
+    customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
+      emit(PairDialogState(deviceInfo: deviceInfo));
+      emit(MainState());
+    };
+
+    customServerSocket.onBufferCall = (text) async {
+      await Clipboard.setData(ClipboardData(text: text));
+      emitDefaultSuccess("Передан текст в буфер");
+    };
+
+    customServerSocket.onFileCall = (FileMessage message) async {
+      Directory? docDir;
+      try {
+        if (!Platform.isAndroid) {
+          docDir = await getApplicationDocumentsDirectory();
+          if (!docDir.path.endsWith(Platform.pathSeparator)) docDir = Directory(docDir.path + Platform.pathSeparator);
+        } else {
+          docDir = Directory("/storage/emulated/0/Download/");
+
+          if (!await docDir.exists()) {
+            docDir = Directory("/storage/emulated/0/Downloads/");
+          }
+        }
+
+        File file = File("${docDir.path}${message.filename}");
+        await file.writeAsBytes(message.bytes);
+        emitDefaultSuccess("Файл ${message.filename} успешно передан и сохранен в ${docDir.path}");
+      } catch (e, st) {
+        FLog.error(text: e.toString(), stacktrace: st);
+        String error;
+        if (e is FileSystemException)
+          error = "Ошибка сохранения файла в ${docDir?.path ?? "неизвестный путь"}";
+        else
+          error = "Внутреняя ошибка";
+
+        emitDefaultError(error);
+      }
+    };
+  }
 
   void initNetworkListener() {
     ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
@@ -58,60 +98,17 @@ class MainBloc extends Cubit<MainState> {
   }
 
   Future<void> startServer() async {
-    String? myIp = GetItHelper.i<DeviceInfo>().ipAddress;
-    if (myIp.isEmpty) return;
-
-    await CustomServerSocket.initServer(myIp);
-    CustomServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
-      emit(PairDialogState(deviceInfo: deviceInfo));
-      emit(MainState());
-    };
-
-    CustomServerSocket.onBufferCall = (text) async {
-      await Clipboard.setData(ClipboardData(text: text));
-      emitDefaultSuccess("Передан текст в буфер");
-    };
-
-    CustomServerSocket.onFileCall = (FileMessage message) async {
-      Directory? docDir;
-      try {
-        if (!Platform.isAndroid) {
-          docDir = await getApplicationDocumentsDirectory();
-          if (!docDir.path.endsWith(Platform.pathSeparator)) docDir = Directory(docDir.path + Platform.pathSeparator);
-        } else {
-          docDir = Directory("/storage/emulated/0/Download/");
-
-          if (!await docDir.exists()) {
-            docDir = Directory("/storage/emulated/0/Downloads/");
-          }
-        }
-
-        File file = File("${docDir.path}${message.filename}");
-        await file.writeAsBytes(message.bytes);
-        emitDefaultSuccess("Файл ${message.filename} успешно передан и сохранен в ${docDir.path}");
-      } catch (e, st) {
-        FLog.error(text: e.toString(), stacktrace: st);
-        String error;
-        if (e is FileSystemException)
-          error = "Ошибка сохранения файла в ${docDir?.path ?? "неизвестный путь"}";
-        else
-          error = "Внутреняя ошибка";
-
-        emitDefaultError(error);
-      }
-    };
-
-    CustomServerSocket.start();
+    await customServerSocket.initServer();
   }
 
   Future<void> onPairConfirmed(DeviceInfo? pairDeviceInfo) async {
     try {
       if (pairDeviceInfo == null)
-        CustomServerSocket.pairStream.sink.add(null);
+        customServerSocket.pairStream.sink.add(null);
       else
-        CustomServerSocket.pairStream.sink.add(pairDeviceInfo);
+        customServerSocket.pairStream.sink.add(pairDeviceInfo);
 
-      await CustomServerSocket.pairStream.close();
+      await customServerSocket.pairStream.close();
       if (pairDeviceInfo != null) {
         await _storage.addPairedDevice(pairDeviceInfo);
         onPairedDeviceChanged(pairDeviceInfo);

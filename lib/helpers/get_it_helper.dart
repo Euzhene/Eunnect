@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:eunnect/models/socket/custom_server_socket.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -15,6 +16,7 @@ abstract class GetItHelper {
 
   static Future<void> registerAll() async {
     await _registerSharedPreferences();
+    await _registerSockets();
     await _registerBlocs();
     await registerDeviceInfo();
     i<MainBloc>().initNetworkListener();
@@ -64,6 +66,12 @@ abstract class GetItHelper {
     if (i.isRegistered<LocalStorage>()) await i.unregister<LocalStorage>();
     LocalStorage storage = LocalStorage();
     i.registerSingleton<LocalStorage>(storage);
+  }
+
+  static Future<void> _registerSockets() async {
+    if (i.isRegistered<CustomServerSocket>()) await i.unregister<CustomServerSocket>();
+    CustomServerSocket customServerSocket = CustomServerSocket(storage: i<LocalStorage>());
+    i.registerSingleton<CustomServerSocket>(customServerSocket);
   }
 
   static Future<void> _registerBlocs() async {

@@ -5,7 +5,9 @@ import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
+import 'package:f_logs/f_logs.dart';
 
+import '../../constants.dart';
 import '../custom_message.dart';
 import 'custom_server_socket.dart';
 
@@ -17,15 +19,19 @@ abstract class CustomClientSocket {
     return SecureSocket.connect(ip, port, onBadCertificate: (X509Certificate certificate) {
       String issuer = certificate.issuer;
       bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
-      if (!containsAppName) return false;
+      if (!containsAppName) {
+        FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
+        return false;
+      }
       bool containsPairedDeviceId = pairedDevicesId.where((e) => issuer.contains(e)).isNotEmpty;
+      if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
       return containsPairedDeviceId;
     });
   }
 
   ///Проверка того, что устройство, с которым мы хотим работать, доступно для подключения
-  static Future<void> checkConnection(String ip) async {
-    return (await Socket.connect(ip, port)).destroy();
+  static Future<void> checkConnection(String ip,LocalStorage localStorage) async {
+    return (await connect(ip, localStorage)).destroy();
   }
 
   static Future<void> sendBuffer({required SecureSocket socket, required String text}) async {

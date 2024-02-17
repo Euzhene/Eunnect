@@ -7,6 +7,7 @@ import 'package:f_logs/f_logs.dart';
 
 import '../repo/local_storage.dart';
 
+//todo deviceId может быть получен прямо из storage
 class SslHelper {
   final LocalStorage storage;
   final String deviceId;
