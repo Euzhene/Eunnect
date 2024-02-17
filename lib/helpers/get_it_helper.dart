@@ -4,6 +4,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/models/socket/custom_server_socket.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,7 +16,7 @@ abstract class GetItHelper {
   static final GetIt i = GetIt.I;
 
   static Future<void> registerAll() async {
-    await _registerSharedPreferences();
+    await _registerStorage();
     await _registerSockets();
     await _registerBlocs();
     await registerDeviceInfo();
@@ -56,15 +57,11 @@ abstract class GetItHelper {
     i.registerSingleton<DeviceInfo>(deviceInfo);
   }
 
-  static Future<void> _registerSharedPreferences() async {
-    if (i.isRegistered<SharedPreferences>()) await i.unregister<SharedPreferences>();
+  static Future<void> _registerStorage() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    i.registerSingleton<SharedPreferences>(sharedPreferences);
-
-    //register localStorage
 
     if (i.isRegistered<LocalStorage>()) await i.unregister<LocalStorage>();
-    LocalStorage storage = LocalStorage();
+    LocalStorage storage = LocalStorage(preferences: sharedPreferences, secureStorage: const FlutterSecureStorage());
     i.registerSingleton<LocalStorage>(storage);
   }
 

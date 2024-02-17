@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:eunnect/extensions.dart';
-import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -19,77 +18,78 @@ const _privateKeyField = "private_key";
 const _publicKeyField = "public_key";
 const _certificateField = "certificate";
 
-//todo передавать SharedPreferences через конструктор
 class LocalStorage {
-  final SharedPreferences _preferences = GetItHelper.i<SharedPreferences>();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final SharedPreferences preferences;
+  final FlutterSecureStorage secureStorage;
+
+  LocalStorage({required this.preferences, required this.secureStorage});
 
   Future<String?> getPublicKey() {
-    return _storage.read(key: _publicKeyField);
+    return secureStorage.read(key: _publicKeyField);
   }
   Future<void> setPublicKey(String publicKey) async {
-    return _storage.write(key: _publicKeyField, value: publicKey);
+    return secureStorage.write(key: _publicKeyField, value: publicKey);
   }
   Future<String?> getPrivateKey() {
-    return _storage.read(key: _privateKeyField);
+    return secureStorage.read(key: _privateKeyField);
   }
   Future<void> setPrivateKey(String privateKey) {
-    return _storage.write(key: _privateKeyField, value: privateKey);
+    return secureStorage.write(key: _privateKeyField, value: privateKey);
   }
 
   Future<String?> getCertificate() {
-    return _storage.read(key: _certificateField);
+    return secureStorage.read(key: _certificateField);
   }
   Future<void> setCertificate(String certificatePem) {
-    return _storage.write(key: _certificateField, value: certificatePem);
+    return secureStorage.write(key: _certificateField, value: certificatePem);
   }
 
 
   bool getFoundDeviceListExpanded() {
-    return _preferences.getBool(_isFoundDeviceListExpanded) ?? true;
+    return preferences.getBool(_isFoundDeviceListExpanded) ?? true;
   }
 
   Future<void> setFoundDeviceListExpanded(bool expanded) async {
-    await _preferences.setBool(_isFoundDeviceListExpanded, expanded);
+    await preferences.setBool(_isFoundDeviceListExpanded, expanded);
   }
 
   bool getPairedDeviceListExpanded() {
-    return _preferences.getBool(_isPairedDeviceListExpanded) ?? true;
+    return preferences.getBool(_isPairedDeviceListExpanded) ?? true;
   }
 
   Future<void> setPairedDeviceListExpanded(bool expanded) async {
-    await _preferences.setBool(_isPairedDeviceListExpanded, expanded);
+    await preferences.setBool(_isPairedDeviceListExpanded, expanded);
   }
 
 
 
   bool isFirstLaunch() {
-    return _preferences.getBool(_isFirstLaunchKey) ?? true;
+    return preferences.getBool(_isFirstLaunchKey) ?? true;
   }
 
   Future<void> setFirstLaunch() async {
-    await _preferences.setBool(_isFirstLaunchKey, false);
+    await preferences.setBool(_isFirstLaunchKey, false);
   }
 
 
   Future<void> setDeviceId() async {
     String deviceId = const Uuid().v4();
-    await _preferences.setString(_deviceIdKey, deviceId);
+    await preferences.setString(_deviceIdKey, deviceId);
   }
 
   String getDeviceId() {
-    return _preferences.getString(_deviceIdKey)!;
+    return preferences.getString(_deviceIdKey)!;
   }
 
   Future<void> clearAll() async {
-    await _storage.deleteAll();
-    await _preferences.clear();
+    await secureStorage.deleteAll();
+    await preferences.clear();
   }
 
 
 
   Future<List<DeviceInfo>> getPairedDevices() async {
-    String? listJsonString = (await _storage.read(key: _pairedDevicesKey));
+    String? listJsonString = (await secureStorage.read(key: _pairedDevicesKey));
     if (listJsonString == null) return [];
     return DeviceInfo.fromJsonList(listJsonString);
   }
@@ -102,7 +102,7 @@ class LocalStorage {
 
   Future<void> _savePairedDevices(List<DeviceInfo> list) async {
     String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
-    await _storage.write(key: _pairedDevicesKey, value: json);
+    await secureStorage.write(key: _pairedDevicesKey, value: json);
   }
 
   Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {

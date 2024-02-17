@@ -41,7 +41,7 @@ class CustomServerSocket {
     await _server?.close();
     String? ipAddress = await NetworkInfo().getWifiIP();
     if (ipAddress == null) return;
-    SslHelper sslHelper = SslHelper(storage, storage.getDeviceId());
+    SslHelper sslHelper = SslHelper(storage);
     SecurityContext context = await sslHelper.getServerSecurityContext();
     _server = await SecureServerSocket.bind(ipAddress, port, context);
     FLog.info(text: "Server is initiated. Address - $ipAddress");

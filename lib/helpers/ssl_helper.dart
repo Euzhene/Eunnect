@@ -7,12 +7,10 @@ import 'package:f_logs/f_logs.dart';
 
 import '../repo/local_storage.dart';
 
-//todo deviceId может быть получен прямо из storage
 class SslHelper {
   final LocalStorage storage;
-  final String deviceId;
 
-  SslHelper(this.storage, this.deviceId);
+  SslHelper(this.storage);
 
   Future<SecurityContext> getServerSecurityContext() async {
     SecurityContext securityContext = SecurityContext();
@@ -47,7 +45,7 @@ class SslHelper {
   Future<String> _generateCertificate(ECPublicKey publicKey,ECPrivateKey privateKey) async {
     FLog.trace(text: "generating certificate...");
     Map<String,String> attributes = {
-      'CN': deviceId,
+      'CN': storage.getDeviceId(),
       'OU': 'Makuku',
     };
     String csr = X509Utils.generateEccCsrPem(attributes, privateKey, publicKey);
