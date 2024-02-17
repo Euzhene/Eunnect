@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
-import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
@@ -11,6 +10,7 @@ import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../helpers/ssl_helper.dart';
 import '../custom_message.dart';
 
 int port = 10242;
@@ -24,8 +24,9 @@ const pcRestartState = "restart";
 const pcShutDownState = "shut_down";
 const pcSleepState = "sleep";
 
+//todo передавать localStorage через конструктор
 abstract class CustomServerSocket {
-  static ServerSocket? _server;
+  static SecureServerSocket? _server;
 
   static Function(DeviceInfo)? onPairDeviceCall;
   static Function(String)? onBufferCall;
@@ -37,12 +38,14 @@ abstract class CustomServerSocket {
 
   static Future<void> initServer(String ipAddress) async {
     await _server?.close();
-    _server = await ServerSocket.bind(ipAddress, port);
+    SslHelper sslHelper = SslHelper(_localStorage, GetItHelper.i<DeviceInfo>().id);
+    SecurityContext context = await sslHelper.getServerSecurityContext();
+    _server = await SecureServerSocket.bind(ipAddress, port, context);
     FLog.info(text: "Сервер иницилизирован. Адрес - $ipAddress");
   }
 
   static void start() {
-    late Socket socket;
+    late SecureSocket socket;
     _server?.listen((s) async {
       socket = s;
       Stream<Uint8List> stream = socket.asBroadcastStream();

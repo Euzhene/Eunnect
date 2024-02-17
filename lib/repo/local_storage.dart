@@ -16,10 +16,35 @@ const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
 const _secretKey = "secret_key";
 const _deviceIdKey = "device_id";
 const _pairedDevicesKey = "paired_devices";
+const _privateKeyField = "private_key";
+const _publicKeyField = "public_key";
+const _certificateField = "certificate";
 
+//todo передавать SharedPreferences через конструктор
 class LocalStorage {
   final SharedPreferences _preferences = GetItHelper.i<SharedPreferences>();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  Future<String?> getPublicKey() {
+    return _storage.read(key: _publicKeyField);
+  }
+  Future<void> setPublicKey(String publicKey) async {
+    return _storage.write(key: _publicKeyField, value: publicKey);
+  }
+  Future<String?> getPrivateKey() {
+    return _storage.read(key: _privateKeyField);
+  }
+  Future<void> setPrivateKey(String privateKey) {
+    return _storage.write(key: _privateKeyField, value: privateKey);
+  }
+
+  Future<String?> getCertificate() {
+    return _storage.read(key: _certificateField);
+  }
+  Future<void> setCertificate(String certificatePem) {
+    return _storage.write(key: _certificateField, value: certificatePem);
+  }
+
 
   bool getFoundDeviceListExpanded() {
     return _preferences.getBool(_isFoundDeviceListExpanded) ?? true;

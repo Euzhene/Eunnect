@@ -27,6 +27,7 @@ dependencies:
   share_plus: ^7.1.0
   font_awesome_flutter:
   connectivity_plus: ^5.0.1
+  basic_utils: ^5.7.0
 
 
 dev_dependencies:
