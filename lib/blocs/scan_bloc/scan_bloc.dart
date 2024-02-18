@@ -34,6 +34,7 @@ class ScanBloc extends Cubit<ScanState> {
   bool isPairedDeviceListExpanded = true;
 
   ScanBloc() : super(ScanState()) {
+    _checkLastOpenDevice();
     isFoundDeviceListExpanded = _localStorage.getFoundDeviceListExpanded();
     isPairedDeviceListExpanded = _localStorage.getPairedDeviceListExpanded();
 
@@ -108,6 +109,15 @@ class ScanBloc extends Cubit<ScanState> {
     _scanIsolate = await Isolate.spawn(_scanDevices, [_receivePort.sendPort, myDeviceInfo, RootIsolateToken.instance]);
   }
 
+
+  Future<void> onSaveLastOpenDevice(DeviceInfo deviceInfo) async {
+    await _localStorage.setLastOpenDevice(deviceInfo.id);
+  }
+  Future<void> onDeleteLastOpenDevice() async {
+    await _localStorage.setLastOpenDevice(null);
+  }
+
+
   void _updateDeviceLists(DeviceInfo deviceInfo) {
     if (pairedDevices.containsSameDeviceId(deviceInfo)) {
       ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
@@ -171,6 +181,16 @@ class ScanBloc extends Cubit<ScanState> {
 
   void onPairedDeviceExpansionChanged(bool expanded) {
     _localStorage.setPairedDeviceListExpanded(expanded);
+  }
+
+  Future<void> _checkLastOpenDevice() async {
+    String? lastOpenDeviceId = _localStorage.getLastOpenDevice();
+    if (lastOpenDeviceId == null) return;
+    DeviceInfo? lastOpenDevice = await _localStorage.getPairedDevice(lastOpenDeviceId);
+    if (lastOpenDevice != null) emit(
+        MoveToLastOpenDeviceState(ScanPairedDevice.fromDeviceInfo(lastOpenDevice))
+    );
+
   }
 }
 

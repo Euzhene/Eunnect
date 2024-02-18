@@ -27,7 +27,9 @@ class ScanScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(title: const Text("Подключение Устройств"),actions: [IconButton(onPressed: ()=>Navigator.pushNamed(context, settingsRoute), icon: const Icon(Icons.settings))],),
         body: BlocConsumer<ScanBloc, ScanState>(
-            listener: (context, state) {},
+            listener: (context, state) {
+              if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
+            },
             buildWhen: (prevS, curS) {
               return true;
             },
@@ -109,9 +111,8 @@ class ScanScreen extends StatelessWidget {
         deviceInfo: e,
         additionalText: e.available ? "" : "(не доступно)",
         highlightDevice: e.available,
-        onPressed: () => Navigator.of(context).pushNamed(deviceActionsRoute, arguments: e).then((value) {
-              if (value == true) context.read<ScanBloc>().getSavedDevices();
-            }));
+        onPressed: () => _onMoveToActionScreen(context: context, deviceInfo: e),
+    );
   }
 
   Widget _buildFoundDeviceItem({required DeviceInfo e, required ScanBloc bloc}) {
@@ -169,9 +170,11 @@ class ScanScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNoConnectionWidget() {
-    return const Center(
-      child: Text("Нет подключения к сети"),
-    );
-  }
+  Future<void> _onMoveToActionScreen({required BuildContext context, required ScanPairedDevice deviceInfo}) async {
+    ScanBloc bloc = context.read();
+    bloc.onSaveLastOpenDevice(deviceInfo);
+    dynamic res = await Navigator.of(context).pushNamed(deviceActionsRoute, arguments: deviceInfo);
+    bloc.onDeleteLastOpenDevice();
+    if (res == true) bloc.getSavedDevices();
+}
 }

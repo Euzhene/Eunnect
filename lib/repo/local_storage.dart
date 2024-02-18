@@ -15,6 +15,7 @@ const _isFirstLaunchKey = "is_first_launch";
 const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
 const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
 const _isDarkThemeKey = "is_dark_theme";
+const _lastOpenDeviceKey = "last_open_device";
 
 const _deviceIdKey = "device_id";
 const _deviceNameKey = "device_name";
@@ -69,6 +70,14 @@ class LocalStorage {
   }
   Future<void> setIsDarkTheme(bool isDarkTheme) async {
     await preferences.setBool(_isDarkThemeKey, isDarkTheme);
+  }
+
+  String? getLastOpenDevice() {
+    return preferences.getString(_lastOpenDeviceKey);
+  }
+  Future<void> setLastOpenDevice(String? deviceId) async {
+    if (deviceId == null) await preferences.remove(_lastOpenDeviceKey);
+    else await preferences.setString(_lastOpenDeviceKey, deviceId);
   }
 
   bool isFirstLaunch() {
