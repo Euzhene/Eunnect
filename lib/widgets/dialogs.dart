@@ -50,11 +50,10 @@ showConfirmDialog(BuildContext context,
       });
 }
 
-//todo: поменять дизайн
 Widget _buildDialog({required List<Widget> actions, required String title, required String? content}) {
   return AlertDialog(
       title: Text(title, textAlign: TextAlign.center),
-      content: content == null ? null : SingleChildScrollView(child: CustomCard(backgroundColor: white, child: Text(content))),
+      content: content == null ? null : SingleChildScrollView(child: Text(content)),
       actionsAlignment: MainAxisAlignment.spaceEvenly,
       actions: actions);
 }
