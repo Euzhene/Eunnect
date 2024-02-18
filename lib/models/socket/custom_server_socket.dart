@@ -78,7 +78,10 @@ class CustomServerSocket {
       socket.destroy();
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      if (e is! SocketException){
+      if (e is HandshakeException) {
+
+      }
+      else if (e is! SocketException){
         socket.add(ServerMessage(status: 105).toUInt8List());
         socket.destroy();
       }
