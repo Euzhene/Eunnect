@@ -66,22 +66,26 @@ class MainBloc extends Cubit<MainState> {
   }
 
   void initNetworkListener() {
-    ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
     Connectivity().onConnectivityChanged.listen((event) async {
       try {
         bool prevConnectionState = hasConnection;
         hasConnection =
             event == ConnectivityResult.ethernet || event == ConnectivityResult.mobile || event == ConnectivityResult.wifi;
         if (hasConnection && hasConnection != prevConnectionState) {
-          await updateDeviceInfo();
-          await startServer();
-          _scanBloc.onScanDevices();
+          resetNetworkSettings();
         }
         emit(MainState());
       }catch(e,st) {
         FLog.error(text: e.toString(),stacktrace: st);
       }
     });
+  }
+
+  Future<void> resetNetworkSettings() async {
+    ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
+    await updateDeviceInfo();
+    await startServer();
+    _scanBloc.onScanDevices();
   }
 
   Future<void> checkFirstLaunch() async {

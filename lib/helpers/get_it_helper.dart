@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/models/socket/custom_server_socket.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:flutter/material.dart';
@@ -26,31 +25,17 @@ abstract class GetItHelper {
   static Future<void> registerDeviceInfo() async {
     if (i.isRegistered<DeviceInfo>()) await i.unregister<DeviceInfo>();
 
-    DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
     String deviceId = i<LocalStorage>().getDeviceId();
 
-    String name;
+    String name = await i<LocalStorage>().getDeviceName();
     DeviceType type;
 
-    if (Platform.isAndroid) {
-      final androidInfo = await _deviceInfoPlugin.androidInfo;
-
+    //todo добавить поддержку IOS
+    if (Platform.isAndroid)
       type = MediaQueryData.fromView(WidgetsBinding.instance.window).size.shortestSide < 550 ? DeviceType.phone : DeviceType.tablet;
-      name = androidInfo.model;
-    } else if (Platform.isWindows) {
-      final windowsInfo = await _deviceInfoPlugin.windowsInfo;
-
-      type = DeviceType.windows;
-      name = windowsInfo.computerName;
-    } else if (Platform.isLinux) {
-      final linuxInfo = await _deviceInfoPlugin.linuxInfo;
-
-      type = DeviceType.linux;
-      name = linuxInfo.name;
-    } else {
-      type = DeviceType.unknown;
-      name = "Unknown";
-    }
+     else if (Platform.isWindows) type = DeviceType.windows;
+     else if (Platform.isLinux) type = DeviceType.linux;
+     else type = DeviceType.unknown;
 
     DeviceInfo deviceInfo = DeviceInfo(name: name, type: type, id: deviceId);
 

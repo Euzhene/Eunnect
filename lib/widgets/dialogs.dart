@@ -24,7 +24,7 @@ showSuccessSnackBar(BuildContext context, {required String text}) =>
     showSnackBar(context, text: text, backgroundColor: successColor, textColor: white);
 
 showConfirmDialog(BuildContext context,
-    {required String title, String? content, List<Widget>? actions, VoidCallback? onConfirm, VoidCallback? onCancel}) {
+    {required String title, String? content, List<Widget>? actions, String confirmText = "Сопряжение", VoidCallback? onConfirm, String cancelText = "Отказаться", VoidCallback? onCancel}) {
   return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -36,13 +36,13 @@ showConfirmDialog(BuildContext context,
                       Navigator.of(context).pop();
                       onConfirm?.call();
                     },
-                    text: "Сопряжение"),
+                    text: confirmText),
                 CustomButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                       onCancel?.call();
                     },
-                    text: "Отказаться"),
+                    text: cancelText),
               ],
           title: title,
           content: content,
@@ -50,6 +50,7 @@ showConfirmDialog(BuildContext context,
       });
 }
 
+//todo: поменять дизайн
 Widget _buildDialog({required List<Widget> actions, required String title, required String? content}) {
   return AlertDialog(
       title: Text(title, textAlign: TextAlign.center),

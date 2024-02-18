@@ -25,7 +25,7 @@ class ScanScreen extends StatelessWidget {
 
     return BlocBuilder<MainBloc, MainState>(builder: (context, state) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Подключение Устройств")),
+        appBar: AppBar(title: const Text("Подключение Устройств"),actions: [IconButton(onPressed: ()=>Navigator.pushNamed(context, settingsRoute), icon: const Icon(Icons.settings))],),
         body: BlocConsumer<ScanBloc, ScanState>(
             listener: (context, state) {},
             buildWhen: (prevS, curS) {
@@ -81,11 +81,12 @@ class ScanScreen extends StatelessWidget {
           {required List<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
       _buildBaseDeviceList(
           devices: devices,
-          label: "Сопряженные устройства",
+          label: "Сопряженные устройства", //todo имя устройства может не вместиться. Добавить скролл
           initiallyExpanded: bloc.isPairedDeviceListExpanded,
           onExpansionChanged: (expanded)=>bloc.onPairedDeviceExpansionChanged(expanded),
           list: devices.map((e) => _buildPairedDeviceItem(e: e, context: context)).toList());
 
+  //todo вынести группирующий виджет в отдельный класс
   Widget _buildBaseDeviceList({required List devices, required String label, required List<Widget> list,required bool initiallyExpanded,  required Function(bool) onExpansionChanged}) {
     return ExpansionTile(
       initiallyExpanded: initiallyExpanded,

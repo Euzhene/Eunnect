@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/extensions.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -11,8 +14,10 @@ const _isFirstLaunchKey = "is_first_launch";
 
 const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
 const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
+const _isDarkThemeKey = "is_dark_theme";
 
 const _deviceIdKey = "device_id";
+const _deviceNameKey = "device_name";
 const _pairedDevicesKey = "paired_devices";
 const _privateKeyField = "private_key";
 const _publicKeyField = "public_key";
@@ -48,7 +53,6 @@ class LocalStorage {
   bool getFoundDeviceListExpanded() {
     return preferences.getBool(_isFoundDeviceListExpanded) ?? true;
   }
-
   Future<void> setFoundDeviceListExpanded(bool expanded) async {
     await preferences.setBool(_isFoundDeviceListExpanded, expanded);
   }
@@ -56,19 +60,23 @@ class LocalStorage {
   bool getPairedDeviceListExpanded() {
     return preferences.getBool(_isPairedDeviceListExpanded) ?? true;
   }
-
   Future<void> setPairedDeviceListExpanded(bool expanded) async {
     await preferences.setBool(_isPairedDeviceListExpanded, expanded);
   }
 
-
+  bool isDarkTheme() {
+    return preferences.getBool(_isDarkThemeKey) ?? false;
+  }
+  Future<void> setIsDarkTheme(bool isDarkTheme) async {
+    await preferences.setBool(_isDarkThemeKey, isDarkTheme);
+  }
 
   bool isFirstLaunch() {
     return preferences.getBool(_isFirstLaunchKey) ?? true;
   }
 
-  Future<void> setFirstLaunch() async {
-    await preferences.setBool(_isFirstLaunchKey, false);
+  Future<void> setFirstLaunch([isFirstLaunch = false]) async {
+    await preferences.setBool(_isFirstLaunchKey, isFirstLaunch);
   }
 
 
@@ -76,9 +84,36 @@ class LocalStorage {
     String deviceId = const Uuid().v4();
     await preferences.setString(_deviceIdKey, deviceId);
   }
-
   String getDeviceId() {
     return preferences.getString(_deviceIdKey)!;
+  }
+
+  Future<void> setDeviceName(String deviceName) async {
+    await preferences.setString(_deviceNameKey, deviceName);
+  }
+
+  Future<String> getDeviceName() async {
+    String? deviceName = preferences.getString(_deviceNameKey);
+    if (deviceName == null) {
+      FLog.info(text: "device name was not set in the local storage. Setting a default one.");
+      DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
+
+      if (Platform.isAndroid) {
+        final androidInfo = await _deviceInfoPlugin.androidInfo;
+        deviceName = androidInfo.model;
+      } else if (Platform.isIOS) {
+        final iosInfo = await _deviceInfoPlugin.iosInfo;
+        deviceName = iosInfo.name;
+      } else if (Platform.isWindows) {
+        final windowsInfo = await _deviceInfoPlugin.windowsInfo;
+        deviceName = windowsInfo.computerName;
+      } else if (Platform.isLinux) {
+        final linuxInfo = await _deviceInfoPlugin.linuxInfo;
+        deviceName = linuxInfo.prettyName;
+      } else deviceName = "Unknown";
+    }
+    await setDeviceName(deviceName);
+    return deviceName;
   }
 
   Future<void> clearAll() async {
