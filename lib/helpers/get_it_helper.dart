@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../blocs/main_bloc/main_bloc.dart';
 import '../blocs/scan_bloc/scan_bloc.dart';
+import '../constants.dart';
 import '../models/device_info.dart';
 
 abstract class GetItHelper {
@@ -30,8 +31,7 @@ abstract class GetItHelper {
     String name = await i<LocalStorage>().getDeviceName();
     DeviceType type;
 
-    //todo добавить поддержку IOS
-    if (Platform.isAndroid)
+    if (isMobile)
       type = MediaQueryData.fromView(WidgetsBinding.instance.window).size.shortestSide < 550 ? DeviceType.phone : DeviceType.tablet;
      else if (Platform.isWindows) type = DeviceType.windows;
      else if (Platform.isLinux) type = DeviceType.linux;
