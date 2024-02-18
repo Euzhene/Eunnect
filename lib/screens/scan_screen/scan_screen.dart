@@ -34,35 +34,19 @@ class ScanScreen extends StatelessWidget {
               return true;
             },
             builder: (context, state) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            CustomText(
-                              "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
-                              textAlign: TextAlign.start,
-                              fontSize: 16,
-                            ),
-                            if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
-                            _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc, context: context),
-                          ],
-                        ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      CustomText(
+                        "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
+                        textAlign: TextAlign.start,
+                        fontSize: 16,
                       ),
-                      if (!Platform.isWindows)
-                        Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CustomButton(
-                              onPressed: () => bloc.onSendLogs(),
-                              text: "Отправить логи",
-                              textColor: black,
-                            ))
+                      if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
+                      _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc, context: context),
                     ],
                   ),
                 ),
@@ -83,7 +67,7 @@ class ScanScreen extends StatelessWidget {
           {required List<ScanPairedDevice> devices, required ScanBloc bloc, required BuildContext context}) =>
       _buildBaseDeviceList(
           devices: devices,
-          label: "Сопряженные устройства", //todo имя устройства может не вместиться. Добавить скролл
+          label: "Сопряженные устройства",
           initiallyExpanded: bloc.isPairedDeviceListExpanded,
           onExpansionChanged: (expanded)=>bloc.onPairedDeviceExpansionChanged(expanded),
           list: devices.map((e) => _buildPairedDeviceItem(e: e, context: context)).toList());
@@ -96,7 +80,7 @@ class ScanScreen extends StatelessWidget {
       title: CustomText("$label ${devices.isNotEmpty ? "(${devices.length})" : ""}", fontSize: 17,textAlign: TextAlign.start),
       onExpansionChanged: onExpansionChanged,
       children: devices.isEmpty
-          ? [const VerticalSizedBox(verticalPadding * 2), Align(alignment: Alignment.center, child: CustomText("Не найдено"))]
+          ? [Align(alignment: Alignment.center, child: CustomText("Не найдено"))]
           : [
               Padding(
                 padding: const EdgeInsets.all(horizontalPadding),
@@ -157,10 +141,13 @@ class ScanScreen extends StatelessWidget {
               children: [
                 Icon(iconData, color: highlightDevice ? Colors.green : Colors.black),
                 const HorizontalSizedBox(horizontalPadding / 2),
-                CustomText(
-                  "${deviceInfo.name} $additionalText",
-                  fontSize: 20,
-                  color: highlightDevice ? Colors.green : Colors.black,
+                Expanded(
+                  child: CustomText(
+                    "${deviceInfo.name} $additionalText",
+                    fontSize: 20,
+                    color: highlightDevice ? Colors.green : Colors.black,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
