@@ -54,7 +54,7 @@ public class MainApplication extends Application {
                 throw new RuntimeException(ex);
             }
         });
-        thread.setDaemon(true);
+//        thread.setDaemon(true);
         thread.start();
     }
 }

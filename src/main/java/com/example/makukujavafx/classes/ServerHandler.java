@@ -85,10 +85,6 @@ public class ServerHandler {
         datagramSocket = new DatagramSocket();
         datagramSocket.setBroadcast(true);
 
-//        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/makukujavafx/main.fxml"));
-//        Parent root = loader.load();
-//        MainController mainController = loader.getController();
-//
         AnchorPane banner = (AnchorPane) scene.lookup("#banner");
         Label errorLabel = (Label) scene.lookup("#errorLabel");
 
@@ -106,7 +102,6 @@ public class ServerHandler {
                         Platform.runLater(() -> {
                             banner.setStyle("-fx-background-color: green;-fx-background-radius: 10;");
                             errorLabel.setVisible(false);
-//                            mainController.hideError();
                         });
                     }
 
@@ -117,7 +112,6 @@ public class ServerHandler {
                         banner.setStyle("-fx-background-color: red;-fx-background-radius: 10;");
                         errorLabel.setVisible(true);
                         errorLabel.setText("No internet connection!");
-//                        mainController.displayError("No internet connection!");
                     });
                 }
             } catch (IOException e) {
@@ -149,7 +143,7 @@ public class ServerHandler {
             if (socketMessage.getCall().equals("pair_devices") || JsonHandler.isIdInArray(id, jsonArray)) {
                 switch (socketMessage.getCall()) {
                     case "pair_devices":
-                        DeviceAction.pairDevices(scene, socketMessage, dos, jsonArray, objectMapper, deviceId);
+                        DeviceAction.pairDevices(/*scene, */socketMessage, dos, jsonArray, objectMapper, deviceId);
                         break;
                     case "buffer":
                         DeviceAction.getBuffer(socketMessage, dos, objectMapper, jsonArray);
