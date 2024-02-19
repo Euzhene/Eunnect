@@ -12,21 +12,26 @@
 
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="900.0" style="-fx-background-color: #242424;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.makukujavafx.MainController">
 <top>
-    <AnchorPane fx:id="banner" prefHeight="100.0" prefWidth="200.0" style="-fx-background-color: #3fd051; -fx-background-radius: 10;" BorderPane.alignment="CENTER">
+    <AnchorPane fx:id="banner" prefHeight="100.0" prefWidth="200.0" style="-fx-background-radius: 10; -fx-background-color: green;" BorderPane.alignment="CENTER">
         <BorderPane.margin>
             <Insets left="50.0" right="50.0" top="20.0" />
         </BorderPane.margin>
         <children>
-            <ProgressBar fx:id="progressBar" layoutX="250.0" layoutY="70.0" nodeOrientation="LEFT_TO_RIGHT" progress="0.12" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="250.0" AnchorPane.rightAnchor="250.0" AnchorPane.topAnchor="70.0" />
-            <Text fx:id="mainFilenameLabel" fill="WHITE" layoutX="338.0" layoutY="54.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Название файла" wrappingWidth="124.4619140625">
+            <ProgressBar fx:id="progressBar" layoutX="250.0" layoutY="70.0" nodeOrientation="LEFT_TO_RIGHT" prefWidth="500.0" progress="0.12" visible="false" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="200.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="80.0" />
+            <Text fx:id="filenameLabel" fill="WHITE" layoutX="338.0" layoutY="64.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Название файла" visible="false" wrappingWidth="124.4619140625">
                 <font>
                     <Font name="Calibri" size="18.0" />
                 </font>
             </Text>
-            <Label fx:id="mainDeviceLabel" layoutX="369.0" layoutY="5.0" text="Label" textFill="WHITE">
+            <Label fx:id="deviceNameLabel" alignment="CENTER" layoutX="369.0" layoutY="7.0" text="Label" textAlignment="CENTER" textFill="WHITE" visible="false" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0">
                 <font>
                     <Font name="Calibri Bold" size="28.0" />
                 </font>
+            </Label>
+            <Label fx:id="errorLabel" alignment="CENTER" layoutX="365.0" layoutY="28.0" text="Label" textAlignment="CENTER" textFill="WHITE" visible="false" AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0">
+               <font>
+                  <Font name="System Bold" size="30.0" />
+               </font>
             </Label>
         </children>
     </AnchorPane>
