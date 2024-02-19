@@ -123,7 +123,7 @@ class SettingsBloc extends Cubit<SettingsState> {
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfoPlugin.androidInfo;
       coreDeviceModel = androidInfo.model;
-      coreDeviceAdditionalInfo = androidInfo.version.release;
+      coreDeviceAdditionalInfo = "Android${androidInfo.version.release}";
     } else if (Platform.isIOS) {
       final iosInfo = await _deviceInfoPlugin.iosInfo;
       coreDeviceModel = iosInfo.model;
@@ -131,7 +131,7 @@ class SettingsBloc extends Cubit<SettingsState> {
     } else if (Platform.isWindows) {
       final windowsInfo = await _deviceInfoPlugin.windowsInfo;
       coreDeviceModel = windowsInfo.productName;
-      coreDeviceAdditionalInfo = windowsInfo.buildNumber.toString();
+      coreDeviceAdditionalInfo = "Build${windowsInfo.buildNumber}";
     } else if (Platform.isLinux) {
       final linuxInfo = await _deviceInfoPlugin.linuxInfo;
       coreDeviceModel = linuxInfo.name;
