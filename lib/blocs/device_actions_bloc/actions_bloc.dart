@@ -49,7 +49,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       if ((text ?? "").isEmpty)
         _mainBloc.emitDefaultError("Буфер не содержит текст");
       else {
-        SecureSocket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
+        Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
         await CustomClientSocket.sendBuffer(socket: socket, text: text!);
         ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
 
@@ -79,7 +79,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       if (checkLoadingState()) return;
       emit(LoadingState());
 
-      SecureSocket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
+      Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
       await CustomClientSocket.sendCommand(socket: socket, commandName: commandName);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
@@ -126,7 +126,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
       String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator) + 1);
 
-      SecureSocket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
+      Socket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
 
       ServerMessage? resultMessage = await CustomClientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
 

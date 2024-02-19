@@ -25,7 +25,7 @@ const pcShutDownState = "shut_down";
 const pcSleepState = "sleep";
 
 class CustomServerSocket {
-  SecureServerSocket? _server;
+  ServerSocket? _server;
 
   Function(DeviceInfo)? onPairDeviceCall;
   Function(String)? onBufferCall;
@@ -41,15 +41,13 @@ class CustomServerSocket {
     await _server?.close();
     String? ipAddress = await NetworkInfo().getWifiIP();
     if (ipAddress == null) return;
-    SslHelper sslHelper = SslHelper(storage);
-    SecurityContext context = await sslHelper.getServerSecurityContext();
-    _server = await SecureServerSocket.bind(ipAddress, port, context);
+    _server = await ServerSocket.bind(ipAddress, port);
     FLog.info(text: "Server is initiated. Address - $ipAddress");
     _start();
   }
 
   void _start() {
-    late SecureSocket socket;
+    late Socket socket;
     _server?.listen((s) async {
       socket = s;
       Stream<Uint8List> stream = socket.asBroadcastStream();

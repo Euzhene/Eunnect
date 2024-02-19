@@ -14,19 +14,9 @@ import 'custom_server_socket.dart';
 abstract class CustomClientSocket {
   static final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
 
-  static Future<SecureSocket> connect(String ip, LocalStorage localStorage) async {
+  static Future<Socket> connect(String ip, LocalStorage localStorage) async {
     List<String> pairedDevicesId = (await localStorage.getPairedDevices()).map((e) => e.id).toList();
-    return SecureSocket.connect(ip, port, onBadCertificate: (X509Certificate certificate) {
-      String issuer = certificate.issuer;
-      bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
-      if (!containsAppName) {
-        FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
-        return false;
-      }
-      bool containsPairedDeviceId = pairedDevicesId.where((e) => issuer.contains(e)).isNotEmpty;
-      if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
-      return containsPairedDeviceId;
-    });
+    return Socket.connect(ip, port);
   }
 
   ///Проверка того, что устройство, с которым мы хотим работать, доступно для подключения
@@ -34,18 +24,18 @@ abstract class CustomClientSocket {
     return (await connect(ip, localStorage)).destroy();
   }
 
-  static Future<void> sendBuffer({required SecureSocket socket, required String text}) async {
+  static Future<void> sendBuffer({required Socket socket, required String text}) async {
     socket.add(ClientMessage(call: sendBufferCall, data: text, deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
   }
 
-  static Future<void> sendCommand({required SecureSocket socket, required String commandName}) async {
+  static Future<void> sendCommand({required Socket socket, required String commandName}) async {
     socket.add(ClientMessage(call: changePcStateCall, data: commandName, deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
   }
 
   ///возвращает false, если не получилось отправить файл из-за отсутствия сопряжения
-  static Future<ServerMessage?> sendFile({required SecureSocket socket, required Uint8List bytes, required String fileName}) async {
+  static Future<ServerMessage?> sendFile({required Socket socket, required Uint8List bytes, required String fileName}) async {
     ClientMessage initialMessage = ClientMessage(
         call: sendFileCall,
         deviceId: myDeviceInfo.id,
