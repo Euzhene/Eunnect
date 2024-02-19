@@ -141,6 +141,7 @@ class ScanBloc extends Cubit<ScanState> {
 
     ShareResult res = await Share.shareXFiles([XFile(logs.path)], text: "$appName ${dateFormat.format(DateTime.now())}");
     if (res.status == ShareResultStatus.success) {
+      //todo добавить LogHelper, в котором будет более сложная логика
       _mainBloc.emitDefaultSuccess("Логи очищены");
       FLog.clearLogs();
     }
@@ -148,6 +149,7 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
+      FLog.trace(text: "a pairing with a new device was requested");
       ServerMessage socketMessage = await compute<List, ServerMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);
 
       if (socketMessage.isErrorStatus) {
@@ -198,8 +200,10 @@ FutureOr<ServerMessage> pair(List args) async {
   DeviceInfo myDeviceInfo = args[0];
   DeviceInfo deviceInfo = args[1];
   try {
+    FLog.trace(text: "pairing with a new device...");
     SecureSocket socket = await SecureSocket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
         timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
+      //todo: общий обработчик для самоподписанных сертификатов. Можно вынести в SSLHelper
           String issuer = certificate.issuer;
           bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
           if (!containsAppName) {
@@ -216,10 +220,11 @@ FutureOr<ServerMessage> pair(List args) async {
 
     final bytes = await socket.single;
     ServerMessage socketMessage = ServerMessage.fromUInt8List(bytes);
+    FLog.trace(text: "Pairing is successful!");
 
     return socketMessage;
   } catch (e, st) {
-    FLog.error(text: e.toString(), stacktrace: st);
+    FLog.error(text: "Caught error while pairing. Error: $e", stacktrace: st);
     return ServerMessage(status: 105);
   }
 }
@@ -250,6 +255,8 @@ Future<void> _receiveDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) asyn
   }, onError: (e, st) {
     sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: "Error in receiver", error: e, stackTrace: st)));
   });
+
+  FLog.trace(text: "Scan receiver was initiated. IP ${receiver.address}");
 }
 
 Future<void> _sendDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) async {
@@ -266,4 +273,6 @@ Future<void> _sendDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) async {
       sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: "Error in sender", error: e, stackTrace: st)));
     }
   });
+
+  FLog.trace(text: "Scan sender was initiated. IP $ip");
 }

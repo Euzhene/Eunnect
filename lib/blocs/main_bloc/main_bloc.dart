@@ -82,6 +82,7 @@ class MainBloc extends Cubit<MainState> {
   }
 
   Future<void> resetNetworkSettings() async {
+    FLog.trace(text: "reseting network settings");
     ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
     await updateDeviceInfo();
     await startServer();

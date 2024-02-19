@@ -5,6 +5,7 @@ import 'package:eunnect/screens/actions_screen.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/screens/scan_screen/scan_screen.dart';
 import 'package:eunnect/screens/settings_screen.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,6 +34,6 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
     default:
       throw UnimplementedError();
   }
-
+  FLog.trace(text: "Navigating to ${settings.name}");
   return MaterialPageRoute(builder: (context) => screen);
 }

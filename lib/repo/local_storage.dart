@@ -128,6 +128,7 @@ class LocalStorage {
   Future<void> clearAll() async {
     await secureStorage.deleteAll();
     await preferences.clear();
+    FLog.trace(text: "the local storage was fully cleared");
   }
 
 
@@ -147,6 +148,7 @@ class LocalStorage {
   Future<void> _savePairedDevices(List<DeviceInfo> list) async {
     String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
     await secureStorage.write(key: _pairedDevicesKey, value: json);
+    FLog.trace(text: "paired devices were saved");
   }
 
   Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {
@@ -155,6 +157,7 @@ class LocalStorage {
 
     pairDevices.add(pairDeviceInfo);
     await _savePairedDevices(pairDevices);
+    FLog.trace(text: "a new device was added to the local storage");
   }
 
   Future<void> updatePairedDevice(DeviceInfo pairDeviceInfo) async {
@@ -165,11 +168,13 @@ class LocalStorage {
     pairDevices[deviceInfoIndex] = pairDeviceInfo;
 
     await _savePairedDevices(pairDevices);
+    FLog.trace(text: "a device was updated to the local storage");
   }
 
   Future<void> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
     List<DeviceInfo> pairDevices = await getPairedDevices();
     pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
     await _savePairedDevices(pairDevices);
+    FLog.trace(text: "a paired device was deleted from the local storage");
   }
 }
