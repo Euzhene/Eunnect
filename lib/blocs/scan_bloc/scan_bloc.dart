@@ -201,19 +201,7 @@ FutureOr<ServerMessage> pair(List args) async {
   DeviceInfo deviceInfo = args[1];
   try {
     FLog.trace(text: "pairing with a new device...");
-    SecureSocket socket = await SecureSocket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
-        timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
-      //todo: общий обработчик для самоподписанных сертификатов. Можно вынести в SSLHelper
-          String issuer = certificate.issuer;
-          bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
-          if (!containsAppName) {
-            FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
-            return false;
-          }
-          bool containsPairedDeviceId = issuer.contains(deviceInfo.id);
-          if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
-          return containsPairedDeviceId;
-        });
+    Socket socket = await Socket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port, timeout: const Duration(seconds: 2));
 
     socket.add(ClientMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString(), deviceId: deviceInfo.id).toUInt8List());
     await socket.close();
