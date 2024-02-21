@@ -1,6 +1,7 @@
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
+import 'package:eunnect/helpers/log_helper.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.storage.request();
   await Permission.manageExternalStorage.request();
+  LogHelper.start();
 
   await GetItHelper.registerAll();
   runApp(BlocProvider(create: (_)=>GetItHelper.i<MainBloc>(), child: Eunnect()));

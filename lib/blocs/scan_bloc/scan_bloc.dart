@@ -14,7 +14,6 @@ import 'package:f_logs/f_logs.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../constants.dart';
 import '../../models/socket/custom_server_socket.dart';
@@ -130,21 +129,6 @@ class ScanBloc extends Cubit<ScanState> {
     _scanIsolate?.kill();
     _receivePort.close();
     _receivePort = ReceivePort();
-  }
-
-  Future<void> onSendLogs() async {
-    File logs = await FLog.exportLogs();
-    if ((await logs.length()) == 0) {
-      _mainBloc.emitDefaultSuccess("Лог пуст!");
-      return;
-    }
-
-    ShareResult res = await Share.shareXFiles([XFile(logs.path)], text: "$appName ${dateFormat.format(DateTime.now())}");
-    if (res.status == ShareResultStatus.success) {
-      //todo добавить LogHelper, в котором будет более сложная логика
-      _mainBloc.emitDefaultSuccess("Логи очищены");
-      FLog.clearLogs();
-    }
   }
 
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {

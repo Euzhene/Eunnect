@@ -2,15 +2,14 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
+import 'package:eunnect/helpers/log_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:share_plus/share_plus.dart';
 
-import '../../constants.dart';
 import '../main_bloc/main_bloc.dart';
 
 part 'settings_state.dart';
@@ -26,7 +25,7 @@ class SettingsBloc extends Cubit<SettingsState> {
   late String? coreDeviceModel;
   late String? coreDeviceAdditionalInfo;
 
-  SettingsBloc() :super(LoadingScreenState()) {
+  SettingsBloc() : super(LoadingScreenState()) {
     deviceNameController.addListener(() {
       if (!state.isAnyLoading) emit(SettingsState());
     });
@@ -46,7 +45,7 @@ class SettingsBloc extends Cubit<SettingsState> {
       packageInfo = await PackageInfo.fromPlatform();
       await _setCoreDeviceInfo();
       emit(SettingsState());
-    }catch(e,st) {
+    } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
@@ -67,44 +66,32 @@ class SettingsBloc extends Cubit<SettingsState> {
       emit(SettingsState());
       _mainBloc.emitDefaultSuccess("Имя устройства обновлено");
       _mainBloc.resetNetworkSettings();
-    }catch(e,st) {
+    } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
   }
 
-  Future<void> onResetSettings() async  {
-    try{
+  Future<void> onResetSettings() async {
+    try {
       await _storage.setFirstLaunch(true);
       await _mainBloc.checkFirstLaunch();
       await GetItHelper.registerDeviceInfo();
       await _onLoadSettings();
       _mainBloc.resetNetworkSettings();
       _mainBloc.emitDefaultSuccess("Настройки сброшены");
-    }catch(e,st) {
+    } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
   }
 
   Future<void> onSendLogs() async {
-    try {
-      File logs = await FLog.exportLogs();
-      if ((await logs.length()) == 0) {
-        _mainBloc.emitDefaultSuccess("Лог пуст!");
-        return;
-      }
-
-      ShareResult res = await Share.shareXFiles(
-          [XFile(logs.path)], text: "${packageInfo.appName} ${dateFormat.format(DateTime.now())}");
-      if (res.status == ShareResultStatus.success) {
-        _mainBloc.emitDefaultSuccess("Логи очищены");
-        FLog.clearLogs();
-      }
-    }catch(e,st) {
-      FLog.error(text: e.toString(), stacktrace: st);
-      _mainBloc.emitDefaultError(e.toString());
-    }
+    await LogHelper.export(
+      onEmptyLogs: () => _mainBloc.emitDefaultSuccess("Лог пуст!"),
+      onError: (e) => _mainBloc.emitDefaultError(e),
+      onSuccess: () => _mainBloc.emitDefaultSuccess("Логи очищены"),
+    );
   }
 
   Future<void> onDarkThemeValueChangeRequested() async {
@@ -112,7 +99,7 @@ class SettingsBloc extends Cubit<SettingsState> {
       isDarkTheme = !isDarkTheme;
       await _storage.setIsDarkTheme(isDarkTheme);
       emit(SettingsState());
-    }catch(e,st) {
+    } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
@@ -138,5 +125,4 @@ class SettingsBloc extends Cubit<SettingsState> {
       coreDeviceAdditionalInfo = linuxInfo.versionId;
     }
   }
-
 }
