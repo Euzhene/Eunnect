@@ -20,14 +20,14 @@ class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
   final List<Log> logs = [];
   final List<Filter> logFilters = [];
 
-  bool haveNewLogs = false;
+  bool haveNewLogs = true;
 
   DeveloperConsoleBloc() : super(LoadingConsoleState()) {
     _listenToLogs();
   }
 
   bool get isTextValid => textController.text.trim().isNotEmpty;
-  bool get _isAtTheBottom => logsScrollController.position.maxScrollExtent - logsScrollController.offset <= 50;
+  bool get _isNearTheBottom => logsScrollController.position.maxScrollExtent - logsScrollController.offset <= 50;
 
   Future<void> onExecuteCommand() async {
     if (!isTextValid) return;
@@ -57,7 +57,7 @@ class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
     logs.clear();
     logs.addAll(await FLog.getAllLogsByCustomFilter(filters: logFilters));
     if (logsScrollController.hasClients) {
-      if (_isAtTheBottom) onMoveToBottom();
+      if (_isNearTheBottom) onMoveToBottom();
       else if(!haveNewLogs) haveNewLogs = oldLogsLength != logs.length;
     }
     emit(DeveloperConsoleState());
