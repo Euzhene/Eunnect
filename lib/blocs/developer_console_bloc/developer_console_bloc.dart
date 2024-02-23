@@ -13,7 +13,7 @@ part 'developer_console_state.dart';
 
 class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
-  final List<Command> commands = [ClearCommand(), GreaterThanTimestampCommand(), LessThanTimestampCommand(), EqualTimestampCommand()];
+  final List<Command> commands = [ClearCommand(), GreaterThanTimestampCommand(), LessThanTimestampCommand(), EqualTimestampCommand(), ResetCommand()];
   final TextEditingController textController = TextEditingController();
   final ScrollController logsScrollController = ScrollController();
   late final Timer _timer;

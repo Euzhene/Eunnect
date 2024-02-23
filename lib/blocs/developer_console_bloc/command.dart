@@ -26,6 +26,17 @@ class ClearCommand extends Command {
   }
 }
 
+class ResetCommand extends Command {
+  ResetCommand() : super(command: "reset", description: "Сбрасывает все фильтры");
+
+  @override
+  Future<void> execute({required DeveloperConsoleBloc bloc, required String text}) async {
+    bloc.textController.text = "";
+    bloc.logFilters.clear();
+    await bloc.updateLogs();
+  }
+}
+
 abstract class TimestampCommand extends Command {
   final String specSymbol;
 
