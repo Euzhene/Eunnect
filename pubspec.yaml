@@ -29,6 +29,7 @@ dependencies:
   font_awesome_flutter:
   connectivity_plus: ^5.0.1
   basic_utils: ^5.7.0
+  nsd: ^3.0.0
 
 
 dev_dependencies:
