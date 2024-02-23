@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 
 const _idField = "id";
 const _nameField = "name";
-const _deviceTypeField = "device_type";
-const _ipAddressField = "ip_address";
+const _deviceTypeField = "type";
+const _ipAddressField = "ip";
 
 const windowsDeviceType = "windows";
 const linuxDeviceType = "linux";
@@ -45,6 +45,22 @@ class DeviceInfo extends Equatable {
         _deviceTypeField: _deviceTypeList.firstWhere((e) => e.typeEnum==type).typeString,
         _ipAddressField: ipAddress,
       });
+
+  Map<String, Uint8List> toNsdJson() => {
+    _idField : utf8.encode(id),
+    _nameField: utf8.encode(name),
+    _deviceTypeField: utf8.encode(_deviceTypeList.firstWhere((e) => e.typeEnum==type).typeString),
+    _ipAddressField: utf8.encode(ipAddress),
+  };
+
+  DeviceInfo.fromNsdJson(Map<String, Uint8List?> json) :
+      id = utf8.decode(json[_idField]!),
+        name = utf8.decode(json[_nameField]!),
+        type = _deviceTypeList
+            .firstWhere((e) => e.typeString == utf8.decode(json[_deviceTypeField]!),
+            orElse: () => _DeviceTypeModel(typeEnum: DeviceType.unknown, typeString: ""))
+            .typeEnum,
+        ipAddress = utf8.decode(json[_ipAddressField]!);
 
   factory DeviceInfo.fromJsonString(String jsonString) {
     Map<String, dynamic> json = jsonDecode(jsonString);

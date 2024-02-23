@@ -21,7 +21,7 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
   switch (settings.name) {
     case scanRoute:
       screen = MultiBlocProvider(
-          providers: [BlocProvider(create: (_) => GetItHelper.i<ScanBloc>()..onScanDevices())], child: const ScanScreen());
+          providers: [BlocProvider(create: (_) => GetItHelper.i<ScanBloc>())], child: const ScanScreen());
       break;
     case deviceActionsRoute:
       ScanPairedDevice deviceInfo = settings.arguments as ScanPairedDevice;

@@ -8,6 +8,7 @@ import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/network/custom_nsd.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:f_logs/f_logs.dart';
@@ -22,6 +23,7 @@ import '../../models/socket/socket_message.dart';
 class ScanBloc extends Cubit<ScanState> {
   final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
+  final CustomNsd nsd = CustomNsd();
 
   Isolate? _scanIsolate;
   ReceivePort _receivePort = ReceivePort();
@@ -46,19 +48,19 @@ class ScanBloc extends Cubit<ScanState> {
     Timer.periodic(const Duration(seconds: period), (timer) {
       DateTime curDate = DateTime.now();
 
-      devicesTime.removeWhere((key, value) {
-        if ((curDate.difference(value).inSeconds) >= period) {
-          foundDevices.removeWhere((element) => element.id == key);
-
-          int index = pairedDevices.indexWhere((element) => element.id == key);
-          if (index >= 0) {
-            ScanPairedDevice pairedDevice = pairedDevices[index];
-            pairedDevices[index] = (pairedDevice.scanCopyWith(available: false));
-          }
-          _emitScanState();
-        }
-        return false;
-      });
+      // devicesTime.removeWhere((key, value) {
+      //   if ((curDate.difference(value).inSeconds) >= period) {
+      //     foundDevices.removeWhere((element) => element.id == key);
+      //
+      //     int index = pairedDevices.indexWhere((element) => element.id == key);
+      //     if (index >= 0) {
+      //       ScanPairedDevice pairedDevice = pairedDevices[index];
+      //       pairedDevices[index] = (pairedDevice.scanCopyWith(available: false));
+      //     }
+      //     _emitScanState();
+      //   }
+      //   return false;
+      // });
     });
     getSavedDevices();
 
@@ -86,36 +88,34 @@ class ScanBloc extends Cubit<ScanState> {
   void onScanDevices() async {
     DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
     if (myDeviceInfo.ipAddress.isEmpty) return;
+    // nsd.onDeviceFound = (DeviceInfo deviceInfo) {
+    //   devicesTime[deviceInfo.id] = DateTime.now();
+    //   _updateDeviceLists(deviceInfo);
+    //   _emitScanState();
+    // };
+    nsd.onDevicesFound = (List<DeviceInfo> devices) {
+      foundDevices = [];
 
-    _resetIsolate();
-
-    _receivePort.listen((message) {
-      message as IsolateMessage;
-      ErrorMessage? errorMessage = message.errorMessage;
-      if (errorMessage != null) {
-        FLog.error(text: errorMessage.shortError, exception: errorMessage.error, stacktrace: errorMessage.stackTrace);
-        return;
+      for (DeviceInfo deviceInfo in devices) {
+        if (pairedDevices.containsSameDeviceId(deviceInfo)) {
+          ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
+          pairedDevices.updateWithDeviceId(updatedPairedDevice);
+          _localStorage.updatePairedDevice(deviceInfo);
+        } else
+          foundDevices.add(deviceInfo);
       }
-
-      DeviceInfo deviceInfo = message.data;
-      devicesTime[deviceInfo.id] = DateTime.now();
-
-      _updateDeviceLists(deviceInfo);
-
       _emitScanState();
-    });
-
-    _scanIsolate = await Isolate.spawn(_scanDevices, [_receivePort.sendPort, myDeviceInfo, RootIsolateToken.instance]);
+    };
+    await nsd.init(myDeviceInfo);
   }
-
 
   Future<void> onSaveLastOpenDevice(DeviceInfo deviceInfo) async {
     await _localStorage.setLastOpenDevice(deviceInfo.id);
   }
+
   Future<void> onDeleteLastOpenDevice() async {
     await _localStorage.setLastOpenDevice(null);
   }
-
 
   void _updateDeviceLists(DeviceInfo deviceInfo) {
     if (pairedDevices.containsSameDeviceId(deviceInfo)) {
@@ -173,10 +173,7 @@ class ScanBloc extends Cubit<ScanState> {
     String? lastOpenDeviceId = _localStorage.getLastOpenDevice();
     if (lastOpenDeviceId == null) return;
     DeviceInfo? lastOpenDevice = await _localStorage.getPairedDevice(lastOpenDeviceId);
-    if (lastOpenDevice != null) emit(
-        MoveToLastOpenDeviceState(ScanPairedDevice.fromDeviceInfo(lastOpenDevice))
-    );
-
+    if (lastOpenDevice != null) emit(MoveToLastOpenDeviceState(ScanPairedDevice.fromDeviceInfo(lastOpenDevice)));
   }
 }
 
@@ -188,16 +185,16 @@ FutureOr<ServerMessage> pair(List args) async {
     SecureSocket socket = await SecureSocket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
         timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
       //todo: общий обработчик для самоподписанных сертификатов. Можно вынести в SSLHelper
-          String issuer = certificate.issuer;
-          bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
-          if (!containsAppName) {
-            FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
-            return false;
-          }
-          bool containsPairedDeviceId = issuer.contains(deviceInfo.id);
-          if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
-          return containsPairedDeviceId;
-        });
+      String issuer = certificate.issuer;
+      bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
+      if (!containsAppName) {
+        FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
+        return false;
+      }
+      bool containsPairedDeviceId = issuer.contains(deviceInfo.id);
+      if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
+      return containsPairedDeviceId;
+    });
 
     socket.add(ClientMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString(), deviceId: deviceInfo.id).toUInt8List());
     await socket.close();
@@ -234,7 +231,6 @@ Future<void> _receiveDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) asyn
     if (datagram != null) {
       DeviceInfo deviceInfo = DeviceInfo.fromUInt8List(datagram.data);
       if (deviceInfo.id != myDeviceInfo.id) sendPort.send(IsolateMessage(data: deviceInfo));
-
     }
   }, onError: (e, st) {
     sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: "Error in receiver", error: e, stackTrace: st)));
@@ -244,7 +240,10 @@ Future<void> _receiveDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) asyn
 }
 
 Future<void> _sendDeviceInfo(DeviceInfo myDeviceInfo, SendPort sendPort) async {
-  String ip = (myDeviceInfo.ipAddress.split(".")..removeLast()..add("255")).join(".");
+  String ip = (myDeviceInfo.ipAddress.split(".")
+        ..removeLast()
+        ..add("255"))
+      .join(".");
   var internetAddress = InternetAddress(ip);
 
   RawDatagramSocket sender = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
