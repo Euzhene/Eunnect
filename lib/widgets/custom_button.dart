@@ -8,19 +8,25 @@ class CustomButton extends StatelessWidget {
   final String text;
   final bool enabled;
   final double fontSize;
-  final Color textColor;
+  final Color? textColor;
+  final double? opacity;
 
   const CustomButton(
-      {super.key, required this.onPressed, required this.text, this.enabled = true, this.fontSize = 14, this.textColor = black});
+      {super.key, required this.onPressed, required this.text, this.enabled = true, this.fontSize = 14, this.textColor, this.opacity});
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
+    Widget _child = TextButton(
         onPressed: enabled ? onPressed : null,
         child: CustomText(
           text,
           fontSize: fontSize,
           color: textColor,
         ));
+    if (opacity != null) _child = Opacity(
+      opacity: opacity!,
+      child: _child,
+    );
+    return _child;
   }
 }

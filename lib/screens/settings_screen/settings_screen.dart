@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../constants.dart';
+import '../../main.dart';
 import '../../widgets/custom_sized_box.dart';
 import '../../widgets/custom_text.dart';
 
@@ -27,37 +28,35 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       _buildDeviceNameField(),
                       const VerticalSizedBox(),
-
                       _buildDarkThemeSwitch(),
                       const VerticalSizedBox(),
-
                       _buildGroup(title: "Заблокированные устройства"),
                       const VerticalSizedBox(),
-
                       _buildGroup(title: "Доверенные устройства"),
                       const VerticalSizedBox(),
-
                       CustomButton(onPressed: bloc.onSendLogs, text: "Сообщить об ошибке"),
                       const VerticalSizedBox(),
-
                       CustomButton(
+                        opacity: 0.5,
                           onPressed: () {
                             showConfirmDialog(
                               context,
                               title: "Сброс настроек",
-                              content: "Вы уверены, что хотите сбросить настройки к стандартным? После подтверждения действия вам придется заново устанавливать сопряжение с другими устройствами, а ваше устройство будет опознано как новое.",
+                              content:
+                                  "Вы уверены, что хотите сбросить настройки к стандартным? После подтверждения действия вам придется заново устанавливать сопряжение с другими устройствами, а ваше устройство будет опознано как новое.",
                               cancelText: "Назад",
                               confirmText: "Продолжить",
-                              onConfirm: ()=> bloc.onResetSettings(),
+                              onConfirm: () => bloc.onResetSettings(),
                             );
                           },
-                          text: "Полный сброс настроек",
-                          textColor: Colors.black54),
+                          text: "Полный сброс настроек",),
                       const VerticalSizedBox(),
-
-                      CustomButton(onPressed: ()=>Navigator.of(context).pushNamed(developerConsoleRoute), text: "Консоль разработчика", textColor: Colors.black54),
+                      CustomButton(
+                        opacity: 0.5,
+                        onPressed: () => Navigator.of(context).pushNamed(developerConsoleRoute),
+                        text: "Консоль разработчика",
+                      ),
                       const VerticalSizedBox(),
-
                       _buildDeviceInfo(),
                       const VerticalSizedBox(),
                     ],
@@ -108,8 +107,8 @@ class SettingsScreen extends StatelessWidget {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomText("${bloc.coreDeviceModel} ${bloc.coreDeviceAdditionalInfo}", color: Colors.black38),
-          CustomText("${bloc.packageInfo.appName} v${bloc.packageInfo.version}", color: Colors.black38),
+          CustomText("${bloc.coreDeviceModel} ${bloc.coreDeviceAdditionalInfo}", dimmed: true,),
+          CustomText("${bloc.packageInfo.appName} v${bloc.packageInfo.version}", dimmed: true,),
           //todo вынести этот цвет в конструктор CustomText.dimmed()
         ],
       );
@@ -121,7 +120,11 @@ class SettingsScreen extends StatelessWidget {
       SettingsBloc bloc = context.read();
       return CheckboxListTile(
         value: bloc.isDarkTheme,
-        onChanged: (val) => bloc.onDarkThemeValueChangeRequested(),
+        onChanged: (val) {
+          bloc
+              .onDarkThemeValueChangeRequested()
+              .then((value) => context.findAncestorStateOfType<EunnectState>()!.onThemeModeChanged());
+        },
         title: CustomText(
           "Темная тема",
           textAlign: TextAlign.start,

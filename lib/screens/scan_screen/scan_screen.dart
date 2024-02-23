@@ -1,11 +1,8 @@
-import 'dart:io';
-
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
-import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,7 +37,7 @@ class ScanScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      CustomText(
+                      const CustomText(
                         "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
                         textAlign: TextAlign.start,
                         fontSize: 16,
@@ -80,7 +77,7 @@ class ScanScreen extends StatelessWidget {
       title: CustomText("$label ${devices.isNotEmpty ? "(${devices.length})" : ""}", fontSize: 17,textAlign: TextAlign.start),
       onExpansionChanged: onExpansionChanged,
       children: devices.isEmpty
-          ? [Align(alignment: Alignment.center, child: CustomText("Не найдено"))]
+          ? [const Align(alignment: Alignment.center, child: CustomText("Не найдено"))]
           : [
               Padding(
                 padding: const EdgeInsets.all(horizontalPadding),
@@ -139,13 +136,13 @@ class ScanScreen extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(iconData, color: highlightDevice ? Colors.green : Colors.black),
+                Icon(iconData, color: highlightDevice ? Colors.green : null),
                 const HorizontalSizedBox(horizontalPadding / 2),
                 Expanded(
                   child: CustomText(
                     "${deviceInfo.name} $additionalText",
                     fontSize: 20,
-                    color: highlightDevice ? Colors.green : Colors.black,
+                    color: highlightDevice ? Colors.green : null,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

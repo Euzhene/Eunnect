@@ -44,14 +44,14 @@ class ActionsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (state.isUnreachableDevice)
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.error_outline, size: 40),
-                        HorizontalSizedBox(),
+                        const Icon(Icons.error_outline, size: 40),
+                        const HorizontalSizedBox(),
                         Expanded(
-                            child: Text(
+                            child: CustomText(
                           "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
-                          style: TextStyle(fontSize: 20),
+                          fontSize: 20,
                         )),
                       ],
                     )
