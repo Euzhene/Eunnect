@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../constants.dart';
 import 'custom_button.dart';
-import 'custom_card.dart';
 
 showSnackBar(BuildContext context,
     {required String text, Color? backgroundColor = white, Color? textColor = black, Color? closeIconColor}) {
+  Duration duration = closeIconColor == null ? const Duration(milliseconds: 4000) : const Duration(minutes: 1);
   ScaffoldMessenger.of(context).hideCurrentSnackBar();
   return ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: closeIconColor == null ? const Duration(milliseconds: 4000) : const Duration(minutes: 1),
+      duration: duration,
       showCloseIcon: closeIconColor != null,
       closeIconColor: closeIconColor,
       shape: const RoundedRectangleBorder(
@@ -17,14 +17,20 @@ showSnackBar(BuildContext context,
       content: Text(text, style: TextStyle(color: textColor))));
 }
 
-showErrorSnackBar(BuildContext context, {required String text, bool withCloseIcon = false}) =>
-    showSnackBar(context, text: text, backgroundColor: errorColor, textColor: white, closeIconColor: withCloseIcon ? white : null);
+showErrorSnackBar(BuildContext context, {required String text, bool withCloseIcon = false}) => showSnackBar(context,
+    text: text, backgroundColor: errorColor, textColor: white, closeIconColor: withCloseIcon ? white : null);
 
 showSuccessSnackBar(BuildContext context, {required String text}) =>
     showSnackBar(context, text: text, backgroundColor: successColor, textColor: white);
 
 showConfirmDialog(BuildContext context,
-    {required String title, String? content, List<Widget>? actions, String confirmText = "Сопряжение", VoidCallback? onConfirm, String cancelText = "Отказаться", VoidCallback? onCancel}) {
+    {required String title,
+    String? content,
+    List<Widget>? actions,
+    String confirmText = "Сопряжение",
+    VoidCallback? onConfirm,
+    String cancelText = "Отказаться",
+    VoidCallback? onCancel}) {
   return showDialog(
       context: context,
       builder: (BuildContext context) {

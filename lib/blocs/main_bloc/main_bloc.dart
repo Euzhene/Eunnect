@@ -130,6 +130,7 @@ class MainBloc extends Cubit<MainState> {
     emit(MainState());
   }
 
+
   void emitDefaultSuccess(String message) {
     emit(SuccessMainState(message: message));
     emit(MainState());

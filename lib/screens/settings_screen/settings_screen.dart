@@ -1,12 +1,13 @@
 import 'package:eunnect/blocs/settings_bloc/settings_bloc.dart';
+import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../constants.dart';
-import '../widgets/custom_sized_box.dart';
-import '../widgets/custom_text.dart';
+import '../../constants.dart';
+import '../../widgets/custom_sized_box.dart';
+import '../../widgets/custom_text.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -26,14 +27,19 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       _buildDeviceNameField(),
                       const VerticalSizedBox(),
+
                       _buildDarkThemeSwitch(),
                       const VerticalSizedBox(),
+
                       _buildGroup(title: "Заблокированные устройства"),
                       const VerticalSizedBox(),
+
                       _buildGroup(title: "Доверенные устройства"),
                       const VerticalSizedBox(),
+
                       CustomButton(onPressed: bloc.onSendLogs, text: "Сообщить об ошибке"),
                       const VerticalSizedBox(),
+
                       CustomButton(
                           onPressed: () {
                             showConfirmDialog(
@@ -48,6 +54,10 @@ class SettingsScreen extends StatelessWidget {
                           text: "Полный сброс настроек",
                           textColor: Colors.black54),
                       const VerticalSizedBox(),
+
+                      CustomButton(onPressed: ()=>Navigator.of(context).pushNamed(developerConsoleRoute), text: "Консоль разработчика", textColor: Colors.black54),
+                      const VerticalSizedBox(),
+
                       _buildDeviceInfo(),
                       const VerticalSizedBox(),
                     ],
