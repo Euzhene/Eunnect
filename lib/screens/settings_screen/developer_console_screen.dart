@@ -114,12 +114,7 @@ class _TextFieldWidget extends StatelessWidget {
               children: [
                 Align(alignment: Alignment.center, child: CustomText("Доступные команды", fontSize: 24)),
                 const VerticalSizedBox(),
-                ...bloc.commands
-                    .map((e) => CustomText(
-                          "• ${e.command} - ${e.description}",
-                          fontSize: 20,
-                        ))
-                    .toList(),
+                ...bloc.commands.map((e) => CustomText("• ${e.command} - ${e.description}", fontSize: 20, textAlign: TextAlign.start,)).toList(),
               ],
             ),
           );

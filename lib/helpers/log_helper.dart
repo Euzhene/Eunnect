@@ -10,7 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../constants.dart';
 
-const String _timestampFormat = TimestampFormat.TIME_FORMAT_FULL_1;
+const String logTimestampFormat = TimestampFormat.TIME_FORMAT_FULL_1;
 const Duration _deleteAfterDuration = Duration(days: 1);
 
 abstract class LogHelper {
@@ -21,7 +21,7 @@ abstract class LogHelper {
 
   static Future<void> _init() async {
     LogsConfig logsConfig = FLog.getDefaultConfigurations();
-    logsConfig.timestampFormat = _timestampFormat;
+    logsConfig.timestampFormat = logTimestampFormat;
     logsConfig.activeLogLevel = LogLevel.ALL;
     logsConfig.fieldOrderFormatCustom = [
       FieldName.LOG_LEVEL,
@@ -37,7 +37,7 @@ abstract class LogHelper {
 
   static Future<void> _deleteOldLogs() async {
     Filter filter = Filter.lessThan(
-        DBConstants.FIELD_TIMESTAMP, DateFormat(_timestampFormat).format(DateTime.now().subtract(_deleteAfterDuration)));
+        DBConstants.FIELD_TIMESTAMP, DateFormat(logTimestampFormat).format(DateTime.now().subtract(_deleteAfterDuration)));
     await FLog.deleteAllLogsByFilter(filters: [filter]);
   }
 

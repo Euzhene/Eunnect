@@ -6,16 +6,19 @@ import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sembast/sembast.dart';
+
 
 part 'developer_console_state.dart';
 
 class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
-  final List<Command> commands = [ClearCommand()];
+  final List<Command> commands = [ClearCommand(), GreaterThanTimestampCommand(), LessThanTimestampCommand(), EqualTimestampCommand()];
   final TextEditingController textController = TextEditingController();
   final ScrollController logsScrollController = ScrollController();
   late final Timer _timer;
   final List<Log> logs = [];
+  final List<Filter> logFilters = [];
 
   bool haveNewLogs = false;
 
@@ -30,14 +33,19 @@ class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
     if (!isTextValid) return;
 
     String text = textController.text.trim().toLowerCase();
-    textController.text = "";
 
-    List<Command> foundCommands = commands.where((c) => c.command == text).toList();
+    List<Command> foundCommands = commands.where((c) => c.validate(text)).toList();
     if (foundCommands.isEmpty) {
       _mainBloc.emitDefaultError("Неизвестная команда");
       return;
     }
-    await commands.first.execute(this);
+    try {
+      await foundCommands.first.execute(bloc: this, text: text);
+    }catch(e,st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+    _mainBloc.emitDefaultError(e.toString());
+
+    }
   }
 
   void onChangedText() {
@@ -47,7 +55,7 @@ class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
   Future<void> updateLogs() async {
     int oldLogsLength = logs.length;
     logs.clear();
-    logs.addAll(await FLog.getAllLogs());
+    logs.addAll(await FLog.getAllLogsByCustomFilter(filters: logFilters));
     if (logsScrollController.hasClients) {
       if (_isAtTheBottom) onMoveToBottom();
       else if(!haveNewLogs) haveNewLogs = oldLogsLength != logs.length;
