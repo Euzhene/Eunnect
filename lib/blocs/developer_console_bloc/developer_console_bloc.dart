@@ -12,20 +12,25 @@ part 'developer_console_state.dart';
 class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final List<Command> commands = [ClearCommand()];
-  final TextEditingController controller = TextEditingController();
+  final TextEditingController textController = TextEditingController();
+  final ScrollController logsScrollController = ScrollController();
   late final Timer _timer;
   final List<Log> logs = [];
+
+  bool haveNewLogs = false;
 
   DeveloperConsoleBloc() : super(LoadingConsoleState()) {
     _listenToLogs();
   }
 
-  bool get isTextValid => controller.text.trim().isNotEmpty;
+  bool get isTextValid => textController.text.trim().isNotEmpty;
+  bool get _isAtTheBottom => logsScrollController.position.maxScrollExtent - logsScrollController.offset <= 50;
 
   Future<void> onExecuteCommand() async {
     if (!isTextValid) return;
 
-    String text = controller.text.trim().toLowerCase();
+    String text = textController.text.trim().toLowerCase();
+    textController.text = "";
 
     List<Command> foundCommands = commands.where((c) => c.command == text).toList();
     if (foundCommands.isEmpty) {
@@ -40,9 +45,24 @@ class DeveloperConsoleBloc extends Cubit<DeveloperConsoleState> {
   }
 
   Future<void> updateLogs() async {
+    int oldLogsLength = logs.length;
     logs.clear();
     logs.addAll(await FLog.getAllLogs());
+    if (logsScrollController.hasClients) {
+      if (_isAtTheBottom) onMoveToBottom();
+      else if(!haveNewLogs) haveNewLogs = oldLogsLength != logs.length;
+    }
     emit(DeveloperConsoleState());
+  }
+
+  void onMoveToBottom() {
+    ScrollPosition scrollPosition = logsScrollController.position;
+    logsScrollController.animateTo(
+        scrollPosition.viewportDimension + scrollPosition.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.linear);
+
+    haveNewLogs = false;
   }
 
   void _listenToLogs() {

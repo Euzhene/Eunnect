@@ -34,6 +34,7 @@ class Eunnect extends StatelessWidget {
             const AppBarTheme(backgroundColor: scaffoldBackgroundColor, centerTitle: true, foregroundColor: Colors.black),
         popupMenuTheme: const PopupMenuThemeData(color: scaffoldBackgroundColor),
         useMaterial3: true,
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(shape: CircleBorder())
       ),
       builder: (context, widget) {
         MainBloc bloc = context.read<MainBloc>();
