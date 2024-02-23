@@ -23,6 +23,15 @@ abstract class LogHelper {
     LogsConfig logsConfig = FLog.getDefaultConfigurations();
     logsConfig.timestampFormat = _timestampFormat;
     logsConfig.activeLogLevel = LogLevel.ALL;
+    logsConfig.fieldOrderFormatCustom = [
+      FieldName.LOG_LEVEL,
+      FieldName.TEXT,
+      FieldName.EXCEPTION,
+      FieldName.METHOD_NAME,
+      FieldName.CLASSNAME,
+      FieldName.TIMESTAMP,
+      FieldName.STACKTRACE
+    ];
     FLog.applyConfigurations(logsConfig);
   }
 

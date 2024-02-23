@@ -78,8 +78,8 @@ class SettingsBloc extends Cubit<SettingsState> {
       await _mainBloc.checkFirstLaunch();
       await GetItHelper.registerDeviceInfo();
       await _onLoadSettings();
-      _mainBloc.resetNetworkSettings();
       _mainBloc.emitDefaultSuccess("Настройки сброшены");
+      _mainBloc.resetNetworkSettings();
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
@@ -90,7 +90,6 @@ class SettingsBloc extends Cubit<SettingsState> {
     await LogHelper.export(
       onEmptyLogs: () => _mainBloc.emitDefaultSuccess("Лог пуст!"),
       onError: (e) => _mainBloc.emitDefaultError(e),
-      onSuccess: () => _mainBloc.emitDefaultSuccess("Логи очищены"),
     );
   }
 

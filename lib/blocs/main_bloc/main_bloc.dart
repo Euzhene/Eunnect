@@ -86,7 +86,7 @@ class MainBloc extends Cubit<MainState> {
     ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
     await updateDeviceInfo();
     await startServer();
-    _scanBloc.onScanDevices();
+    await _scanBloc.onScanDevices();
   }
 
   Future<void> checkFirstLaunch() async {
