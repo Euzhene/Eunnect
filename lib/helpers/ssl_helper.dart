@@ -42,6 +42,18 @@ class SslHelper {
     return securityContext;
   }
 
+  static bool handleSelfSignedCertificate({required X509Certificate certificate,required List<String> pairedDevicesId}) {
+    String issuer = certificate.issuer;
+    bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
+    if (!containsAppName) {
+      FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
+      return false;
+    }
+    bool containsPairedDeviceId = pairedDevicesId.where((e) => issuer.contains(e)).isNotEmpty;
+    if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
+    return containsPairedDeviceId;
+  }
+
   Future<String> _generateCertificate(ECPublicKey publicKey,ECPrivateKey privateKey) async {
     FLog.trace(text: "generating certificate...");
     Map<String,String> attributes = {

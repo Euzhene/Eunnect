@@ -2,10 +2,10 @@ import 'dart:io' hide SocketMessage;
 import 'dart:typed_data';
 
 import 'package:eunnect/helpers/get_it_helper.dart';
+import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
-import 'package:f_logs/f_logs.dart';
 
 import '../../constants.dart';
 import '../custom_message.dart';
@@ -14,18 +14,11 @@ import 'custom_server_socket.dart';
 abstract class CustomClientSocket {
   static final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
 
+  //todo вынести LocalStorage
   static Future<SecureSocket> connect(String ip, LocalStorage localStorage) async {
     List<String> pairedDevicesId = (await localStorage.getPairedDevices()).map((e) => e.id).toList();
     return SecureSocket.connect(ip, port, onBadCertificate: (X509Certificate certificate) {
-      String issuer = certificate.issuer;
-      bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
-      if (!containsAppName) {
-        FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
-        return false;
-      }
-      bool containsPairedDeviceId = pairedDevicesId.where((e) => issuer.contains(e)).isNotEmpty;
-      if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
-      return containsPairedDeviceId;
+      return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: pairedDevicesId);
     });
   }
 

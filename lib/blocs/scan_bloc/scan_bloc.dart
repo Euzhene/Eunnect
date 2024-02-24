@@ -5,6 +5,7 @@ import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_state.dart';
 import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
+import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/network/custom_nsd.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -135,16 +136,7 @@ FutureOr<ServerMessage> pair(List args) async {
     FLog.trace(text: "pairing with a new device...");
     SecureSocket socket = await SecureSocket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
         timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
-      //todo: общий обработчик для самоподписанных сертификатов. Можно вынести в SSLHelper
-      String issuer = certificate.issuer;
-      bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
-      if (!containsAppName) {
-        FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
-        return false;
-      }
-      bool containsPairedDeviceId = issuer.contains(deviceInfo.id);
-      if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
-      return containsPairedDeviceId;
+      return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [deviceInfo.id]);
     });
 
     socket.add(ClientMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString(), deviceId: deviceInfo.id).toUInt8List());
