@@ -1,4 +1,4 @@
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 
 class ScanPairedDevice extends DeviceInfo {
   final bool available;

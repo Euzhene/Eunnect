@@ -1,5 +1,5 @@
 
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 
 extension DeviceInfoList<T extends DeviceInfo> on List<T> {
   bool containsSameDeviceId(DeviceInfo deviceInfo) {

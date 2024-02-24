@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:nsd/nsd.dart';
 
 import '../constants.dart';
-import '../models/device_info.dart';
+import '../models/device_info/device_info.dart';
 
 const String _nsdType = "_http._tcp";
 

@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
@@ -116,7 +116,7 @@ class CustomServerSocket {
   }
 
   Future<ServerMessage?> _checkPairDevice(ClientMessage clientMessage) async {
-    if ((await storage.getPairedDevice(clientMessage.deviceId) == null))
+    if ((await storage.getBaseDevice(clientMessage.deviceId, pairedDevicesKey) == null))
       return ServerMessage(status: 101);
 
     return null;

@@ -8,7 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/device_info.dart';
+import '../models/device_info/device_info.dart';
 
 const _isFirstLaunchKey = "is_first_launch";
 
@@ -16,11 +16,13 @@ const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
 const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
 const _isDarkThemeKey = "is_dark_theme";
 const _lastOpenDeviceKey = "last_open_device";
+const _commandsKey = "commands";
 
 const _deviceIdKey = "device_id";
 const _deviceNameKey = "device_name";
-const _pairedDevicesKey = "paired_devices";
-const _blockedDevicesKey = "blocked_devices";
+const pairedDevicesKey = "paired_devices";
+const blockedDevicesKey = "blocked_devices";
+
 const _privateKeyField = "private_key";
 const _publicKeyField = "public_key";
 const _certificateField = "certificate";
@@ -134,82 +136,120 @@ class LocalStorage {
 
 
 
-  Future<List<DeviceInfo>> getPairedDevices() async {
-    String? listJsonString = (await secureStorage.read(key: _pairedDevicesKey));
+  // Future<List<DeviceInfo>> getPairedDevices() async {
+  //   String? listJsonString = (await secureStorage.read(key: _pairedDevicesKey));
+  //   if (listJsonString == null) return [];
+  //   return DeviceInfo.fromJsonList(listJsonString);
+  // }
+  //
+  // Future<DeviceInfo?> getPairedDevice(String? id) async {
+  //   if (id == null) return null;
+  //   List<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toList();
+  //   return devices.isEmpty ? null : devices.first;
+  // }
+  //
+  // Future<void> _savePairedDevices(List<DeviceInfo> list) async {
+  //   String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
+  //   await secureStorage.write(key: _pairedDevicesKey, value: json);
+  //   FLog.trace(text: "paired devices were saved");
+  // }
+  //
+  // Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {
+  //   List<DeviceInfo> pairDevices = await getPairedDevices();
+  //   if (pairDevices.containsSameDeviceId(pairDeviceInfo)) return;
+  //
+  //   pairDevices.add(pairDeviceInfo);
+  //   await _savePairedDevices(pairDevices);
+  //   FLog.trace(text: "a new paired device was added to the local storage");
+  // }
+  //
+  // Future<void> updatePairedDevice(DeviceInfo pairDeviceInfo) async {
+  //   List<DeviceInfo> pairDevices = await getPairedDevices();
+  //   int deviceInfoIndex = pairDevices.findIndexWithDeviceId(pairDeviceInfo);
+  //   if (deviceInfoIndex < 0 || pairDevices[deviceInfoIndex] == pairDeviceInfo) return;
+  //
+  //   pairDevices[deviceInfoIndex] = pairDeviceInfo;
+  //
+  //   await _savePairedDevices(pairDevices);
+  //   FLog.trace(text: "a paired device was updated to the local storage");
+  // }
+  //
+  // Future<void> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
+  //   List<DeviceInfo> pairDevices = await getPairedDevices();
+  //   pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
+  //   await _savePairedDevices(pairDevices);
+  //   FLog.trace(text: "a paired device was deleted from the local storage");
+  // }
+  //
+  // Future<List<DeviceInfo>> getBlockedDevices() async {
+  //   String? listJsonString = (await secureStorage.read(key: _blockedDevicesKey));
+  //   if (listJsonString == null) return [];
+  //   return DeviceInfo.fromJsonList(listJsonString);
+  // }
+  //
+  // Future<DeviceInfo?> getBlockedDevice(String? id) async {
+  //   if (id == null) return null;
+  //   List<DeviceInfo> devices = (await getBlockedDevices()).where((element) => element.id == id).toList();
+  //   return devices.isEmpty ? null : devices.first;
+  // }
+  //
+  // Future<void> _saveBlockedDevices(List<DeviceInfo> list) async {
+  //   String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
+  //   await secureStorage.write(key: _blockedDevicesKey, value: json);
+  //   FLog.trace(text: "blocked devices were saved");
+  // }
+  //
+  // Future<void> addBlockedDevice(DeviceInfo deviceInfo) async {
+  //   List<DeviceInfo> blockedDevices = await getBlockedDevices();
+  //   if (blockedDevices.containsSameDeviceId(deviceInfo)) return;
+  //
+  //   blockedDevices.add(deviceInfo);
+  //   await _saveBlockedDevices(blockedDevices);
+  //   FLog.trace(text: "a new blocked device was added to the local storage");
+  // }
+
+
+
+  Future<List<DeviceInfo>> getBaseDevices(String deviceKey) async {
+    String? listJsonString = (await secureStorage.read(key: deviceKey));
     if (listJsonString == null) return [];
     return DeviceInfo.fromJsonList(listJsonString);
   }
 
-  Future<DeviceInfo?> getPairedDevice(String? id) async {
+  Future<DeviceInfo?> getBaseDevice(String? id, String deviceKey) async {
     if (id == null) return null;
-    List<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toList();
+    List<DeviceInfo> devices = (await getBaseDevices(deviceKey)).where((element) => element.id == id).toList();
     return devices.isEmpty ? null : devices.first;
   }
 
-  Future<void> _savePairedDevices(List<DeviceInfo> list) async {
+  Future<void> saveBaseDevices(List<DeviceInfo> list, String deviceKey) async {
     String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
-    await secureStorage.write(key: _pairedDevicesKey, value: json);
-    FLog.trace(text: "paired devices were saved");
+    await secureStorage.write(key: deviceKey, value: json);
+    FLog.trace(text: "$deviceKey devices were saved");
   }
 
-  Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {
-    List<DeviceInfo> pairDevices = await getPairedDevices();
-    if (pairDevices.containsSameDeviceId(pairDeviceInfo)) return;
+  Future<void> addBaseDevice(DeviceInfo deviceInfo, String deviceKey) async {
+    List<DeviceInfo> baseDevices = await getBaseDevices(deviceKey);
+    if (baseDevices.containsSameDeviceId(deviceInfo)) return;
 
-    pairDevices.add(pairDeviceInfo);
-    await _savePairedDevices(pairDevices);
-    FLog.trace(text: "a new paired device was added to the local storage");
+    baseDevices.add(deviceInfo);
+    await saveBaseDevices(baseDevices, deviceKey);
+    FLog.trace(text: "a new $deviceKey device was added to the local storage");
   }
 
-  Future<void> updatePairedDevice(DeviceInfo pairDeviceInfo) async {
-    List<DeviceInfo> pairDevices = await getPairedDevices();
-    int deviceInfoIndex = pairDevices.findIndexWithDeviceId(pairDeviceInfo);
-    if (deviceInfoIndex < 0 || pairDevices[deviceInfoIndex] == pairDeviceInfo) return;
-
-    pairDevices[deviceInfoIndex] = pairDeviceInfo;
-
-    await _savePairedDevices(pairDevices);
-    FLog.trace(text: "a paired device was updated to the local storage");
+  Future<void> updateBaseDevice(DeviceInfo deviceInfo, String deviceKey) async {
+    List<DeviceInfo> baseDevices = await getBaseDevices(deviceKey);
+    int deviceInfoIndex = baseDevices.findIndexWithDeviceId(deviceInfo);
+    if (deviceInfoIndex < 0 || baseDevices[deviceInfoIndex] == deviceInfo) return;
+    baseDevices[deviceInfoIndex] = deviceInfo;
+    await saveBaseDevices(baseDevices, deviceKey);
+    FLog.trace(text: "a $deviceKey device was updated to the local storage");
   }
 
-  Future<void> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
-    List<DeviceInfo> pairDevices = await getPairedDevices();
-    pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
-    await _savePairedDevices(pairDevices);
-    FLog.trace(text: "a paired device was deleted from the local storage");
-  }
-
-  Future<List<DeviceInfo>> getBlockedDevices() async {
-    String? listJsonString = (await secureStorage.read(key: _blockedDevicesKey));
-    if (listJsonString == null) return [];
-    return DeviceInfo.fromJsonList(listJsonString);
-  }
-
-  Future<DeviceInfo?> getBlockedDevice(String? id) async {
-    if (id == null) return null;
-    List<DeviceInfo> devices = (await getBlockedDevices()).where((element) => element.id == id).toList();
-    return devices.isEmpty ? null : devices.first;
-  }
-
-  Future<void> _saveBlockedDevices(List<DeviceInfo> list) async {
-    String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
-    await secureStorage.write(key: _blockedDevicesKey, value: json);
-    FLog.trace(text: "blocked devices were saved");
-  }
-
-  Future<void> addBlockedDevice(DeviceInfo deviceInfo) async {
-    List<DeviceInfo> blockedDevices = await getBlockedDevices();
-    if (blockedDevices.containsSameDeviceId(deviceInfo)) return;
-
-    blockedDevices.add(deviceInfo);
-    await _saveBlockedDevices(blockedDevices);
-    FLog.trace(text: "a new blocked device was added to the local storage");
-  }
-
-  Future<void> deleteBlockedDevice(DeviceInfo deviceInfo) async {
-    List<DeviceInfo> blockedDevices = await getBlockedDevices();
-    blockedDevices.removeWhere((e) => e.id == deviceInfo.id);
-    await _saveBlockedDevices(blockedDevices);
-    FLog.trace(text: "a blocked device was deleted from the local storage");
+  Future<void> deleteBaseDevice(DeviceInfo deviceInfo, String deviceKey) async {
+    List<DeviceInfo> baseDevices = await getBaseDevices(deviceKey);
+    baseDevices.removeWhere((e) => e.id == deviceInfo.id);
+    await saveBaseDevices(baseDevices, deviceKey);
+    FLog.trace(text: "a $deviceKey device was deleted from the local storage");
   }
 }

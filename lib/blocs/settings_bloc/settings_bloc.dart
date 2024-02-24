@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/log_helper.dart';
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +46,7 @@ class SettingsBloc extends Cubit<SettingsState> {
       isDarkTheme = _storage.isDarkTheme();
       packageInfo = await PackageInfo.fromPlatform();
       await _setCoreDeviceInfo();
-      blockedDevices = await _storage.getBlockedDevices();
+      blockedDevices = await _storage.getBaseDevices(blockedDevicesKey);
       emit(SettingsState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
@@ -109,8 +109,8 @@ class SettingsBloc extends Cubit<SettingsState> {
 
   Future<void> onDeleteBlockedDevice(DeviceInfo deviceInfo) async {
     try {
-      await _storage.deleteBlockedDevice(deviceInfo);
-      blockedDevices = await _storage.getBlockedDevices();
+      await _storage.deleteBaseDevice(deviceInfo,blockedDevicesKey);
+      blockedDevices = await _storage.getBaseDevices(blockedDevicesKey);
       emit(SettingsState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);

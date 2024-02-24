@@ -1,4 +1,4 @@
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 

@@ -5,7 +5,7 @@ import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../models/device_info.dart';
+import '../models/device_info/device_info.dart';
 import '../widgets/custom_text.dart';
 
 class ActionsScreen extends StatelessWidget {

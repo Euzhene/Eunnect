@@ -12,7 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../blocs/main_bloc/main_bloc.dart';
 import '../blocs/scan_bloc/scan_bloc.dart';
 import '../constants.dart';
-import '../models/device_info.dart';
+import '../models/device_info/device_info.dart';
+import '../models/device_info/device_type.dart';
 
 abstract class GetItHelper {
   static final GetIt i = GetIt.I;

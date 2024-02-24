@@ -1,5 +1,5 @@
 import 'package:eunnect/blocs/settings_bloc/settings_bloc.dart';
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/dialogs.dart';
@@ -9,6 +9,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../constants.dart';
 import '../../main.dart';
+import '../../models/device_info/device_type.dart';
 import '../../widgets/custom_sized_box.dart';
 import '../../widgets/custom_text.dart';
 
@@ -74,7 +75,6 @@ class SettingsScreen extends StatelessWidget {
     return Builder(builder: (context) {
       SettingsBloc bloc = context.read();
       return Padding(
-        //todo добавить CustomPadding
         padding: const EdgeInsets.symmetric(horizontal: horizontalPadding * 2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -182,7 +182,6 @@ class SettingsScreen extends StatelessWidget {
             "${bloc.packageInfo.appName} v${bloc.packageInfo.version}",
             dimmed: true,
           ),
-          //todo вынести этот цвет в конструктор CustomText.dimmed()
         ],
       );
     });

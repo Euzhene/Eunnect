@@ -2,7 +2,7 @@ import 'dart:io' hide SocketMessage;
 import 'dart:typed_data';
 
 import 'package:eunnect/helpers/ssl_helper.dart';
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 
@@ -17,7 +17,7 @@ class CustomClientSocket {
   CustomClientSocket({required this.myDeviceInfo, required this.storage});
 
   Future<SecureSocket> connect(String ip) async {
-    List<String> pairedDevicesId = (await storage.getPairedDevices()).map((e) => e.id).toList();
+    List<String> pairedDevicesId = (await storage.getBaseDevices(pairedDevicesKey)).map((e) => e.id).toList();
     return SecureSocket.connect(ip, port, onBadCertificate: (X509Certificate certificate) {
       return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: pairedDevicesId);
     });

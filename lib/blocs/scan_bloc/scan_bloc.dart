@@ -6,7 +6,7 @@ import 'package:eunnect/blocs/scan_bloc/scan_state.dart';
 import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/ssl_helper.dart';
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/network/custom_nsd.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
@@ -17,6 +17,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../constants.dart';
 import '../../models/socket/custom_server_socket.dart';
 import '../../models/socket/socket_message.dart';
+
+const String _deviceKey = pairedDevicesKey;
 
 class ScanBloc extends Cubit<ScanState> {
   final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
@@ -48,7 +50,7 @@ class ScanBloc extends Cubit<ScanState> {
   }
 
   void getSavedDevices() {
-    _localStorage.getPairedDevices().then((value) {
+    _localStorage.getBaseDevices(_deviceKey).then((value) {
       pairedDevices.clear();
       pairedDevices.addAll(value.map((e) => ScanPairedDevice.fromDeviceInfo(e)));
       _emitScanState();
@@ -65,7 +67,7 @@ class ScanBloc extends Cubit<ScanState> {
         if (pairedDevices.containsSameDeviceId(deviceInfo)) {
           ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
           pairedDevices.updateWithDeviceId(updatedPairedDevice);
-          _localStorage.updatePairedDevice(deviceInfo);
+          _localStorage.updateBaseDevice(deviceInfo,_deviceKey);
         } else
           foundDevices.add(deviceInfo);
       }
@@ -93,7 +95,7 @@ class ScanBloc extends Cubit<ScanState> {
         return;
       }
 
-      await _localStorage.addPairedDevice(deviceInfo);
+      await _localStorage.addBaseDevice(deviceInfo,_deviceKey);
 
       _updateNewPairedDevice(deviceInfo);
 
@@ -124,7 +126,7 @@ class ScanBloc extends Cubit<ScanState> {
   Future<void> _checkLastOpenDevice() async {
     String? lastOpenDeviceId = _localStorage.getLastOpenDevice();
     if (lastOpenDeviceId == null) return;
-    DeviceInfo? lastOpenDevice = await _localStorage.getPairedDevice(lastOpenDeviceId);
+    DeviceInfo? lastOpenDevice = await _localStorage.getBaseDevice(lastOpenDeviceId,_deviceKey);
     if (lastOpenDevice != null) emit(MoveToLastOpenDeviceState(ScanPairedDevice.fromDeviceInfo(lastOpenDevice)));
   }
 }

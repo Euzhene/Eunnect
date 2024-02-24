@@ -10,10 +10,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/device_info.dart';
+import '../../models/device_info/device_info.dart';
+import '../../models/device_info/device_type.dart';
 import '../../models/socket/custom_server_socket.dart';
 
 part 'device_actions_state.dart';
+
+const String _deviceKey = pairedDevicesKey;
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
   ActionsBloc({required this.deviceInfo, required bool deviceAvailable})
@@ -143,6 +146,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   }
 
   Future<void> onBreakPairing() async {
-    await _storage.deletePairedDevice(deviceInfo);
+    await _storage.deleteBaseDevice(deviceInfo, _deviceKey);
   }
 }

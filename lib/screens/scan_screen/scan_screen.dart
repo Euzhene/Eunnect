@@ -1,6 +1,6 @@
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
@@ -10,6 +10,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../blocs/scan_bloc/scan_bloc.dart';
 import '../../blocs/scan_bloc/scan_state.dart';
+import '../../models/device_info/device_type.dart';
 import '../../widgets/custom_text.dart';
 
 class ScanScreen extends StatelessWidget {

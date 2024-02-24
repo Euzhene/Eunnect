@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
 import 'package:eunnect/helpers/notification_helper.dart';
-import 'package:eunnect/models/device_info.dart';
+import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +17,7 @@ import '../../models/custom_message.dart';
 import '../../models/socket/custom_server_socket.dart';
 
 part 'main_state.dart';
+
 
 class MainBloc extends Cubit<MainState> {
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
@@ -41,7 +42,7 @@ class MainBloc extends Cubit<MainState> {
     };
 
     customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
-      bool isBlockedDevice = (await _storage.getBlockedDevice(deviceInfo.id)) != null;
+      bool isBlockedDevice = (await _storage.getBaseDevice(deviceInfo.id, blockedDevicesKey)) != null;
       if (!isBlockedDevice) NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
       else onPairConfirmed(null);
     };
@@ -131,7 +132,7 @@ class MainBloc extends Cubit<MainState> {
 
       await customServerSocket.pairStream.close();
       if (pairDeviceInfo != null) {
-        await _storage.addPairedDevice(pairDeviceInfo);
+        await _storage.addBaseDevice(pairDeviceInfo, pairedDevicesKey);
         onPairedDeviceChanged(pairDeviceInfo);
         emitDefaultSuccess("Успешно сопряжено");
       }
@@ -146,7 +147,7 @@ class MainBloc extends Cubit<MainState> {
       customServerSocket.pairStream.sink.add(null);
 
       await customServerSocket.pairStream.close();
-      await _storage.addBlockedDevice(deviceInfo);
+      await _storage.addBaseDevice(deviceInfo, blockedDevicesKey);
 
       emitDefaultSuccess("Устройство ${deviceInfo.name} заблокировано");
     } catch (e, st) {
