@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:eunnect/models/socket/custom_client_socket.dart';
 import 'package:eunnect/models/socket/custom_server_socket.dart';
 import 'package:eunnect/network/custom_nsd.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -18,10 +19,10 @@ abstract class GetItHelper {
 
   static Future<void> registerAll() async {
     await _registerStorage();
+    await registerDeviceInfo();
     await _registerHelpers();
     await _registerSockets();
     await _registerBlocs();
-    await registerDeviceInfo();
     i<MainBloc>().initNetworkListener();
   }
 
@@ -50,6 +51,8 @@ abstract class GetItHelper {
   static Future<void> _registerSockets() async {
     CustomServerSocket customServerSocket = CustomServerSocket(storage: i<LocalStorage>());
     await _customRegister(customServerSocket);
+    CustomClientSocket customClientSocket = CustomClientSocket(myDeviceInfo: GetItHelper.i<DeviceInfo>(), storage: GetItHelper.i<LocalStorage>());
+    await _customRegister(customClientSocket);
   }
 
   static Future<void> _registerBlocs() async {

@@ -25,13 +25,14 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
+  final CustomClientSocket clientSocket = GetItHelper.i<CustomClientSocket>();
   final DeviceInfo deviceInfo;
 
   final bool isAndroidDeviceType;
 
   Future<void> tryConnectToDevice() async {
     try {
-      await CustomClientSocket.checkConnection(deviceInfo.ipAddress, _storage);
+      await clientSocket.checkConnection(deviceInfo.ipAddress);
       if (!isClosed) emit(DeviceActionsState());
     } catch (e, st) {
       if (!isClosed) emit(UnreachableDeviceState());
@@ -51,8 +52,8 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
         emit(DeviceActionsState());
         return;
       }
-      SecureSocket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
-      await CustomClientSocket.sendBuffer(socket: socket, text: text!);
+      SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
+      await clientSocket.sendBuffer(socket: socket, text: text!);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
 
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Буфер успешно передан");
@@ -80,8 +81,8 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
       if (checkLoadingState()) return;
       emit(LoadingState());
 
-      SecureSocket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
-      await CustomClientSocket.sendCommand(socket: socket, commandName: commandName);
+      SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
+      await clientSocket.sendCommand(socket: socket, commandName: commandName);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
     } catch (e, st) {
@@ -128,9 +129,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
       String fileName = file.path.substring(file.path.lastIndexOf(Platform.pathSeparator) + 1);
 
-      SecureSocket socket = await CustomClientSocket.connect(deviceInfo.ipAddress, _storage);
+      SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
 
-      ServerMessage? resultMessage = await CustomClientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
+      ServerMessage? resultMessage = await clientSocket.sendFile(socket: socket, bytes: bytes, fileName: fileName);
 
       resultMessage ??= ServerMessage.fromUInt8List(await socket.single);
       await _handleServerResponse(serverMessage: resultMessage, successMessage: "Файл успешно передан");

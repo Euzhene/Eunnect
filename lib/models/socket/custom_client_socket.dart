@@ -1,7 +1,6 @@
 import 'dart:io' hide SocketMessage;
 import 'dart:typed_data';
 
-import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
@@ -11,34 +10,36 @@ import '../../constants.dart';
 import '../custom_message.dart';
 import 'custom_server_socket.dart';
 
-abstract class CustomClientSocket {
-  static final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
+class CustomClientSocket {
+  final DeviceInfo myDeviceInfo;
+  final LocalStorage storage;
 
-  //todo вынести LocalStorage
-  static Future<SecureSocket> connect(String ip, LocalStorage localStorage) async {
-    List<String> pairedDevicesId = (await localStorage.getPairedDevices()).map((e) => e.id).toList();
+  CustomClientSocket({required this.myDeviceInfo, required this.storage});
+
+  Future<SecureSocket> connect(String ip) async {
+    List<String> pairedDevicesId = (await storage.getPairedDevices()).map((e) => e.id).toList();
     return SecureSocket.connect(ip, port, onBadCertificate: (X509Certificate certificate) {
       return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: pairedDevicesId);
     });
   }
 
   ///Проверка того, что устройство, с которым мы хотим работать, доступно для подключения
-  static Future<void> checkConnection(String ip,LocalStorage localStorage) async {
-    return (await connect(ip, localStorage)).destroy();
+  Future<void> checkConnection(String ip) async {
+    return (await connect(ip)).destroy();
   }
 
-  static Future<void> sendBuffer({required SecureSocket socket, required String text}) async {
+  Future<void> sendBuffer({required SecureSocket socket, required String text}) async {
     socket.add(ClientMessage(call: sendBufferCall, data: text, deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
   }
 
-  static Future<void> sendCommand({required SecureSocket socket, required String commandName}) async {
+  Future<void> sendCommand({required SecureSocket socket, required String commandName}) async {
     socket.add(ClientMessage(call: changePcStateCall, data: commandName, deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
   }
 
   ///возвращает false, если не получилось отправить файл из-за отсутствия сопряжения
-  static Future<ServerMessage?> sendFile({required SecureSocket socket, required Uint8List bytes, required String fileName}) async {
+  Future<ServerMessage?> sendFile({required SecureSocket socket, required Uint8List bytes, required String fileName}) async {
     ClientMessage initialMessage = ClientMessage(
         call: sendFileCall,
         deviceId: myDeviceInfo.id,
