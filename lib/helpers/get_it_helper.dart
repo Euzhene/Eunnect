@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:eunnect/models/socket/custom_server_socket.dart';
+import 'package:eunnect/network/custom_nsd.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,6 +18,7 @@ abstract class GetItHelper {
 
   static Future<void> registerAll() async {
     await _registerStorage();
+    await _registerHelpers();
     await _registerSockets();
     await _registerBlocs();
     await registerDeviceInfo();
@@ -24,8 +26,6 @@ abstract class GetItHelper {
   }
 
   static Future<void> registerDeviceInfo() async {
-    if (i.isRegistered<DeviceInfo>()) await i.unregister<DeviceInfo>();
-
     String deviceId = i<LocalStorage>().getDeviceId();
 
     String name = await i<LocalStorage>().getDeviceName();
@@ -38,32 +38,36 @@ abstract class GetItHelper {
      else type = DeviceType.unknown;
 
     DeviceInfo deviceInfo = DeviceInfo(name: name, type: type, id: deviceId);
-
-    i.registerSingleton<DeviceInfo>(deviceInfo);
+    await _customRegister(deviceInfo);
   }
 
   static Future<void> _registerStorage() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-
-    if (i.isRegistered<LocalStorage>()) await i.unregister<LocalStorage>();
     LocalStorage storage = LocalStorage(preferences: sharedPreferences, secureStorage: const FlutterSecureStorage());
-    i.registerSingleton<LocalStorage>(storage);
+    await _customRegister(storage);
   }
 
   static Future<void> _registerSockets() async {
-    if (i.isRegistered<CustomServerSocket>()) await i.unregister<CustomServerSocket>();
     CustomServerSocket customServerSocket = CustomServerSocket(storage: i<LocalStorage>());
-    i.registerSingleton<CustomServerSocket>(customServerSocket);
+    await _customRegister(customServerSocket);
   }
 
   static Future<void> _registerBlocs() async {
-    if (i.isRegistered<MainBloc>()) await i.unregister<MainBloc>();
     MainBloc mainBloc = MainBloc();
-    i.registerSingleton<MainBloc>(mainBloc);
+    await _customRegister(mainBloc);
     await mainBloc.checkFirstLaunch();
 
-    if (i.isRegistered<ScanBloc>()) await i.unregister<ScanBloc>();
     ScanBloc scanBloc = ScanBloc();
-    i.registerSingleton<ScanBloc>(scanBloc);
+    await _customRegister(scanBloc);
+  }
+
+  static Future<void> _registerHelpers() async {
+    CustomNsd customNsd = CustomNsd();
+    await _customRegister(customNsd);
+  }
+
+  static Future<T> _customRegister<T extends Object>(T value) async {
+    if (i.isRegistered<T>()) await i.unregister<T>();
+    return i.registerSingleton<T>(value);
   }
 }

@@ -36,6 +36,27 @@ class ResetCommand extends Command {
     await bloc.updateLogs();
   }
 }
+abstract class SearchCommand extends Command {
+  final String specSymbol;
+  SearchCommand(this.specSymbol, String description): super(command: "$specSymbol<your text>", description: description);
+
+  Filter getFilter(String text);
+
+  @override
+  Future<void> execute({required DeveloperConsoleBloc bloc, required String text}) async {
+    text = text.substring(1);
+    bloc.logFilters.clear();
+    bloc.logFilters.addAll([getFilter(text)]);
+    await bloc.updateLogs();
+  }
+
+
+
+  @override
+  bool validate(String text) {
+    return text.length > 1 && text.startsWith(specSymbol);
+  }
+}
 
 abstract class TimestampCommand extends Command {
   final String specSymbol;
@@ -65,6 +86,20 @@ abstract class TimestampCommand extends Command {
     if (text.length > 6) return false;
     return text.contains(RegExp(specSymbol + r'\d\d:\d\d'));
   }
+}
+
+class ExcludeCommand extends SearchCommand {
+  ExcludeCommand(): super("-", "Убирает логи, которые содержат заданный текст сразу после символа '-'");
+
+  @override
+  Filter getFilter(String text) => Filter.not(Filter.matches(DBConstants.FIELD_TEXT, text));
+}
+
+class IncludeCommand extends SearchCommand {
+  IncludeCommand(): super("+", "Показывает логи, которые содержат заданный текст сразу после символа '+'");
+
+  @override
+  Filter getFilter(String text) =>Filter.matches(DBConstants.FIELD_TEXT, text);
 }
 
 class GreaterThanTimestampCommand extends TimestampCommand {
