@@ -12,17 +12,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../models/device_info/device_info.dart';
 import '../../models/device_info/device_type.dart';
-import '../../models/socket/custom_server_socket.dart';
+import '../../models/socket/socket_command.dart';
 
 part 'device_actions_state.dart';
 
 const String _deviceKey = pairedDevicesKey;
+const String _commandKey = commandsKey;
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
   ActionsBloc({required this.deviceInfo, required bool deviceAvailable})
       : isAndroidDeviceType = deviceInfo.type == DeviceType.phone || deviceInfo.type == DeviceType.tablet,
         super(deviceAvailable ? DeviceActionsState() : UnreachableDeviceState()) {
-    tryConnectToDevice();
+    _init();
   }
 
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
@@ -30,8 +31,19 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final CustomClientSocket clientSocket = GetItHelper.i<CustomClientSocket>();
   final DeviceInfo deviceInfo;
+  List<SocketCommand> commands = [];
 
   final bool isAndroidDeviceType;
+
+  Future<void> _init() async {
+    tryConnectToDevice();
+    await onGetLocalCommands();
+  }
+
+  Future<void> onGetLocalCommands() async {
+    commands = await _storage.getSocketCommands();
+    if (!isClosed && state is !UnreachableDeviceState) emit(DeviceActionsState());
+  }
 
   Future<void> tryConnectToDevice() async {
     try {
@@ -67,25 +79,13 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     }
   }
 
-  void onSendRestartCommand() {
-    _onSendCommand(commandName: pcRestartState);
-  }
-
-  void onSendSleepCommand() {
-    _onSendCommand(commandName: pcSleepState);
-  }
-
-  void onSendShutDownCommand() {
-    _onSendCommand(commandName: pcShutDownState);
-  }
-
-  void _onSendCommand({required String commandName}) async {
+  void onSendCommand({required SocketCommand command}) async {
     try {
       if (checkLoadingState()) return;
       emit(LoadingState());
 
       SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
-      await clientSocket.sendCommand(socket: socket, commandName: commandName);
+      await clientSocket.sendCommand(socket: socket, command: command);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
     } catch (e, st) {

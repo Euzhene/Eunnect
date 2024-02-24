@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/extensions.dart';
+import 'package:eunnect/models/socket/socket_command.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +17,7 @@ const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
 const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
 const _isDarkThemeKey = "is_dark_theme";
 const _lastOpenDeviceKey = "last_open_device";
-const _commandsKey = "commands";
+const commandsKey = "commands";
 
 const _deviceIdKey = "device_id";
 const _deviceNameKey = "device_name";
@@ -136,79 +137,6 @@ class LocalStorage {
 
 
 
-  // Future<List<DeviceInfo>> getPairedDevices() async {
-  //   String? listJsonString = (await secureStorage.read(key: _pairedDevicesKey));
-  //   if (listJsonString == null) return [];
-  //   return DeviceInfo.fromJsonList(listJsonString);
-  // }
-  //
-  // Future<DeviceInfo?> getPairedDevice(String? id) async {
-  //   if (id == null) return null;
-  //   List<DeviceInfo> devices = (await getPairedDevices()).where((element) => element.id == id).toList();
-  //   return devices.isEmpty ? null : devices.first;
-  // }
-  //
-  // Future<void> _savePairedDevices(List<DeviceInfo> list) async {
-  //   String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
-  //   await secureStorage.write(key: _pairedDevicesKey, value: json);
-  //   FLog.trace(text: "paired devices were saved");
-  // }
-  //
-  // Future<void> addPairedDevice(DeviceInfo pairDeviceInfo) async {
-  //   List<DeviceInfo> pairDevices = await getPairedDevices();
-  //   if (pairDevices.containsSameDeviceId(pairDeviceInfo)) return;
-  //
-  //   pairDevices.add(pairDeviceInfo);
-  //   await _savePairedDevices(pairDevices);
-  //   FLog.trace(text: "a new paired device was added to the local storage");
-  // }
-  //
-  // Future<void> updatePairedDevice(DeviceInfo pairDeviceInfo) async {
-  //   List<DeviceInfo> pairDevices = await getPairedDevices();
-  //   int deviceInfoIndex = pairDevices.findIndexWithDeviceId(pairDeviceInfo);
-  //   if (deviceInfoIndex < 0 || pairDevices[deviceInfoIndex] == pairDeviceInfo) return;
-  //
-  //   pairDevices[deviceInfoIndex] = pairDeviceInfo;
-  //
-  //   await _savePairedDevices(pairDevices);
-  //   FLog.trace(text: "a paired device was updated to the local storage");
-  // }
-  //
-  // Future<void> deletePairedDevice(DeviceInfo pairDeviceInfo) async {
-  //   List<DeviceInfo> pairDevices = await getPairedDevices();
-  //   pairDevices.removeWhere((e) => e.id == pairDeviceInfo.id);
-  //   await _savePairedDevices(pairDevices);
-  //   FLog.trace(text: "a paired device was deleted from the local storage");
-  // }
-  //
-  // Future<List<DeviceInfo>> getBlockedDevices() async {
-  //   String? listJsonString = (await secureStorage.read(key: _blockedDevicesKey));
-  //   if (listJsonString == null) return [];
-  //   return DeviceInfo.fromJsonList(listJsonString);
-  // }
-  //
-  // Future<DeviceInfo?> getBlockedDevice(String? id) async {
-  //   if (id == null) return null;
-  //   List<DeviceInfo> devices = (await getBlockedDevices()).where((element) => element.id == id).toList();
-  //   return devices.isEmpty ? null : devices.first;
-  // }
-  //
-  // Future<void> _saveBlockedDevices(List<DeviceInfo> list) async {
-  //   String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
-  //   await secureStorage.write(key: _blockedDevicesKey, value: json);
-  //   FLog.trace(text: "blocked devices were saved");
-  // }
-  //
-  // Future<void> addBlockedDevice(DeviceInfo deviceInfo) async {
-  //   List<DeviceInfo> blockedDevices = await getBlockedDevices();
-  //   if (blockedDevices.containsSameDeviceId(deviceInfo)) return;
-  //
-  //   blockedDevices.add(deviceInfo);
-  //   await _saveBlockedDevices(blockedDevices);
-  //   FLog.trace(text: "a new blocked device was added to the local storage");
-  // }
-
-
 
   Future<List<DeviceInfo>> getBaseDevices(String deviceKey) async {
     String? listJsonString = (await secureStorage.read(key: deviceKey));
@@ -252,4 +180,49 @@ class LocalStorage {
     await saveBaseDevices(baseDevices, deviceKey);
     FLog.trace(text: "a $deviceKey device was deleted from the local storage");
   }
+
+  Future<List<SocketCommand>> getSocketCommands() async {
+    String? listJsonString = (await secureStorage.read(key: commandsKey));
+    if (listJsonString == null) return [];
+    return SocketCommand.fromJsonList(listJsonString);
+  }
+
+  Future<SocketCommand?> getSocketCommand(String? id) async {
+    if (id == null) return null;
+    List<SocketCommand> commands = (await getSocketCommands()).where((element) => element.id == id).toList();
+    return commands.isEmpty ? null : commands.first;
+  }
+
+  Future<void> saveSocketCommands(List<SocketCommand> list) async {
+    String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
+    await secureStorage.write(key: commandsKey, value: json);
+    FLog.trace(text: "socket commands were saved");
+  }
+
+  Future<void> addSocketCommand(SocketCommand command) async {
+    List<SocketCommand> commands = await getSocketCommands();
+    if (commands.where((e) => e.id == command.id).isNotEmpty) return;
+
+    commands.add(command);
+    await saveSocketCommands(commands);
+    FLog.trace(text: "a new command was added to the local storage");
+  }
+
+  Future<void> updateSocketCommand(SocketCommand command) async {
+    List<SocketCommand> commands = await getSocketCommands();
+    int commandIndex = commands.indexWhere((e) => e.id == command.id);
+    if (commandIndex < 0 || commands[commandIndex] == command) return;
+    commands[commandIndex] = command;
+    await saveSocketCommands(commands);
+    FLog.trace(text: "a command was updated to the local storage");
+  }
+
+  Future<void> deleteSocketCommand(SocketCommand command) async {
+    List<SocketCommand> commands = await getSocketCommands();
+    commands.removeWhere((e) => e.id == command.id);
+    await saveSocketCommands(commands);
+    FLog.trace(text: "a command was deleted from the local storage");
+  }
+
+
 }

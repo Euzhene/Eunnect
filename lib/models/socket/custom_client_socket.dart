@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
+import 'package:eunnect/models/socket/socket_command.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 
@@ -33,8 +34,8 @@ class CustomClientSocket {
     await socket.close();
   }
 
-  Future<void> sendCommand({required SecureSocket socket, required String commandName}) async {
-    socket.add(ClientMessage(call: changePcStateCall, data: commandName, deviceId: myDeviceInfo.id).toUInt8List());
+  Future<void> sendCommand({required SecureSocket socket, required SocketCommand command}) async {
+    socket.add(ClientMessage(call: changePcStateCall, data: command.toJsonString(), deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
   }
 

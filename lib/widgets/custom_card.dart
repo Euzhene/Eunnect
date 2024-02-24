@@ -1,15 +1,18 @@
-import 'package:eunnect/constants.dart';
 import 'package:flutter/material.dart';
 
 class CustomCard extends StatelessWidget {
   final Widget child;
   final Color? backgroundColor;
-  final EdgeInsets? padding;
+  final EdgeInsets padding;
+  final VoidCallback? onPressed;
+  final double? elevation;
 
   const CustomCard({
     super.key,
     this.backgroundColor,
-    this.padding = const EdgeInsets.all(horizontalPadding),
+    this.onPressed,
+    this.padding = const EdgeInsets.symmetric(),
+    this.elevation,
     required this.child,
   });
 
@@ -19,7 +22,18 @@ class CustomCard extends StatelessWidget {
 
     _child = SizedBox(
       width: double.infinity,
-      child: Card(color: backgroundColor, child: _child),
+      child: Card(
+        elevation: elevation,
+        color: backgroundColor,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+          padding: padding,
+          child: _child,
+        ),
+        ),
+      ),
     );
 
     return _child;
