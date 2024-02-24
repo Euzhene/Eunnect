@@ -13,6 +13,7 @@ const String _nsdType = "_http._tcp";
 class CustomNsd {
   Registration? _registration;
   Discovery? _discovery;
+  Timer? _timer;
 
   void Function(List<DeviceInfo>)? onDevicesFound;
 
@@ -26,25 +27,25 @@ class CustomNsd {
       });
       _discovery = await startDiscovery(_nsdType);
       FLog.debug(text: "nsd started discovery");
-
-      _getServices(myDeviceInfo);
       _discovery!.addListener(() {
         FLog.debug(text: "Discovery noticed ${_discovery!.services.length} changes");
-        _getServices(myDeviceInfo);
+        _getFoundServices(myDeviceInfo);
+      });
+      _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+        _getFoundServices(myDeviceInfo);
       });
     }catch(e,st) {
       FLog.error(text: e.toString(), stacktrace: st);
     }
   }
 
-  void _getServices(DeviceInfo myDeviceInfo) {
+  void _getFoundServices(DeviceInfo myDeviceInfo) {
     List<Service> services = _discovery!.services;
     Set<DeviceInfo> foundDevices = {};
     for (var service in services) {
       if ((service.name ?? "").contains("MAKUKU") && service.txt != null) {
         Map<String, Uint8List?> attributes = service.txt!;
         DeviceInfo deviceInfo = DeviceInfo.fromNsdJson(attributes);
-        FLog.debug(text: "Device found: ${deviceInfo.name}");
         if (myDeviceInfo == deviceInfo) continue;
         foundDevices.add(deviceInfo);
       }
@@ -57,6 +58,7 @@ class CustomNsd {
     if (_reg != null) await unregister(_reg);
     _discovery?.removeListener(() {});
     _discovery?.dispose();
+    _timer?.cancel();
 
     FLog.debug(text: "nsd was reseted");
   }

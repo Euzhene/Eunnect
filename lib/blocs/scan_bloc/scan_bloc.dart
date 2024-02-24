@@ -20,7 +20,7 @@ import '../../models/socket/socket_message.dart';
 class ScanBloc extends Cubit<ScanState> {
   final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
-  final CustomNsd nsd = CustomNsd();
+  final CustomNsd nsd = GetItHelper.i<CustomNsd>();
 
   List<DeviceInfo> foundDevices = [];
   List<ScanPairedDevice> pairedDevices = [];
@@ -53,8 +53,6 @@ class ScanBloc extends Cubit<ScanState> {
       _emitScanState();
     });
   }
-
-  Map<String, DateTime> devicesTime = {};
 
   Future<void> onScanDevices() async {
     DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
