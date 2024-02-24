@@ -2,6 +2,7 @@ import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/log_helper.dart';
+import 'package:eunnect/helpers/notification_helper.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/dialogs.dart';
@@ -13,13 +14,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.storage.request();
   await Permission.manageExternalStorage.request();
+  await Permission.notification.request();
+
   LogHelper.start();
 
+  NotificationHelper.init();
+
   await GetItHelper.registerAll();
+
   bool isDarkMode = GetItHelper.i<LocalStorage>().isDarkTheme();
   ThemeMode themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
   runApp(BlocProvider(create: (_) => GetItHelper.i<MainBloc>(), child: Eunnect(initialThemeMode: themeMode,)));
 }
+
+
 
 class Eunnect extends StatefulWidget {
   Eunnect({super.key, required this.initialThemeMode});
@@ -108,3 +116,4 @@ class EunnectState extends State<Eunnect> {
     });
   }
 }
+

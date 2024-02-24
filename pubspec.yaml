@@ -19,7 +19,7 @@ dependencies:
   network_info_plus: ^4.0.2
   device_info_plus: ^9.0.3
   package_info_plus: ^5.0.1
-  #flutter_local_notifications: ^15.1.1
+  flutter_local_notifications: ^15.1.1
   f_logs: ^2.0.1
   get_it: ^7.6.4
   flutter_secure_storage:

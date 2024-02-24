@@ -143,5 +143,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   Future<void> onBreakPairing() async {
     await _storage.deletePairedDevice(deviceInfo);
+    //todo update nsd
   }
 }

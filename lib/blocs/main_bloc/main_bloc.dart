@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
+import 'package:eunnect/helpers/notification_helper.dart';
 import 'package:eunnect/models/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
@@ -25,9 +26,22 @@ class MainBloc extends Cubit<MainState> {
   bool hasConnection = false;
 
   MainBloc():  super(MainState()) {
-    customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
+    NotificationHelper.onPairingDenied = (deviceInfo) {
+        onPairConfirmed(null);
+    };
+    NotificationHelper.onPairingAccepted = (deviceInfo) {
+      onPairConfirmed(deviceInfo);
+    };
+    NotificationHelper.onPairingBlocked = (deviceInfo) {
+      //todo
+    };
+    NotificationHelper.onNotificationClicked = (deviceInfo) {
       emit(PairDialogState(deviceInfo: deviceInfo));
       emit(MainState());
+    };
+
+    customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
+      NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
     };
 
     customServerSocket.onBufferCall = (text) async {
