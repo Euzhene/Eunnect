@@ -33,15 +33,17 @@ class MainBloc extends Cubit<MainState> {
       onPairConfirmed(deviceInfo);
     };
     NotificationHelper.onPairingBlocked = (deviceInfo) {
-      //todo
+      onPairBlocked(deviceInfo);
     };
     NotificationHelper.onNotificationClicked = (deviceInfo) {
       emit(PairDialogState(deviceInfo: deviceInfo));
       emit(MainState());
     };
 
-    customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) {
-      NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
+    customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
+      bool isBlockedDevice = (await _storage.getBlockedDevice(deviceInfo.id)) != null;
+      if (!isBlockedDevice) NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
+      else onPairConfirmed(null);
     };
 
     customServerSocket.onBufferCall = (text) async {
@@ -133,6 +135,20 @@ class MainBloc extends Cubit<MainState> {
         onPairedDeviceChanged(pairDeviceInfo);
         emitDefaultSuccess("Успешно сопряжено");
       }
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      emitDefaultError(e.toString());
+    }
+  }
+
+  Future<void> onPairBlocked(DeviceInfo deviceInfo) async {
+    try {
+      customServerSocket.pairStream.sink.add(null);
+
+      await customServerSocket.pairStream.close();
+      await _storage.addBlockedDevice(deviceInfo);
+
+      emitDefaultSuccess("Устройство ${deviceInfo.name} заблокировано");
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       emitDefaultError(e.toString());

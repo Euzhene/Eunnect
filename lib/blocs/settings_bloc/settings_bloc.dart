@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -24,6 +25,7 @@ class SettingsBloc extends Cubit<SettingsState> {
   late bool isDarkTheme;
   late String? coreDeviceModel;
   late String? coreDeviceAdditionalInfo;
+  List<DeviceInfo> blockedDevices = [];
 
   SettingsBloc() : super(LoadingScreenState()) {
     deviceNameController.addListener(() {
@@ -44,6 +46,7 @@ class SettingsBloc extends Cubit<SettingsState> {
       isDarkTheme = _storage.isDarkTheme();
       packageInfo = await PackageInfo.fromPlatform();
       await _setCoreDeviceInfo();
+      blockedDevices = await _storage.getBlockedDevices();
       emit(SettingsState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
@@ -97,6 +100,17 @@ class SettingsBloc extends Cubit<SettingsState> {
     try {
       isDarkTheme = !isDarkTheme;
       await _storage.setIsDarkTheme(isDarkTheme);
+      emit(SettingsState());
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      _mainBloc.emitDefaultError(e.toString());
+    }
+  }
+
+  Future<void> onDeleteBlockedDevice(DeviceInfo deviceInfo) async {
+    try {
+      await _storage.deleteBlockedDevice(deviceInfo);
+      blockedDevices = await _storage.getBlockedDevices();
       emit(SettingsState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
