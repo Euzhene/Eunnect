@@ -8,6 +8,7 @@ module com.example.makukujavafx {
     requires java.prefs;
     requires com.fasterxml.jackson.databind;
     requires java.desktop;
+    requires javax.jmdns;
 
     opens com.example.makukujavafx to javafx.fxml;
     exports com.example.makukujavafx;

@@ -26,6 +26,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
+import javax.jmdns.JmDNS;
+import javax.jmdns.ServiceInfo;
 
 
 public class ServerHandler {
@@ -40,6 +42,13 @@ public class ServerHandler {
     private String deviceId;
     private volatile boolean isServerRunning = true;
     private Scene scene;
+
+    private JmDNS jmdns;
+    private ServiceInfo serviceInfo;
+    private MulticastSocket multicastSocket;
+
+    private static final String SERVICE_TYPE = "_http._tcp";
+    private static final int PORT = 10242;
 
     public ServerHandler(Scene scene) {
         this.scene = scene;
@@ -78,12 +87,76 @@ public class ServerHandler {
     private boolean isConnection = true;
 
     public void startServer() throws IOException {
+        jmdns = JmDNS.create(InetAddress.getLocalHost());
+        serverSocket = new ServerSocket(PORT);
+        isServerRunning = true;
+        ServiceInfo serviceInfo = ServiceInfo.create(SERVICE_TYPE, "MAKUKU", PORT, "");
+        jmdns.registerService(serviceInfo);
+
+        System.out.println(InetAddress.getLocalHost().getHostAddress());
+
+        AnchorPane banner = (AnchorPane) scene.lookup("#banner");
+        Label errorLabel = (Label) scene.lookup("#errorLabel");
+
+        // Создаем MulticastSocket и присоединяемся к группе
+//        MulticastSocket socket = new MulticastSocket(10242);
+        InetAddress group = InetAddress.getByName("224.0.0.251");
+//        socket.joinGroup(group);
+
+        // Отправляем пакеты mDNS с информацией о сервисе каждые 3 секунды
+        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            try {
+                if (isInternetConnectionAvailable()) {
+                    deviceInfo.setIpAddress(InetAddress.getLocalHost().getHostAddress());
+                    String jsonDeviceInfo = objectMapper.writeValueAsString(deviceInfo);
+                    System.out.println(jsonDeviceInfo);
+                    byte[] data = jsonDeviceInfo.getBytes();
+                    DatagramPacket packet = new DatagramPacket(data, data.length, group, PORT);
+//                    socket.send(packet);
+                    if (!isConnection) {
+                        Platform.runLater(() -> {
+                            banner.setStyle("-fx-background-color: green;-fx-background-radius: 10;");
+                            errorLabel.setVisible(false);
+                        });
+                    }
+                    isConnection = true;
+                } else {
+                    isConnection = false;
+                    Platform.runLater(() -> {
+                        banner.setStyle("-fx-background-color: red;-fx-background-radius: 10;");
+                        errorLabel.setVisible(true);
+                        errorLabel.setText("No internet connection!");
+                    });
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }, 0, 3, TimeUnit.SECONDS);
+
+        // Отдельный поток для обработки входящих соединений
+        new Thread(() -> {
+            while (isServerRunning) {
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    handleClient(clientSocket);
+                    clientSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+/*    public void startServer() throws IOException {
         serverSocket = new ServerSocket(10242);
         isServerRunning = true;
-
         InetAddress broadcastAddress = InetAddress.getByName("255.255.255.255");
         datagramSocket = new DatagramSocket();
         datagramSocket.setBroadcast(true);
+        System.out.println(InetAddress.getLocalHost().getHostAddress());
+        System.out.println(broadcastAddress.getHostAddress());
 
         AnchorPane banner = (AnchorPane) scene.lookup("#banner");
         Label errorLabel = (Label) scene.lookup("#errorLabel");
@@ -94,6 +167,7 @@ public class ServerHandler {
                 if (isInternetConnectionAvailable()) {
                     deviceInfo.setIpAddress(InetAddress.getLocalHost().getHostAddress());
                     String jsonDeviceInfo = objectMapper.writeValueAsString(deviceInfo);
+                    System.out.println(jsonDeviceInfo);
                     byte[] data = jsonDeviceInfo.getBytes();
                     DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, 10242);
                     datagramSocket.send(packet);
@@ -124,7 +198,7 @@ public class ServerHandler {
             handleClient(clientSocket);
             clientSocket.close();
         }
-    }
+    }*/
 
     private void handleClient(Socket clientSocket) throws IOException {
         try (DataInputStream dis = new DataInputStream(clientSocket.getInputStream());

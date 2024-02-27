@@ -89,11 +89,11 @@ public class DeviceAction {
 //    }
 
     public static void pairDevices(SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
-        JsonNode data = objectMapper.readTree(socketMessage.getData());
+        /*JsonNode data = objectMapper.readTree(socketMessage.getData());
         System.out.println("data - " + data);
 
         final SocketMessage[] responseMessage = new SocketMessage[1];
-
+//
         CompletableFuture<Void> future = new CompletableFuture<>();
 
         Platform.runLater(() -> {
@@ -162,13 +162,13 @@ public class DeviceAction {
                 }
             };
             timer.schedule(timerTask, 5000); // 5 секунд
-        });
+        });*/
 
-        try {
+        /*try {
             future.get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
 

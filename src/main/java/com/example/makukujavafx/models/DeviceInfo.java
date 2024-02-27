@@ -2,12 +2,13 @@ package com.example.makukujavafx.models;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.Serializable;
 import java.util.UUID;
 
 public class DeviceInfo implements Serializable {
-    @JsonProperty("device_type")
+    @JsonProperty("type")
     private String deviceType;
 
     @JsonProperty("name")
@@ -16,16 +17,16 @@ public class DeviceInfo implements Serializable {
     @JsonProperty("id")
     private String id;
 
-    @JsonProperty("ip_address")
+    @JsonProperty("ip")
     private String ipAddress;
 
     public DeviceInfo() {
     }
 
     @JsonCreator
-    public DeviceInfo(@JsonProperty("device_type") String deviceType,
+    public DeviceInfo(@JsonProperty("type") String deviceType,
                       @JsonProperty("name") String name,
-                      @JsonProperty("ip_address") String ipAddress) {
+                      @JsonProperty("ip") String ipAddress) {
         if (deviceType.contains("windows"))
             this.deviceType = "windows";
         else if (deviceType.contains("linux"))
@@ -36,8 +37,8 @@ public class DeviceInfo implements Serializable {
     }
 
     @JsonCreator
-    public DeviceInfo(@JsonProperty("device_type") String deviceType, @JsonProperty("name") String name,
-                      @JsonProperty("ip_address") String ipAddress, @JsonProperty("id") String id) {
+    public DeviceInfo(@JsonProperty("type") String deviceType, @JsonProperty("name") String name,
+                      @JsonProperty("ip") String ipAddress, @JsonProperty("id") String id) {
         if (deviceType.contains("windows"))
             this.deviceType = "windows";
         else if (deviceType.contains("linux"))
@@ -76,4 +77,5 @@ public class DeviceInfo implements Serializable {
                 ", ipAddress='" + ipAddress + '\'' +
                 '}';
     }
+
 }
