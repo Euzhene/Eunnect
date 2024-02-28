@@ -28,7 +28,7 @@ abstract class GetItHelper {
   }
 
   static Future<void> registerDeviceInfo() async {
-    String deviceId = i<LocalStorage>().getDeviceId();
+    String deviceId = await i<LocalStorage>().getDeviceId();
 
     String name = await i<LocalStorage>().getDeviceName();
     DeviceType type;

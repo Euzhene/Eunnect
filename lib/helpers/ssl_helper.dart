@@ -57,7 +57,7 @@ class SslHelper {
   Future<String> _generateCertificate(ECPublicKey publicKey,ECPrivateKey privateKey) async {
     FLog.trace(text: "generating certificate...");
     Map<String,String> attributes = {
-      'CN': storage.getDeviceId(),
+      'CN': await storage.getDeviceId(),
       'OU': 'Makuku',
     };
     String csr = X509Utils.generateEccCsrPem(attributes, privateKey, publicKey);
