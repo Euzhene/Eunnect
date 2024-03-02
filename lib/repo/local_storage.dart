@@ -97,7 +97,7 @@ class LocalStorage {
     String deviceId = const Uuid().v4();
     await preferences.setString(_deviceIdKey, deviceId);
   }
-  Future<String> getDeviceId() async {
+  Future<String> getDeviceId() async { //todo: убрать создание deviceId
     String? id = preferences.getString(_deviceIdKey);
     if (id == null) await setDeviceId();
     return preferences.getString(_deviceIdKey)!;
