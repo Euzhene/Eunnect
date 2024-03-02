@@ -21,7 +21,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.nio.file.Path;
-import java.util.Enumeration;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,7 @@ import javax.jmdns.ServiceInfo;
 public class ServerHandler {
     private DatagramSocket datagramSocket;
     private ScheduledExecutorService scheduledExecutorService;
-    private ServerSocket serverSocket;
+    //    private ServerSocket serverSocket;
     private boolean isFirstLaunch;
     private final String FIRST_LAUNCH_KEY = "firstL12345";
     private ArrayNode jsonArray;
@@ -47,7 +47,7 @@ public class ServerHandler {
     private ServiceInfo serviceInfo;
     private MulticastSocket multicastSocket;
 
-    private static final String SERVICE_TYPE = "_http._tcp";
+    private static final String SERVICE_TYPE = "_http._tcp.local.";
     private static final int PORT = 10242;
 
     public ServerHandler(Scene scene) {
@@ -87,65 +87,24 @@ public class ServerHandler {
     private boolean isConnection = true;
 
     public void startServer() throws IOException {
-        jmdns = JmDNS.create(InetAddress.getLocalHost());
-        serverSocket = new ServerSocket(PORT);
-        isServerRunning = true;
-        ServiceInfo serviceInfo = ServiceInfo.create(SERVICE_TYPE, "MAKUKU", PORT, "");
-        jmdns.registerService(serviceInfo);
+        List<InetAddress> wirelessAddresses = getWirelessAddresses();
+        for (InetAddress address : wirelessAddresses) {
+            System.out.println("Creating server socket on address: " + address);
+            try (ServerSocket serverSocket = new ServerSocket(PORT, 0, address)) {
 
-        System.out.println(InetAddress.getLocalHost().getHostAddress());
+                deviceInfo.setIpAddress(String.valueOf(address));
+                String jsonDeviceInfo = objectMapper.writeValueAsString(deviceInfo);
+                System.out.println(jsonDeviceInfo);
+                byte[] data = jsonDeviceInfo.getBytes();
+                JmDNS jmdns = JmDNS.create(address);
+                ServiceInfo serviceInfo = ServiceInfo.create("_http._tcp.local.", "MAKUKU", PORT, Arrays.toString(data));
+                jmdns.registerService(serviceInfo);
+                System.out.println("Service registered on address: " + address);
 
-        AnchorPane banner = (AnchorPane) scene.lookup("#banner");
-        Label errorLabel = (Label) scene.lookup("#errorLabel");
-
-        // Создаем MulticastSocket и присоединяемся к группе
-//        MulticastSocket socket = new MulticastSocket(10242);
-        InetAddress group = InetAddress.getByName("224.0.0.251");
-//        socket.joinGroup(group);
-
-        // Отправляем пакеты mDNS с информацией о сервисе каждые 3 секунды
-        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-            try {
-                if (isInternetConnectionAvailable()) {
-                    deviceInfo.setIpAddress(InetAddress.getLocalHost().getHostAddress());
-                    String jsonDeviceInfo = objectMapper.writeValueAsString(deviceInfo);
-                    System.out.println(jsonDeviceInfo);
-                    byte[] data = jsonDeviceInfo.getBytes();
-                    DatagramPacket packet = new DatagramPacket(data, data.length, group, PORT);
-//                    socket.send(packet);
-                    if (!isConnection) {
-                        Platform.runLater(() -> {
-                            banner.setStyle("-fx-background-color: green;-fx-background-radius: 10;");
-                            errorLabel.setVisible(false);
-                        });
-                    }
-                    isConnection = true;
-                } else {
-                    isConnection = false;
-                    Platform.runLater(() -> {
-                        banner.setStyle("-fx-background-color: red;-fx-background-radius: 10;");
-                        errorLabel.setVisible(true);
-                        errorLabel.setText("No internet connection!");
-                    });
-                }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error creating server socket on address: {}" + address);
             }
-        }, 0, 3, TimeUnit.SECONDS);
-
-        // Отдельный поток для обработки входящих соединений
-        new Thread(() -> {
-            while (isServerRunning) {
-                try {
-                    Socket clientSocket = serverSocket.accept();
-                    handleClient(clientSocket);
-                    clientSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        }
     }
 
 
@@ -264,5 +223,21 @@ public class ServerHandler {
         String platform = System.getProperty("os.name").toLowerCase();
         String name = System.getProperty("user.name");
         return new DeviceInfo(platform, name, InetAddress.getLocalHost().getHostAddress(), deviceId);
+    }
+
+    private List<InetAddress> getWirelessAddresses() throws SocketException {
+        List<InetAddress> wirelessAddresses = new ArrayList<>();
+        List<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+        for (NetworkInterface networkInterface : networkInterfaces) {
+            if (!networkInterface.getName().contains("w"))
+                continue;
+            List<InetAddress> addresses = Collections.list(networkInterface.getInetAddresses());
+            for (InetAddress address : addresses) {
+                if (address.getHostAddress().contains(":"))
+                    continue;
+                wirelessAddresses.add(address);
+            }
+        }
+        return wirelessAddresses;
     }
 }
