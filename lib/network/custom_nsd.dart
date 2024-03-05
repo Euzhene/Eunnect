@@ -8,7 +8,7 @@ import 'package:nsd/nsd.dart';
 import '../constants.dart';
 import '../models/device_info/device_info.dart';
 
-const String _nsdType = "_http._tcp";
+const String _nsdType = "_makuku._tcp";
 
 class CustomNsd {
   Registration? _registration;
@@ -21,7 +21,7 @@ class CustomNsd {
     try {
       await _reset();
 
-      register(Service(name: 'MAKUKU', type: _nsdType, port: port, txt: myDeviceInfo.toNsdJson())).then((value) {
+      register(Service(name: myDeviceInfo.id, type: _nsdType, port: port, txt: myDeviceInfo.toNsdJson())).then((value) {
         _registration = value;
         FLog.debug(text: "service registered");
       });
@@ -43,7 +43,7 @@ class CustomNsd {
     List<Service> services = _discovery!.services;
     Set<DeviceInfo> foundDevices = {};
     for (var service in services) {
-      if ((service.name ?? "").contains("MAKUKU") && service.txt != null) {
+      if (service.txt != null) {
         Map<String, Uint8List?> attributes = service.txt!;
         DeviceInfo deviceInfo = DeviceInfo.fromNsdJson(attributes);
         if (myDeviceInfo == deviceInfo) continue;

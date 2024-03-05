@@ -6,6 +6,7 @@ import 'package:eunnect/helpers/notification_helper.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/dialogs.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,6 +25,10 @@ void main() async {
 
   bool isDarkMode = GetItHelper.i<LocalStorage>().isDarkTheme();
   ThemeMode themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+  FlutterError.onError = (FlutterErrorDetails e) {
+    FlutterError.presentError(e);
+    FLog.error(text: "internal error", exception: e.exception, stacktrace: e.stack);
+  };
   runApp(BlocProvider(create: (_) => GetItHelper.i<MainBloc>(), child: Eunnect(initialThemeMode: themeMode,)));
 }
 
