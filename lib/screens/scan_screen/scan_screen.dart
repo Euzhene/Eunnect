@@ -4,13 +4,12 @@ import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
+import 'package:eunnect/widgets/device_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../blocs/scan_bloc/scan_bloc.dart';
 import '../../blocs/scan_bloc/scan_state.dart';
-import '../../models/device_info/device_type.dart';
 import '../../widgets/custom_text.dart';
 
 class ScanScreen extends StatelessWidget {
@@ -106,24 +105,6 @@ class ScanScreen extends StatelessWidget {
       required VoidCallback onPressed,
       String additionalText = "",
       bool highlightDevice = false}) {
-    IconData iconData;
-    switch (deviceInfo.type) {
-      case DeviceType.windows:
-        iconData = FontAwesomeIcons.windows;
-        break;
-      case DeviceType.linux:
-        iconData = FontAwesomeIcons.linux;
-        break;
-      case DeviceType.phone:
-        iconData = Icons.phone_android;
-        break;
-      case DeviceType.tablet:
-        iconData = Icons.tablet_mac_sharp;
-        break;
-      default:
-        iconData = Icons.question_mark;
-        break;
-    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -137,7 +118,7 @@ class ScanScreen extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(iconData, color: highlightDevice ? Colors.green : null),
+                DeviceIcon(deviceType: deviceInfo.type, highLight: highlightDevice),
                 const HorizontalSizedBox(horizontalPadding / 2),
                 Expanded(
                   child: CustomText(

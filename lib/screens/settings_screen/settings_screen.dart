@@ -2,14 +2,13 @@ import 'package:eunnect/blocs/settings_bloc/settings_bloc.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_button.dart';
+import 'package:eunnect/widgets/device_icon.dart';
 import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../constants.dart';
 import '../../main.dart';
-import '../../models/device_info/device_type.dart';
 import '../../widgets/custom_sized_box.dart';
 import '../../widgets/custom_text.dart';
 
@@ -123,24 +122,7 @@ class SettingsScreen extends StatelessWidget {
 
   Widget _buildGroupDevice({required DeviceInfo deviceInfo, required VoidCallback onDelete}) {
     //todo это используется в scan_screen. Нужно вынести в общий класс
-    IconData iconData;
-    switch (deviceInfo.type) {
-      case DeviceType.windows:
-        iconData = FontAwesomeIcons.windows;
-        break;
-      case DeviceType.linux:
-        iconData = FontAwesomeIcons.linux;
-        break;
-      case DeviceType.phone:
-        iconData = Icons.phone_android;
-        break;
-      case DeviceType.tablet:
-        iconData = Icons.tablet_mac_sharp;
-        break;
-      default:
-        iconData = Icons.question_mark;
-        break;
-    }
+
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -151,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(iconData),
+              DeviceIcon(deviceType: deviceInfo.type),
               const HorizontalSizedBox(horizontalPadding / 2),
               Expanded(
                 child: CustomText(
