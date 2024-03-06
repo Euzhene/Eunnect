@@ -40,7 +40,7 @@ class _ConsoleWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<Log> logs = bloc.logs;
-    if (logs.isEmpty) return Center(child: CustomText("Консоль пуста"));
+    if (logs.isEmpty) return const Center(child: CustomText("Консоль пуста"));
     return Stack(
       children: [
         ListView.separated(
@@ -112,7 +112,7 @@ class _TextFieldWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Align(alignment: Alignment.center, child: CustomText("Доступные команды", fontSize: 24)),
+                const Align(alignment: Alignment.center, child: CustomText("Доступные команды", fontSize: 24)),
                 const VerticalSizedBox(),
                 ...bloc.commands.map((e) => CustomText("• ${e.command} - ${e.description}", fontSize: 20, textAlign: TextAlign.start,)).toList(),
               ],

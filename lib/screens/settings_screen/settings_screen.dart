@@ -2,7 +2,8 @@ import 'package:eunnect/blocs/settings_bloc/settings_bloc.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_button.dart';
-import 'package:eunnect/widgets/device_icon.dart';
+import 'package:eunnect/widgets/custom_expansion_tile.dart';
+import 'package:eunnect/widgets/device_info_widget.dart';
 import 'package:eunnect/widgets/dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -95,58 +96,32 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildBlockedGroup() {
-    return Builder(
-      builder: (context) {
-        SettingsBloc bloc = context.read();
-        return _buildGroup(
-          title: "Заблокированные устройства ${bloc.blockedDevices.isEmpty ? "" :"(${bloc.blockedDevices.length})"}",
-          children: bloc.blockedDevices
-              .map((e) => _buildGroupDevice(deviceInfo: e, onDelete: () => bloc.onDeleteBlockedDevice(e)))
-              .toList(),
-        );
-      }
-    );
+    return Builder(builder: (context) {
+      SettingsBloc bloc = context.read();
+      return _buildGroup(
+        title: "Заблокированные устройства ${bloc.blockedDevices.isEmpty ? "" : "(${bloc.blockedDevices.length})"}",
+        children: bloc.blockedDevices
+            .map((e) => _buildGroupDevice(deviceInfo: e, onDelete: () => bloc.onDeleteBlockedDevice(e)))
+            .toList(),
+      );
+    });
   }
 
   Widget _buildGroup({required String title, required List<Widget> children}) {
-    return ExpansionTile(
-      initiallyExpanded: false,
-      shape: const Border(),
-      title: CustomText(title, fontSize: 17, textAlign: TextAlign.start),
-      childrenPadding: const EdgeInsets.symmetric(horizontal: horizontalPadding*3),
-      children: children.isNotEmpty
-          ? children
-          : [const VerticalSizedBox(), const Align(alignment: Alignment.center, child: CustomText("Здесь пока пусто"))],
+    return CustomExpansionTile(
+      text: title,
+      childrenPadding: const EdgeInsets.symmetric(horizontal: horizontalPadding * 3),
+      children: children,
     );
   }
 
   Widget _buildGroupDevice({required DeviceInfo deviceInfo, required VoidCallback onDelete}) {
-    //todo это используется в scan_screen. Нужно вынести в общий класс
-
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(verticalPadding),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DeviceIcon(deviceType: deviceInfo.type),
-              const HorizontalSizedBox(horizontalPadding / 2),
-              Expanded(
-                child: CustomText(
-                  deviceInfo.name,
-                  fontSize: 20,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              IconButton(onPressed: onDelete, icon: const Icon(Icons.close, color: errorColor)),
-            ],
-          ),
-        )
-      ],
+    return DeviceInfoWidget(
+      deviceInfo: deviceInfo,
+      suffixIcon: IconButton(
+        onPressed: onDelete,
+        icon: const Icon(Icons.close, color: errorColor),
+      ),
     );
   }
 

@@ -1,4 +1,3 @@
-import 'package:eunnect/constants.dart';
 import 'package:flutter/material.dart';
 
 import 'custom_text.dart';
