@@ -1,5 +1,6 @@
 import 'package:eunnect/blocs/developer_console_bloc/developer_console_bloc.dart';
 import 'package:eunnect/constants.dart';
+import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:eunnect/widgets/custom_text.dart';
 import 'package:f_logs/f_logs.dart';
@@ -29,6 +30,12 @@ class DeveloperConsoleScreen extends StatelessWidget {
         ),
       );
     });
+  }
+
+  static Future<void> openScreen(BuildContext context) {
+    Widget screen = MultiBlocProvider(
+        providers: [BlocProvider(create: (_) => DeveloperConsoleBloc())], child: const DeveloperConsoleScreen());
+    return pushScreen<void>(context, screen: screen, screenName: "DeveloperConsoleScreen");
   }
 }
 
@@ -77,6 +84,7 @@ class _ConsoleWidget extends StatelessWidget {
       ],
     );
   }
+
 }
 
 class _TextFieldWidget extends StatelessWidget {
@@ -114,10 +122,18 @@ class _TextFieldWidget extends StatelessWidget {
               children: [
                 const Align(alignment: Alignment.center, child: CustomText("Доступные команды", fontSize: 24)),
                 const VerticalSizedBox(),
-                ...bloc.commands.map((e) => CustomText("• ${e.command} - ${e.description}", fontSize: 20, textAlign: TextAlign.start,)).toList(),
+                ...bloc.commands
+                    .map((e) => CustomText(
+                          "• ${e.command} - ${e.description}",
+                          fontSize: 20,
+                          textAlign: TextAlign.start,
+                        ))
+                    .toList(),
               ],
             ),
           );
         });
   }
+
+
 }

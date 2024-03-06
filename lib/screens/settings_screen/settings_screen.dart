@@ -1,6 +1,7 @@
 import 'package:eunnect/blocs/settings_bloc/settings_bloc.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/routes.dart';
+import 'package:eunnect/screens/settings_screen/developer_console_screen.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_expansion_tile.dart';
 import 'package:eunnect/widgets/device_info_widget.dart';
@@ -57,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
                       const VerticalSizedBox(),
                       CustomButton(
                         opacity: 0.5,
-                        onPressed: () => Navigator.of(context).pushNamed(developerConsoleRoute),
+                        onPressed: () => DeveloperConsoleScreen.openScreen(context),
                         text: "Консоль разработчика",
                       ),
                       const VerticalSizedBox(),
@@ -149,11 +150,9 @@ class SettingsScreen extends StatelessWidget {
       SettingsBloc bloc = context.read();
       return CheckboxListTile(
         value: bloc.isDarkTheme,
-        onChanged: (val) {
-          bloc
-              .onDarkThemeValueChangeRequested()
-              .then((value) => context.findAncestorStateOfType<EunnectState>()!.onThemeModeChanged());
-        },
+        onChanged: (val) => bloc
+            .onDarkThemeValueChangeRequested()
+            .then((value) => context.findAncestorStateOfType<EunnectState>()!.onThemeModeChanged()),
         title: const CustomText(
           "Темная тема",
           textAlign: TextAlign.start,
@@ -162,5 +161,10 @@ class SettingsScreen extends StatelessWidget {
         secondary: const Icon(Icons.dark_mode),
       );
     });
+  }
+
+  static Future<void> openScreen(BuildContext context) {
+    Widget screen = MultiBlocProvider(providers: [BlocProvider(create: (_) => SettingsBloc())], child: const SettingsScreen());
+    return pushScreen<void>(context, screen: screen, screenName: "SettingsScreen");
   }
 }

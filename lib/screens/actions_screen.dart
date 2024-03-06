@@ -3,6 +3,8 @@ import 'package:eunnect/blocs/command_bloc/command_bloc.dart';
 import 'package:eunnect/blocs/device_actions_bloc/actions_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info/device_type.dart';
+import 'package:eunnect/routes.dart';
+import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
@@ -12,6 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/device_info/device_info.dart';
 import '../widgets/custom_text.dart';
 
+//todo добавить класс CustomScreen
 class ActionsScreen extends StatelessWidget {
   const ActionsScreen({super.key});
 
@@ -59,22 +62,20 @@ class ActionsScreen extends StatelessWidget {
                           HorizontalSizedBox(),
                           Expanded(
                               child: CustomText(
-                                "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
-                                fontSize: 20,
-                              )),
+                            "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
+                            fontSize: 20,
+                          )),
                         ],
                       )
-                    else
-                      ...[
-                        _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
-                        _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
-                        if (!bloc.isAndroidDeviceType)
-                          ...bloc.commands
-                              .map((e) =>
-                              _buildActionButton(
-                                  text: e.name, description: e.description, onPressed: () => bloc.onSendCommand(command: e)))
-                              .toList(),
-                      ]
+                    else ...[
+                      _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
+                      _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
+                      if (!bloc.isAndroidDeviceType)
+                        ...bloc.commands
+                            .map((e) => _buildActionButton(
+                                text: e.name, description: e.description, onPressed: () => bloc.onSendCommand(command: e)))
+                            .toList(),
+                    ]
                   ],
                 ),
               ),
@@ -102,18 +103,23 @@ class ActionsScreen extends StatelessWidget {
     dynamic res = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) =>
-          BlocProvider(
-              create: (ctx) => CommandBloc(),
-              child: Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery
-                    .of(context)
-                    .viewInsets
-                    .bottom),
-                child: _CommandScreen(),
-              )),
+      builder: (ctx) => BlocProvider(
+          create: (ctx) => CommandBloc(),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: _CommandScreen(),
+          )),
     );
     if (res == true) bloc.onGetLocalCommands();
+  }
+
+  static Future<bool?> openScreen(BuildContext context, {required ScanPairedDevice deviceInfo}) async {
+    Widget screen = MultiBlocProvider(
+      providers: [BlocProvider(create: (_) => ActionsBloc(deviceInfo: deviceInfo, deviceAvailable: deviceInfo.available))],
+      child: const ActionsScreen(),
+    );
+
+    return pushScreen<bool?>(context, screen: screen, screenName: "ActionsScreen");
   }
 }
 
@@ -122,11 +128,9 @@ class _CommandScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     CommandBloc bloc = context.read();
 
-    return BlocConsumer<CommandBloc, CommandState>(
-        listener: (context,state) {
-          if (state is CloseScreen) Navigator.of(context).pop(true);
-        },
-        builder: (context, state) {
+    return BlocConsumer<CommandBloc, CommandState>(listener: (context, state) {
+      if (state is CloseScreen) Navigator.of(context).pop(true);
+    }, builder: (context, state) {
       return SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
@@ -163,23 +167,23 @@ class _CommandScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildTextField({required TextEditingController controller,
+  Widget _buildTextField({
+    required TextEditingController controller,
     required String label,
     required IconData prefixIconData,
-    TextCapitalization textCapitalization = TextCapitalization.none,}) {
-    return Builder(
-        builder: (context) {
-          return TextFormField(
-            textCapitalization: textCapitalization,
-            controller: controller,
-            onChanged: (val) => context.read<CommandBloc>().onTextChanged(),
-            decoration: InputDecoration(
-              labelText: label,
-              prefixIcon: Icon(prefixIconData),
-            ),
-          );
-        }
-    );
+    TextCapitalization textCapitalization = TextCapitalization.none,
+  }) {
+    return Builder(builder: (context) {
+      return TextFormField(
+        textCapitalization: textCapitalization,
+        controller: controller,
+        onChanged: (val) => context.read<CommandBloc>().onTextChanged(),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(prefixIconData),
+        ),
+      );
+    });
   }
 
   Widget _buildDeviceTypeList() {
@@ -224,9 +228,9 @@ class _CommandScreen extends StatelessWidget {
               const HorizontalSizedBox(),
               Expanded(
                   child: CustomText(
-                    deviceType.type.name,
-                    overflow: TextOverflow.ellipsis,
-                  )),
+                deviceType.type.name,
+                overflow: TextOverflow.ellipsis,
+              )),
               const HorizontalSizedBox(),
               Icon(
                 isAdded ? Icons.close : Icons.add,

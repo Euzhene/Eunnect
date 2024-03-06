@@ -4,7 +4,7 @@ import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/log_helper.dart';
 import 'package:eunnect/helpers/notification_helper.dart';
 import 'package:eunnect/repo/local_storage.dart';
-import 'package:eunnect/routes.dart';
+import 'package:eunnect/screens/scan_screen/scan_screen.dart';
 import 'package:eunnect/widgets/dialogs.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
@@ -109,8 +109,7 @@ class EunnectState extends State<Eunnect> {
             },
             child: child ?? Container());
       },
-      onGenerateRoute: onGenerateRoute,
-      initialRoute: scanRoute,
+      home: ScanScreen.getScreen(),
     );
   }
 

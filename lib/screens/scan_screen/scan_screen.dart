@@ -1,8 +1,9 @@
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
-import 'package:eunnect/routes.dart';
+import 'package:eunnect/screens/actions_screen.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
+import 'package:eunnect/screens/settings_screen/settings_screen.dart';
 import 'package:eunnect/widgets/custom_expansion_tile.dart';
 import 'package:eunnect/widgets/device_info_widget.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/scan_bloc/scan_bloc.dart';
 import '../../blocs/scan_bloc/scan_state.dart';
+import '../../helpers/get_it_helper.dart';
 import '../../widgets/custom_text.dart';
 
 class ScanScreen extends StatelessWidget {
@@ -24,7 +26,7 @@ class ScanScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: const Text("Подключение Устройств"),
-          actions: [IconButton(onPressed: () => Navigator.pushNamed(context, settingsRoute), icon: const Icon(Icons.settings))],
+          actions: [IconButton(onPressed: () => SettingsScreen.openScreen(context), icon: const Icon(Icons.settings))],
         ),
         body: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
           if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
@@ -80,12 +82,15 @@ class ScanScreen extends StatelessWidget {
                 .toList(),
           ));
 
-//todo вынести в actions_screen
   Future<void> _onMoveToActionScreen({required BuildContext context, required ScanPairedDevice deviceInfo}) async {
     ScanBloc bloc = context.read();
     bloc.onSaveLastOpenDevice(deviceInfo);
-    dynamic res = await Navigator.of(context).pushNamed(deviceActionsRoute, arguments: deviceInfo);
+    bool? res = await ActionsScreen.openScreen(context, deviceInfo: deviceInfo);
     bloc.onDeleteLastOpenDevice();
     if (res == true) bloc.getSavedDevices();
+  }
+
+  static Widget getScreen() {
+    return MultiBlocProvider(providers: [BlocProvider(create: (_) => GetItHelper.i<ScanBloc>())], child: const ScanScreen());
   }
 }
