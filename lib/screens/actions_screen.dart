@@ -7,6 +7,7 @@ import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_card.dart';
+import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,7 +15,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/device_info/device_info.dart';
 import '../widgets/custom_text.dart';
 
-//todo добавить класс CustomScreen
 class ActionsScreen extends StatelessWidget {
   const ActionsScreen({super.key});
 
@@ -23,65 +23,53 @@ class ActionsScreen extends StatelessWidget {
     ActionsBloc bloc = context.read();
     DeviceInfo deviceInfo = bloc.deviceInfo;
 
-    return Scaffold(
-        appBar: AppBar(
-          title: Text("${deviceInfo.name} (${deviceInfo.ipAddress})"),
-          centerTitle: true,
-          actions: [
-            PopupMenuButton<void Function()>(
-              itemBuilder: (context) {
-                return [
-                  PopupMenuItem(
-                    value: () => bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
-                    child: const Text('Разорвать сопряжение'),
-                  ),
-                  PopupMenuItem(
-                    value: () => _showCommandBottomSheet(context),
-                    child: const Text('Добавить команду'),
-                  ),
-                ];
-              },
-              onSelected: (fn) => fn(),
-            )
-          ],
+    return CustomScreen(
+      appbarText: "${deviceInfo.name} (${deviceInfo.ipAddress})",
+      menuButtons: [
+        PopupMenuItem(
+          value: () => bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
+          child: const Text('Разорвать сопряжение'),
         ),
-        body: BlocConsumer<ActionsBloc, DeviceActionsState>(listener: (context, state) {
-          if (state is DeletedDeviceState) bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true));
-        }, builder: (context, state) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (state.isUnreachableDevice)
-                      const Row(
-                        children: [
-                          Icon(Icons.error_outline, size: 40),
-                          HorizontalSizedBox(),
-                          Expanded(
-                              child: CustomText(
-                            "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
-                            fontSize: 20,
-                          )),
-                        ],
-                      )
-                    else ...[
-                      _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
-                      _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
-                      if (!bloc.isAndroidDeviceType)
-                        ...bloc.commands
-                            .map((e) => _buildActionButton(
-                                text: e.name, description: e.description, onPressed: () => bloc.onSendCommand(command: e)))
-                            .toList(),
-                    ]
-                  ],
-                ),
-              ),
+        PopupMenuItem(
+          value: () => _showCommandBottomSheet(context),
+          child: const Text('Добавить команду'),
+        ),
+      ],
+      child: BlocConsumer<ActionsBloc, DeviceActionsState>(listener: (context, state) {
+        if (state is DeletedDeviceState) bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true));
+      }, builder: (context, state) {
+        return Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (state.isUnreachableDevice)
+                  const Row(
+                    children: [
+                      Icon(Icons.error_outline, size: 40),
+                      HorizontalSizedBox(),
+                      Expanded(
+                          child: CustomText(
+                        "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
+                        fontSize: 20,
+                      )),
+                    ],
+                  )
+                else ...[
+                  _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
+                  _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
+                  if (!bloc.isAndroidDeviceType)
+                    ...bloc.commands
+                        .map((e) => _buildActionButton(
+                            text: e.name, description: e.description, onPressed: () => bloc.onSendCommand(command: e)))
+                        .toList(),
+                ]
+              ],
             ),
-          );
-        }));
+          ),
+        );
+      }),
+    );
   }
 
   Widget _buildActionButton({required String text, String? description, required VoidCallback onPressed}) {

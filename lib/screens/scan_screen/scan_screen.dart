@@ -5,6 +5,7 @@ import 'package:eunnect/screens/actions_screen.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/screens/settings_screen/settings_screen.dart';
 import 'package:eunnect/widgets/custom_expansion_tile.dart';
+import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/device_info_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,37 +23,31 @@ class ScanScreen extends StatelessWidget {
     ScanBloc bloc = context.read<ScanBloc>();
     MainBloc mainBloc = context.read<MainBloc>();
 
-    return BlocBuilder<MainBloc, MainState>(builder: (context, state) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Подключение Устройств"),
-          actions: [IconButton(onPressed: () => SettingsScreen.openScreen(context), icon: const Icon(Icons.settings))],
-        ),
-        body: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
-          if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
-        }, buildWhen: (prevS, curS) {
-          return true;
-        }, builder: (context, state) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: 3 * horizontalPadding),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const CustomText(
-                    "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
-                    textAlign: TextAlign.start,
-                    fontSize: 16,
-                  ),
-                  if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
-                  _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc),
-                ],
-              ),
-            ),
-          );
-        }),
-      );
-    });
+    return BlocBuilder<MainBloc, MainState>(
+        builder: (context, state) => CustomScreen(
+            appbarText: "Подключение Устройств",
+            padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding * 3),
+            appbarActions: [IconButton(onPressed: () => SettingsScreen.openScreen(context), icon: const Icon(Icons.settings))],
+            child: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
+              if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
+            }, buildWhen: (prevS, curS) {
+              return true;
+            }, builder: (context, state) {
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const CustomText(
+                      "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
+                      textAlign: TextAlign.start,
+                      fontSize: 16,
+                    ),
+                    if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
+                    _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc),
+                  ],
+                ),
+              );
+            })));
   }
 
   Widget _buildFoundDeviceList({required List<DeviceInfo> devices, required ScanBloc bloc}) => CustomExpansionTile(

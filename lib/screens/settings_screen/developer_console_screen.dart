@@ -1,6 +1,7 @@
 import 'package:eunnect/blocs/developer_console_bloc/developer_console_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/routes.dart';
+import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:eunnect/widgets/custom_text.dart';
 import 'package:f_logs/f_logs.dart';
@@ -14,9 +15,8 @@ class DeveloperConsoleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     DeveloperConsoleBloc bloc = context.read();
     return BlocBuilder<DeveloperConsoleBloc, DeveloperConsoleState>(builder: (context, state) {
-      return Scaffold(
-        appBar: AppBar(title: const Text("Консоль разработчика")),
-        body: SafeArea(
+      return CustomScreen(
+          appbarText: "Консоль разработчика",
           child: Column(
             children: [
               Expanded(
@@ -26,9 +26,7 @@ class DeveloperConsoleScreen extends StatelessWidget {
               const VerticalSizedBox(),
               _TextFieldWidget(bloc: bloc),
             ],
-          ),
-        ),
-      );
+          ));
     });
   }
 
@@ -84,7 +82,6 @@ class _ConsoleWidget extends StatelessWidget {
       ],
     );
   }
-
 }
 
 class _TextFieldWidget extends StatelessWidget {
@@ -134,6 +131,4 @@ class _TextFieldWidget extends StatelessWidget {
           );
         });
   }
-
-
 }
