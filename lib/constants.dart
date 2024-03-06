@@ -32,6 +32,6 @@ const Color successColor = Colors.green;
 
 final DateFormat dateFormat = DateFormat("dd-MM-y");
 
-const String appName = "MaKuKu Connect"; //todo получать название приложения из названия пакета
+late final String appName;
 
 const int port = 10242;

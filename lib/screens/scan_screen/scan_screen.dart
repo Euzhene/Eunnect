@@ -37,7 +37,7 @@ class ScanScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const CustomText(
+                    CustomText(
                       "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
                       textAlign: TextAlign.start,
                       fontSize: 16,

@@ -9,6 +9,7 @@ import 'package:eunnect/widgets/dialogs.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() async {
@@ -16,7 +17,7 @@ void main() async {
   await Permission.storage.request();
   await Permission.manageExternalStorage.request();
   await Permission.notification.request();
-
+  appName = (await PackageInfo.fromPlatform()).appName;
   LogHelper.start();
 
   NotificationHelper.init();
