@@ -31,14 +31,17 @@ class CustomServerSocket {
 
   Function(DeviceInfo)? onPairDeviceCall;
   Function(String)? onBufferCall;
+
   Future<NotificationFile?> Function(FileMessage, DeviceInfo)? onFileStartReceivingCall;
   Function(NotificationFile?, FileMessage)? onFileFullReceivedCall;
+  Function(NotificationFile?)? onFileNotFullyReceivedCall;
   Function(int, NotificationFile?)? onFileBytesReceivedCall;
 
   late StreamController<DeviceInfo?> pairStream;
 
   final LocalStorage storage;
   late DeviceInfo myDeviceInfo;
+  late SecureSocket curSocket;
 
   CustomServerSocket({required this.storage});
 
@@ -55,10 +58,9 @@ class CustomServerSocket {
   }
 
   void _start() {
-    late SecureSocket socket;
     _server?.listen((s) async {
-      socket = s;
-      Stream<Uint8List> stream = socket.asBroadcastStream();
+      curSocket = s; //todo: handle multiple sockets
+      Stream<Uint8List> stream = s.asBroadcastStream();
 
       Uint8List bytes = await stream.first.then((value) => value, onError: (e, st) => Uint8List(0));
       if (bytes.isEmpty) return;
@@ -77,22 +79,22 @@ class CustomServerSocket {
           sendMessage = await _handleBufferCall(receiveMessage);
           break;
         case sendFileCall:
-          sendMessage = await _handleFileCall(stream, receiveMessage, socket);
+          sendMessage = await _handleFileCall(stream, receiveMessage, curSocket);
           break;
         default:
           sendMessage = _handleUnknownCall(receiveMessage.call);
           break;
       }
-      socket.add(sendMessage.toUInt8List());
-      socket.destroy();
+      s.add(sendMessage.toUInt8List());
+      s.destroy();
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       if (e is HandshakeException) {
 
       }
       else if (e is! SocketException){
-        socket.add(ServerMessage(status: 105).toUInt8List());
-        socket.destroy();
+        curSocket.add(ServerMessage(status: 105).toUInt8List());
+        curSocket.destroy();
       }
     });
   }
@@ -157,10 +159,10 @@ class CustomServerSocket {
         bytesBuilder.add(bytes);
       }
 
-      if (bytesBuilder.isNotEmpty) {
+      if (bytesBuilder.isNotEmpty && bytesBuilder.length == fileMessage.fileSize) {
         fileMessage = fileMessage.copyWith(bytes: bytesBuilder.takeBytes());
         onFileFullReceivedCall?.call(notificationFile, fileMessage);
-      }
+      } else onFileNotFullyReceivedCall?.call(notificationFile);
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       status = 105;

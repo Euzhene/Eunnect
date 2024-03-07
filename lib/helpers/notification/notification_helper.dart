@@ -10,13 +10,17 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 const String _acceptId = "accept";
 const String _denyId = "deny";
 const String _blockId = "block";
+const String _cancelFileId = "cancel";
 
 abstract class NotificationHelper {
   static final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   static Function(DeviceInfo)? onPairingAccepted;
   static Function(DeviceInfo)? onPairingDenied;
   static Function(DeviceInfo)? onPairingBlocked;
+  static Function(NotificationFile)? onCancelFile;
   static Function(DeviceInfo)? onNotificationClicked;
+
+  static final Map<String, int> _pairingDeviceNotifications = {};
 
   static Future<void> init() async {
 // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
@@ -47,7 +51,12 @@ abstract class NotificationHelper {
           AndroidNotificationAction(_blockId, "Заблокировать", showsUserInterface: true),
         ]);
     const NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
-    int notificationId = int.parse(anotherDeviceInfo.id.replaceAll(RegExp(r'\D'), "").substring(10));
+
+    if (_pairingDeviceNotifications[anotherDeviceInfo.id] == null) {
+      _pairingDeviceNotifications[anotherDeviceInfo.id] = Random().nextInt(1000000);
+    }
+    int notificationId = _pairingDeviceNotifications[anotherDeviceInfo.id]!;
+
     await _flutterLocalNotificationsPlugin.show(
       notificationId,
       "Запрос на сопряжение",
@@ -57,20 +66,19 @@ abstract class NotificationHelper {
     );
   }
 
-  static Future<NotificationFile> createFileNotification(
-      {required String deviceName, required FileMessage fileInfo}) async {
-    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails('file', 'file uploading',
-        channelDescription: 'show user the uploading of the files',
-        category: AndroidNotificationCategory.progress,
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
-        ticker: 'ticker',
-        showProgress: true,
-        onlyAlertOnce: true,
-        maxProgress: fileInfo.fileSize,
-        actions: [
-          const AndroidNotificationAction(_denyId, "Отменить передачу", showsUserInterface: true),
-        ]);
+  static Future<NotificationFile> createFileNotification({required String deviceName, required FileMessage fileInfo}) async {
+    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+      'file',
+      'file uploading',
+      channelDescription: 'show user the uploading of the files',
+      category: AndroidNotificationCategory.progress,
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      ticker: 'ticker',
+      showProgress: true,
+      onlyAlertOnce: true,
+      maxProgress: fileInfo.fileSize,
+    );
     NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
     int notificationId = Random().nextInt(1000000);
     await _flutterLocalNotificationsPlugin.show(
@@ -94,7 +102,7 @@ abstract class NotificationHelper {
         progress: progress,
         maxProgress: notificationFile.fileInfo.fileSize,
         actions: [
-          const AndroidNotificationAction(_denyId, "Отменить передачу", showsUserInterface: true),
+          const AndroidNotificationAction(_cancelFileId, "Отменить передачу", showsUserInterface: true),
         ]);
     NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
     String progressFileSize = FileUtils.getFileSizeString(bytes: progress);
@@ -104,9 +112,9 @@ abstract class NotificationHelper {
       "${notificationFile.deviceName} передает файл",
       "${notificationFile.fileInfo.filename} $progressFileSize/$totalFileSize",
       notificationDetails,
+      payload: notificationFile.toJsonString(),
     );
   }
-
 
   static Future<void> deleteNotification(int notificationId) async {
     await _flutterLocalNotificationsPlugin.cancel(notificationId);
@@ -118,24 +126,36 @@ abstract class NotificationHelper {
 
   static void _onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
     final String? payload = notificationResponse.payload;
-    if (payload != null) {
-      FLog.debug(text: "notification action ${notificationResponse.actionId}, payload: $payload");
-      DeviceInfo deviceInfo = DeviceInfo.fromJsonString(payload);
+    if (payload == null) return;
 
-      switch (notificationResponse.actionId) {
-        case _acceptId:
-          onPairingAccepted?.call(deviceInfo);
-          break;
-        case _denyId:
-          onPairingDenied?.call(deviceInfo);
-          break;
-        case _blockId:
-          onPairingBlocked?.call(deviceInfo);
-          break;
-        default:
-          onNotificationClicked?.call(deviceInfo);
-          break;
-      }
+    FLog.debug(text: "notification action ${notificationResponse.actionId}, payload: $payload");
+    String? actionId = notificationResponse.actionId;
+    if (actionId == _cancelFileId)
+      _handeCancelFile(payload, actionId);
+    else
+      _handlePairDeviceInfo(payload, actionId);
+  }
+
+  static void _handeCancelFile(String payload, String? actionId) {
+    NotificationFile notificationFile = NotificationFile.fromJsonString(payload);
+    onCancelFile?.call(notificationFile);
+  }
+
+  static void _handlePairDeviceInfo(String payload, String? actionId) {
+    DeviceInfo deviceInfo = DeviceInfo.fromJsonString(payload);
+    switch (actionId) {
+      case _acceptId:
+        onPairingAccepted?.call(deviceInfo);
+        break;
+      case _denyId:
+        onPairingDenied?.call(deviceInfo);
+        break;
+      case _blockId:
+        onPairingBlocked?.call(deviceInfo);
+        break;
+      default:
+        onNotificationClicked?.call(deviceInfo);
+        break;
     }
   }
 }

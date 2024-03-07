@@ -43,6 +43,10 @@ class MainBloc extends Cubit<MainState> {
       emit(MainState());
     };
 
+    NotificationHelper.onCancelFile = (notificationFile) {
+      customServerSocket.curSocket.destroy();
+    };
+
     customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
       bool isBlockedDevice = (await _storage.getBaseDevice(deviceInfo.id, blockedDevicesKey)) != null;
       if (!isBlockedDevice)
@@ -106,6 +110,13 @@ class MainBloc extends Cubit<MainState> {
           error = "Внутреняя ошибка";
 
         emitDefaultError(error);
+      }
+    };
+
+    customServerSocket.onFileNotFullyReceivedCall = (NotificationFile? notificationFile) async {
+      if (notificationFile != null) {
+        _notificationFileQueue.remove(notificationFile);
+        await NotificationHelper.deleteNotification(notificationFile.notificationId);
       }
     };
   }
