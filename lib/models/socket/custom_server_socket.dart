@@ -16,6 +16,7 @@ import '../custom_message.dart';
 
 
 const pairDevicesCall = "pair_devices";
+const deviceInfoCall = "device_info";
 const sendBufferCall = "buffer";
 const sendFileCall = "file";
 
@@ -34,10 +35,12 @@ class CustomServerSocket {
   late StreamController<DeviceInfo?> pairStream;
 
   final LocalStorage storage;
+  late DeviceInfo myDeviceInfo;
 
   CustomServerSocket({required this.storage});
 
-  Future<void> initServer() async {
+  Future<void> initServer(DeviceInfo myDeviceInfo) async {
+    this.myDeviceInfo = myDeviceInfo;
     await _server?.close();
     String? ipAddress = await NetworkInfo().getWifiIP();
     if (ipAddress == null) return;
@@ -61,6 +64,9 @@ class CustomServerSocket {
 
       ServerMessage sendMessage;
       switch (receiveMessage.call) {
+        case deviceInfoCall:
+          sendMessage = await _handleDeviceInfoCall();
+          break;
         case pairDevicesCall:
           sendMessage = await _handlePairCall(receiveMessage.data);
           break;
@@ -86,6 +92,15 @@ class CustomServerSocket {
         socket.destroy();
       }
     });
+  }
+
+  Future<ServerMessage> _handleDeviceInfoCall() async {
+    try {
+      return ServerMessage(status: 200, data: myDeviceInfo.toJsonString());
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      return ServerMessage(status: 104);
+    }
   }
 
   Future<ServerMessage> _handlePairCall(String data) async {

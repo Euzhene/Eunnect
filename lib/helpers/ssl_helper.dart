@@ -42,13 +42,13 @@ class SslHelper {
     return securityContext;
   }
 
-  static bool handleSelfSignedCertificate({required X509Certificate certificate,required List<String> pairedDevicesId}) {
+  static bool handleSelfSignedCertificate({required X509Certificate certificate,required List<String> pairedDevicesId, bool deviceIdCheck = true,}) {
     String issuer = certificate.issuer;
     bool containsAppName = issuer.toUpperCase().contains("MAKUKU");
     if (!containsAppName) {
       FLog.info(text: "The issuer ($issuer) of the provided certificate is not Makuku. Closing connection");
       return false;
-    }
+    } else if (!deviceIdCheck) return true;
     bool containsPairedDeviceId = pairedDevicesId.where((e) => issuer.contains(e)).isNotEmpty;
     if (!containsPairedDeviceId) FLog.info(text: "Server device id is unknown to this device. Closing connection");
     return containsPairedDeviceId;

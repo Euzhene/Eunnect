@@ -4,6 +4,7 @@ import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/screens/actions_screen.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/screens/settings_screen/settings_screen.dart';
+import 'package:eunnect/widgets/add_device_by_ip_dialog.dart';
 import 'package:eunnect/widgets/custom_expansion_tile.dart';
 import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/device_info_widget.dart';
@@ -28,6 +29,7 @@ class ScanScreen extends StatelessWidget {
             appbarText: "Подключение Устройств",
             padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding * 3),
             appbarActions: [IconButton(onPressed: () => SettingsScreen.openScreen(context), icon: const Icon(Icons.settings))],
+            fab: FloatingActionButton(tooltip: "Добавить устройство по IP", onPressed: () => AddDeviceByIpDialog.openDialog(context, bloc), child: const Icon(Icons.add),),
             child: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
               if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
             }, buildWhen: (prevS, curS) {

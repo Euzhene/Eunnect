@@ -120,7 +120,7 @@ class MainBloc extends Cubit<MainState> {
   }
 
   Future<void> startServer() async {
-    await customServerSocket.initServer();
+    await customServerSocket.initServer(GetItHelper.i<DeviceInfo>());
   }
 
   Future<void> onPairConfirmed(DeviceInfo? pairDeviceInfo) async {

@@ -45,10 +45,6 @@ class ScanBloc extends Cubit<ScanState> {
     };
   }
 
-  void _emitScanState() {
-    if (!isClosed) emit(ScanState());
-  }
-
   void getSavedDevices() {
     _localStorage.getBaseDevices(_deviceKey).then((value) {
       pairedDevices.clear();
@@ -67,7 +63,7 @@ class ScanBloc extends Cubit<ScanState> {
         if (pairedDevices.containsSameDeviceId(deviceInfo)) {
           ScanPairedDevice updatedPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
           pairedDevices.updateWithDeviceId(updatedPairedDevice);
-          _localStorage.updateBaseDevice(deviceInfo,_deviceKey);
+          _localStorage.updateBaseDevice(deviceInfo, _deviceKey);
         } else
           foundDevices.add(deviceInfo);
       }
@@ -84,10 +80,9 @@ class ScanBloc extends Cubit<ScanState> {
     await _localStorage.setLastOpenDevice(null);
   }
 
-
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
-      FLog.trace(text: "a pairing with a new device was requested");
+      FLog.trace(text: "a pairing with a new device ${deviceInfo.name} was requested");
       ServerMessage socketMessage = await compute<List, ServerMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);
 
       if (socketMessage.isErrorStatus) {
@@ -95,7 +90,7 @@ class ScanBloc extends Cubit<ScanState> {
         return;
       }
 
-      await _localStorage.addBaseDevice(deviceInfo,_deviceKey);
+      await _localStorage.addBaseDevice(deviceInfo, _deviceKey);
 
       _updateNewPairedDevice(deviceInfo);
 
@@ -108,11 +103,29 @@ class ScanBloc extends Cubit<ScanState> {
     }
   }
 
-  void _updateNewPairedDevice(DeviceInfo deviceInfo) {
-    ScanPairedDevice scanPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
-    if (!pairedDevices.contains(scanPairedDevice)) pairedDevices.add(scanPairedDevice);
+  Future<void> onAddDeviceByIp(String ip) async {
+    try {
+      FLog.trace(text: "getting info of a device by ip...");
+      SecureSocket socket = await SecureSocket.connect(InternetAddress(ip, type: InternetAddressType.IPv4), port,
+          timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
+        return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [], deviceIdCheck: false);
+      });
 
-    foundDevices.remove(deviceInfo);
+      socket.add(ClientMessage(call: deviceInfoCall, data: "", deviceId: GetItHelper.i<DeviceInfo>().id).toUInt8List());
+      await socket.close();
+
+      final bytes = await socket.single;
+      ServerMessage socketMessage = ServerMessage.fromUInt8List(bytes);
+      if (socketMessage.isErrorStatus) {
+        FLog.error(text: socketMessage.getError!);
+        return;
+      }
+      DeviceInfo pairingDeviceInfo = DeviceInfo.fromJsonString(socketMessage.data!);
+
+      onPairRequested(pairingDeviceInfo);
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+    }
   }
 
   void onFoundDeviceExpansionChanged(bool expanded) {
@@ -123,10 +136,21 @@ class ScanBloc extends Cubit<ScanState> {
     _localStorage.setPairedDeviceListExpanded(expanded);
   }
 
+  void _emitScanState() {
+    if (!isClosed) emit(ScanState());
+  }
+
+  void _updateNewPairedDevice(DeviceInfo deviceInfo) {
+    ScanPairedDevice scanPairedDevice = ScanPairedDevice.fromDeviceInfo(deviceInfo, true);
+    if (!pairedDevices.contains(scanPairedDevice)) pairedDevices.add(scanPairedDevice);
+
+    foundDevices.remove(deviceInfo);
+  }
+
   Future<void> _checkLastOpenDevice() async {
     String? lastOpenDeviceId = _localStorage.getLastOpenDevice();
     if (lastOpenDeviceId == null) return;
-    DeviceInfo? lastOpenDevice = await _localStorage.getBaseDevice(lastOpenDeviceId,_deviceKey);
+    DeviceInfo? lastOpenDevice = await _localStorage.getBaseDevice(lastOpenDeviceId, _deviceKey);
     if (lastOpenDevice != null) emit(MoveToLastOpenDeviceState(ScanPairedDevice.fromDeviceInfo(lastOpenDevice)));
   }
 }
