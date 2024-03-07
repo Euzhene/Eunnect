@@ -35,18 +35,23 @@ class ScanScreen extends StatelessWidget {
             }, buildWhen: (prevS, curS) {
               return true;
             }, builder: (context, state) {
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    CustomText(
-                      "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
-                      textAlign: TextAlign.start,
-                      fontSize: 16,
-                    ),
-                    if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
-                    _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc),
-                  ],
+              return RefreshIndicator(
+                displacement: 20,
+                onRefresh: bloc.onScanDevices,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      CustomText(
+                        "Другие устройства, запустившие $appName в той же сети, должны появиться здесь.",
+                        textAlign: TextAlign.start,
+                        fontSize: 16,
+                      ),
+                      if (mainBloc.hasConnection) _buildFoundDeviceList(devices: bloc.foundDevices, bloc: bloc),
+                      _buildPairedDeviceList(devices: bloc.pairedDevices, bloc: bloc),
+                    ],
+                  ),
                 ),
               );
             })));
