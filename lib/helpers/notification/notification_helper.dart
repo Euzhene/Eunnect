@@ -1,4 +1,9 @@
+import 'dart:math';
+
+import 'package:eunnect/helpers/notification/notification_file.dart';
+import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
+import 'package:eunnect/utils/file_utils.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -30,7 +35,7 @@ abstract class NotificationHelper {
   }
 
   static Future<void> createPairingNotification({required DeviceInfo anotherDeviceInfo}) async {
-    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails('Makuku', 'pairing',
+    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails('pairing', 'pairing',
         channelDescription: 'request for pairing',
         category: AndroidNotificationCategory.event,
         importance: Importance.max,
@@ -52,6 +57,61 @@ abstract class NotificationHelper {
     );
   }
 
+  static Future<NotificationFile> createFileNotification(
+      {required String deviceName, required FileMessage fileInfo}) async {
+    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails('file', 'file uploading',
+        channelDescription: 'show user the uploading of the files',
+        category: AndroidNotificationCategory.progress,
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        ticker: 'ticker',
+        showProgress: true,
+        onlyAlertOnce: true,
+        maxProgress: fileInfo.fileSize,
+        actions: [
+          const AndroidNotificationAction(_denyId, "Отменить передачу", showsUserInterface: true),
+        ]);
+    NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
+    int notificationId = Random().nextInt(1000000);
+    await _flutterLocalNotificationsPlugin.show(
+      notificationId,
+      "$deviceName передает файл",
+      fileInfo.filename,
+      notificationDetails,
+    );
+    return NotificationFile(fileInfo: fileInfo, notificationId: notificationId, deviceName: deviceName);
+  }
+
+  static Future<void> updateFileNotification({required int progress, required NotificationFile notificationFile}) async {
+    AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails('file', 'file uploading',
+        channelDescription: 'show user the uploading of the files',
+        category: AndroidNotificationCategory.progress,
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        ticker: 'ticker',
+        showProgress: true,
+        onlyAlertOnce: true,
+        progress: progress,
+        maxProgress: notificationFile.fileInfo.fileSize,
+        actions: [
+          const AndroidNotificationAction(_denyId, "Отменить передачу", showsUserInterface: true),
+        ]);
+    NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
+    String progressFileSize = FileUtils.getFileSizeString(bytes: progress);
+    String totalFileSize = FileUtils.getFileSizeString(bytes: notificationFile.fileInfo.fileSize);
+    await _flutterLocalNotificationsPlugin.show(
+      notificationFile.notificationId,
+      "${notificationFile.deviceName} передает файл",
+      "${notificationFile.fileInfo.filename} $progressFileSize/$totalFileSize",
+      notificationDetails,
+    );
+  }
+
+
+  static Future<void> deleteNotification(int notificationId) async {
+    await _flutterLocalNotificationsPlugin.cancel(notificationId);
+  }
+
   static void _onDidReceiveLocalNotification(int id, String? title, String? body, String? payload) {
     return;
   }
@@ -62,7 +122,7 @@ abstract class NotificationHelper {
       FLog.debug(text: "notification action ${notificationResponse.actionId}, payload: $payload");
       DeviceInfo deviceInfo = DeviceInfo.fromJsonString(payload);
 
-      switch(notificationResponse.actionId) {
+      switch (notificationResponse.actionId) {
         case _acceptId:
           onPairingAccepted?.call(deviceInfo);
           break;

@@ -3,7 +3,8 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
-import 'package:eunnect/helpers/notification_helper.dart';
+import 'package:eunnect/helpers/notification/notification_file.dart';
+import 'package:eunnect/helpers/notification/notification_helper.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
@@ -18,17 +19,18 @@ import '../../models/socket/custom_server_socket.dart';
 
 part 'main_state.dart';
 
-
 class MainBloc extends Cubit<MainState> {
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final CustomServerSocket customServerSocket = GetItHelper.i<CustomServerSocket>();
 
+  final Map<NotificationFile, int> _notificationFileQueue = {};
   late Function(DeviceInfo) onPairedDeviceChanged;
   bool hasConnection = false;
 
-  MainBloc():  super(MainState()) {
+  MainBloc() : super(MainState()) {
+    _initNotificationTimer();
     NotificationHelper.onPairingDenied = (deviceInfo) {
-        onPairConfirmed(null);
+      onPairConfirmed(null);
     };
     NotificationHelper.onPairingAccepted = (deviceInfo) {
       onPairConfirmed(deviceInfo);
@@ -43,8 +45,10 @@ class MainBloc extends Cubit<MainState> {
 
     customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
       bool isBlockedDevice = (await _storage.getBaseDevice(deviceInfo.id, blockedDevicesKey)) != null;
-      if (!isBlockedDevice) NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
-      else onPairConfirmed(null);
+      if (!isBlockedDevice)
+        NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
+      else
+        onPairConfirmed(null);
     };
 
     customServerSocket.onBufferCall = (text) async {
@@ -52,7 +56,28 @@ class MainBloc extends Cubit<MainState> {
       emitDefaultSuccess("Передан текст в буфер");
     };
 
-    customServerSocket.onFileCall = (FileMessage message) async {
+    customServerSocket.onFileStartReceivingCall = (FileMessage file, DeviceInfo otherDeviceInfo) async {
+      try {
+        FLog.debug(text: "start receiving ${file.fileSize} bytes from ${file.filename}");
+        NotificationFile notificationFile =
+            await NotificationHelper.createFileNotification(deviceName: otherDeviceInfo.name, fileInfo: file);
+        return notificationFile;
+      } catch (e, st) {
+        FLog.error(text: e.toString(), stacktrace: st);
+        return null;
+      }
+    };
+
+    customServerSocket.onFileBytesReceivedCall = (int progress, NotificationFile? notificationFile) async {
+      try {
+        if (notificationFile == null) return;
+        _notificationFileQueue[notificationFile] = progress;
+      } catch (e, st) {
+        FLog.error(text: e.toString(), stacktrace: st);
+      }
+    };
+
+    customServerSocket.onFileFullReceivedCall = (NotificationFile? notificationFile, FileMessage message) async {
       Directory? docDir;
       try {
         if (!Platform.isAndroid) {
@@ -61,14 +86,17 @@ class MainBloc extends Cubit<MainState> {
         } else {
           docDir = Directory("/storage/emulated/0/Download/");
 
-          if (!await docDir.exists()) {
-            docDir = Directory("/storage/emulated/0/Downloads/");
-          }
+          if (!await docDir.exists()) docDir = Directory("/storage/emulated/0/Downloads/");
         }
 
         File file = File("${docDir.path}${message.filename}");
         await file.writeAsBytes(message.bytes);
         emitDefaultSuccess("Файл ${message.filename} успешно передан и сохранен в ${docDir.path}");
+        if (notificationFile != null) {
+          _notificationFileQueue.remove(notificationFile);
+          await NotificationHelper.deleteNotification(notificationFile.notificationId);
+        }
+        FLog.trace(text: "file is fully received");
       } catch (e, st) {
         FLog.error(text: e.toString(), stacktrace: st);
         String error;
@@ -92,8 +120,8 @@ class MainBloc extends Cubit<MainState> {
           resetNetworkSettings();
         }
         emit(MainState());
-      }catch(e,st) {
-        FLog.error(text: e.toString(),stacktrace: st);
+      } catch (e, st) {
+        FLog.error(text: e.toString(), stacktrace: st);
       }
     });
   }
@@ -161,19 +189,27 @@ class MainBloc extends Cubit<MainState> {
     emit(MainState());
   }
 
-
   void emitDefaultSuccess(String message) {
     emit(SuccessMainState(message: message));
     emit(MainState());
   }
 
   Future<void> updateDeviceInfo() async {
-
-    DeviceInfo deviceInfo= GetItHelper.i<DeviceInfo>();
+    DeviceInfo deviceInfo = GetItHelper.i<DeviceInfo>();
     String deviceIp = (await NetworkInfo().getWifiIP()) ?? "";
     deviceInfo = deviceInfo.copyWith(ipAddress: deviceIp);
 
     await GetItHelper.i.unregister<DeviceInfo>();
     GetItHelper.i.registerSingleton<DeviceInfo>(deviceInfo);
+  }
+
+  void _initNotificationTimer() {
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      List<NotificationFile> queue = _notificationFileQueue.keys.toList();
+      if (queue.isNotEmpty) FLog.debug(text: "Queue has ${queue.length} items");
+      for (NotificationFile key in queue) {
+        NotificationHelper.updateFileNotification(progress: _notificationFileQueue[key]!, notificationFile: key);
+      }
+    });
   }
 }

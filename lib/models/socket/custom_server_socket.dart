@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io' hide SocketMessage;
 
+import 'package:eunnect/helpers/notification/notification_file.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -30,7 +31,9 @@ class CustomServerSocket {
 
   Function(DeviceInfo)? onPairDeviceCall;
   Function(String)? onBufferCall;
-  Function(FileMessage)? onFileCall;
+  Future<NotificationFile?> Function(FileMessage, DeviceInfo)? onFileStartReceivingCall;
+  Function(NotificationFile?, FileMessage)? onFileFullReceivedCall;
+  Function(int, NotificationFile?)? onFileBytesReceivedCall;
 
   late StreamController<DeviceInfo?> pairStream;
 
@@ -144,16 +147,19 @@ class CustomServerSocket {
       if (checkRes != null) return checkRes;
 
       FileMessage fileMessage = FileMessage.fromJsonString(receiveMessage.data);
+      DeviceInfo otherDeviceInfo = (await storage.getBaseDevice(receiveMessage.deviceId, pairedDevicesKey))!;
+      NotificationFile? notificationFile = await onFileStartReceivingCall?.call(fileMessage, otherDeviceInfo);
 
       var bytesBuilder = BytesBuilder();
 
       await for (Uint8List bytes in stream) {
+        onFileBytesReceivedCall?.call(bytesBuilder.length, notificationFile);
         bytesBuilder.add(bytes);
       }
 
       if (bytesBuilder.isNotEmpty) {
         fileMessage = fileMessage.copyWith(bytes: bytesBuilder.takeBytes());
-        onFileCall?.call(fileMessage);
+        onFileFullReceivedCall?.call(notificationFile, fileMessage);
       }
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);

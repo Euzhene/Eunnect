@@ -2,7 +2,7 @@ import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/log_helper.dart';
-import 'package:eunnect/helpers/notification_helper.dart';
+import 'package:eunnect/helpers/notification/notification_helper.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:eunnect/screens/scan_screen/scan_screen.dart';
 import 'package:eunnect/widgets/dialogs.dart';
