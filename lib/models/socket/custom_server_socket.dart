@@ -20,11 +20,9 @@ const pairDevicesCall = "pair_devices";
 const deviceInfoCall = "device_info";
 const sendBufferCall = "buffer";
 const sendFileCall = "file";
+const getCommandsCall = "get_commands";
+const sendCommandCall = "send_command";
 
-const changePcStateCall = "pc_state";
-const pcRestartState = "restart";
-const pcShutDownState = "shut_down";
-const pcSleepState = "sleep";
 
 class CustomServerSocket {
   SecureServerSocket? _server;

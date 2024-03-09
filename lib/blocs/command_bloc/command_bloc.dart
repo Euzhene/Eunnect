@@ -1,68 +1,73 @@
+import 'dart:io';
+
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
-import 'package:eunnect/models/device_info/device_type.dart';
 import 'package:eunnect/models/socket/socket_command.dart';
-import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:uuid/uuid.dart';
 
-import 'choose_device_type.dart';
+import '../../models/device_info/device_info.dart';
+import '../../models/socket/custom_client_socket.dart';
+import '../../models/socket/socket_message.dart';
 
 part 'command_state.dart';
 
 class CommandBloc extends Cubit<CommandState> {
-  final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
+  final CustomClientSocket clientSocket = GetItHelper.i<CustomClientSocket>();
+  final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
+  final DeviceInfo deviceInfo;
 
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController commandController = TextEditingController();
-  final List<ChooseDeviceType> deviceTypeList = [
-    ChooseDeviceType(type: DeviceType.windows, isAdded: false),
-    ChooseDeviceType(type: DeviceType.linux, isAdded: false),
-  ];
+  List<SocketCommand> commands = [];
 
-  CommandBloc() : super(CommandState());
 
-  bool get _isNameValid => nameController.text.trim().isNotEmpty;
-  bool get _isDescriptionValid => true;
-  bool get _isCommandValid => commandController.text.trim().isNotEmpty;
-  bool get _isDeviceTypeListValid => deviceTypeList.where((e) => e.isAdded).isNotEmpty;
-  bool get isAllValid => _isNameValid && _isDescriptionValid && _isCommandValid && _isDeviceTypeListValid;
-
-  void onSelectDeviceType(ChooseDeviceType type) {
-    int index = deviceTypeList.indexOf(type);
-    ChooseDeviceType foundType = deviceTypeList[index];
-    deviceTypeList[index] = foundType.copyWith(isAdded: !foundType.isAdded);
-    emit(CommandState());
+  CommandBloc({required this.deviceInfo}) : super(LoadingCommandState()) {
+    _getCommands();
   }
 
-  Future<void> onAddCommand() async {
+
+  Future<void> onSendCommand(SocketCommand command) async {
     try {
-      if (!isAllValid) return;
-
-      String name = nameController.text.trim();
-      String? description = descriptionController.text.trim();
-      if (description.isEmpty) description = null;
-      String command = commandController.text.trim();
-
-      SocketCommand socketCommand = SocketCommand(
-        id: const Uuid().v4(),
-        name: name,
-        description: description,
-        command: command,
-        deviceTypeList: deviceTypeList.where((e) => e.isAdded).map((e) => e.type).toList(),
-      );
-      await _storage.addSocketCommand(socketCommand);
-      _mainBloc.emitDefaultSuccess("Команда создана");
-      emit(CloseScreen());
-    } catch (e, st) {
-      FLog.error(text: e.toString(), stacktrace: st);
+      SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
+      await clientSocket.sendCommand(socket: socket, commandId: command.id);
+    }catch(e,st) {
       _mainBloc.emitDefaultError(e.toString());
+      FLog.error(text: e.toString(), stacktrace: st);
     }
   }
 
-  void onTextChanged() => emit(CommandState());
+  Future<void> _getCommands() async {
+    try {
+      emit(LoadingCommandState());
+
+      SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
+      ServerMessage serverMessage = await clientSocket.getCommands(socket: socket);
+
+      bool isError = await _handleServerResponse(serverMessage: serverMessage);
+      if (isError) return;
+
+      commands = serverMessage.data == null ? [] : SocketCommand.fromJsonList(serverMessage.data!);
+      if (!isClosed) emit(CommandState());
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      _mainBloc.emitDefaultError("Ошибка во время передачи команды");
+      emit(NotGotCommandsState());
+    }
+  }
+
+
+  ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
+  Future<bool> _handleServerResponse({required ServerMessage serverMessage, String? successMessage}) async {
+    if (!serverMessage.isErrorStatus) {
+      if (successMessage != null) _mainBloc.emitDefaultSuccess(successMessage);
+      emit(CommandState());
+      return false;
+    }
+
+    _mainBloc.emitDefaultError(serverMessage.getError!);
+
+    emit(NotGotCommandsState());
+    return true;
+  }
+
 }

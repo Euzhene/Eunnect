@@ -1,11 +1,9 @@
-import 'package:eunnect/blocs/command_bloc/choose_device_type.dart';
 import 'package:eunnect/blocs/command_bloc/command_bloc.dart';
 import 'package:eunnect/blocs/device_actions_bloc/actions_bloc.dart';
 import 'package:eunnect/constants.dart';
-import 'package:eunnect/models/device_info/device_type.dart';
+import 'package:eunnect/models/socket/socket_command.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
-import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
@@ -58,11 +56,7 @@ class ActionsScreen extends StatelessWidget {
                 else ...[
                   _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
                   _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
-                  if (!bloc.isAndroidDeviceType)
-                    ...bloc.commands
-                        .map((e) => _buildActionButton(
-                            text: e.name, description: e.description, onPressed: () => bloc.onSendCommand(command: e)))
-                        .toList(),
+                  if (!bloc.isAndroidDeviceType) _buildActionButton(text: "Команды", onPressed: () => _showCommandBottomSheet(context)),
                 ]
               ],
             ),
@@ -88,17 +82,18 @@ class ActionsScreen extends StatelessWidget {
 
   void _showCommandBottomSheet(BuildContext context) async {
     ActionsBloc bloc = context.read();
-    dynamic res = await showModalBottomSheet(
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
       builder: (ctx) => BlocProvider(
-          create: (ctx) => CommandBloc(),
+          create: (ctx) => CommandBloc(deviceInfo: bloc.deviceInfo),
           child: Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: _CommandScreen(),
           )),
     );
-    if (res == true) bloc.onGetLocalCommands();
   }
 
   static Future<bool?> openScreen(BuildContext context, {required ScanPairedDevice deviceInfo}) async {
@@ -116,116 +111,35 @@ class _CommandScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     CommandBloc bloc = context.read();
 
-    return BlocConsumer<CommandBloc, CommandState>(listener: (context, state) {
-      if (state is CloseScreen) Navigator.of(context).pop(true);
-    }, builder: (context, state) {
-      return SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
-          child: Column(
-            children: [
-              _buildTextField(
-                controller: bloc.nameController,
-                label: "Название",
-                prefixIconData: Icons.title,
-                textCapitalization: TextCapitalization.sentences,
+    return BlocConsumer<CommandBloc, CommandState>(
+        listener: (context, state) {},
+        builder: (context, state) {
+          if (state is LoadingCommandState) return const Center(child: CircularProgressIndicator());
+          if (state is NotGotCommandsState)
+            return const Center(child: CustomText("Ошибка при получении команд", color: errorColor));
+
+          return Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
+                child: Column(
+                  children: [
+                    if (bloc.commands.isEmpty)
+                      const CustomText("Тут пока пусто. Добавьте команды на другом устройстве, чтобы видеть их здесь")
+                    else
+                      ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: bloc.commands.length,
+                          separatorBuilder: (context, index) => const VerticalSizedBox(),
+                          itemBuilder: (context, index) {
+                            SocketCommand command = bloc.commands[index];
+                            return InkWell(onTap: ()=>bloc.onSendCommand(command), child: CustomText(command.name));
+                          }),
+                  ],
+                ),
               ),
-              const VerticalSizedBox(),
-              _buildTextField(
-                controller: bloc.descriptionController,
-                label: "Описание (опционально)",
-                prefixIconData: Icons.comment,
-                textCapitalization: TextCapitalization.sentences,
-              ),
-              const VerticalSizedBox(),
-              _buildTextField(
-                controller: bloc.commandController,
-                label: "Команда",
-                prefixIconData: Icons.keyboard_command_key,
-              ),
-              const VerticalSizedBox(),
-              _buildDeviceTypeList(),
-              const VerticalSizedBox(),
-              _buildAddButton(),
-              const VerticalSizedBox(),
-            ],
-          ),
-        ),
-      );
-    });
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData prefixIconData,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-  }) {
-    return Builder(builder: (context) {
-      return TextFormField(
-        textCapitalization: textCapitalization,
-        controller: controller,
-        onChanged: (val) => context.read<CommandBloc>().onTextChanged(),
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(prefixIconData),
-        ),
-      );
-    });
-  }
-
-  Widget _buildDeviceTypeList() {
-    return Builder(builder: (context) {
-      CommandBloc bloc = context.read();
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CustomText("Поддерживаемые устройства "),
-          GridView.count(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            crossAxisCount: 2,
-            childAspectRatio: 3,
-            padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
-            crossAxisSpacing: horizontalPadding,
-            children: bloc.deviceTypeList.map((e) => _buildDeviceTypeWidget(e)).toList(),
-          ),
-        ],
-      );
-    });
-  }
-
-  Widget _buildAddButton() {
-    return Builder(builder: (context) {
-      CommandBloc bloc = context.read();
-      return CustomButton(enabled: bloc.isAllValid, onPressed: bloc.onAddCommand, text: "Добавить");
-    });
-  }
-
-  Widget _buildDeviceTypeWidget(ChooseDeviceType deviceType) {
-    bool isAdded = deviceType.isAdded;
-    return Builder(builder: (context) {
-      return CustomCard(
-          onPressed: () => context.read<CommandBloc>().onSelectDeviceType(deviceType),
-          backgroundColor: isAdded ? null : Colors.transparent,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: verticalPadding / 2),
-          child: Row(
-            children: [
-              Icon(DeviceTypeConverter.iconFromType(deviceType.type)),
-              const HorizontalSizedBox(),
-              Expanded(
-                  child: CustomText(
-                deviceType.type.name,
-                overflow: TextOverflow.ellipsis,
-              )),
-              const HorizontalSizedBox(),
-              Icon(
-                isAdded ? Icons.close : Icons.add,
-                color: isAdded ? errorColor : successColor,
-              )
-            ],
-          ));
-    });
+            ),
+          );
+        });
   }
 }

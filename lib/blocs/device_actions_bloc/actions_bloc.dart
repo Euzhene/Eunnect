@@ -17,7 +17,6 @@ import '../../models/socket/socket_command.dart';
 part 'device_actions_state.dart';
 
 const String _deviceKey = pairedDevicesKey;
-const String _commandKey = commandsKey;
 
 class ActionsBloc extends Cubit<DeviceActionsState> {
   ActionsBloc({required this.deviceInfo, required bool deviceAvailable})
@@ -31,19 +30,32 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final CustomClientSocket clientSocket = GetItHelper.i<CustomClientSocket>();
   final DeviceInfo deviceInfo;
-  List<SocketCommand> commands = [];
+ // List<SocketCommand> commands = [];
 
   final bool isAndroidDeviceType;
 
   Future<void> _init() async {
     tryConnectToDevice();
-    await onGetLocalCommands();
   }
 
-  Future<void> onGetLocalCommands() async {
-    commands = await _storage.getSocketCommands();
-    if (!isClosed && state is !UnreachableDeviceState) emit(DeviceActionsState());
-  }
+  // Future<void> onGetCommands() async {
+  //   try {
+  //     if (isAndroidDeviceType) return;
+  //
+  //     SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
+  //     ServerMessage serverMessage = await clientSocket.getCommands(socket: socket);
+  //
+  //     bool isError = await _handleServerResponse(serverMessage: serverMessage);
+  //     if (isError) return;
+  //
+  //     commands = serverMessage.data == null ? [] : SocketCommand.fromJsonList(serverMessage.data!);
+  //     if (!isClosed) emit(DeviceActionsState());
+  //   } catch (e, st) {
+  //     FLog.error(text: e.toString(), stacktrace: st);
+  //     _mainBloc.emitDefaultError("Ошибка во время передачи команды");
+  //     emit(DeviceActionsState());
+  //   }
+  // }
 
   Future<void> tryConnectToDevice() async {
     try {
@@ -57,7 +69,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   void onSendBuffer() async {
     try {
-      if (checkLoadingState()) return;
+      if (_checkLoadingState()) return;
       emit(LoadingState());
 
       String type = Clipboard.kTextPlain;
@@ -81,11 +93,11 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   void onSendCommand({required SocketCommand command}) async {
     try {
-      if (checkLoadingState()) return;
+      if (_checkLoadingState()) return;
       emit(LoadingState());
 
       SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
-      await clientSocket.sendCommand(socket: socket, command: command);
+      await clientSocket.sendCommand(socket: socket, commandId: command.id);
       ServerMessage socketMessage = ServerMessage.fromUInt8List(await socket.single);
       await _handleServerResponse(serverMessage: socketMessage, successMessage: "Команда выполнена");
     } catch (e, st) {
@@ -95,31 +107,10 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     }
   }
 
-  bool checkLoadingState() {
-    bool res = state.isLoading;
-    if (res) _mainBloc.emitDefaultError("Другая команда в процессе выполнения");
-    return res;
-  }
-
-  ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
-  Future<bool> _handleServerResponse({required ServerMessage serverMessage, required String successMessage}) async {
-    if (!serverMessage.isErrorStatus) {
-      _mainBloc.emitDefaultSuccess(successMessage);
-      emit(DeviceActionsState());
-      return false;
-    }
-
-    _mainBloc.emitDefaultError(serverMessage.getError!);
-
-    if (serverMessage.status == 101) emit(DeletedDeviceState());
-
-    emit(DeviceActionsState());
-    return true;
-  }
 
   void onSendFile() async {
     try {
-      if (checkLoadingState()) return;
+      if (_checkLoadingState()) return;
 
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: false);
       if (result == null) return;
@@ -148,5 +139,27 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   Future<void> onBreakPairing() async {
     await _storage.deleteBaseDevice(deviceInfo, _deviceKey);
+  }
+
+  ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
+  Future<bool> _handleServerResponse({required ServerMessage serverMessage, String? successMessage}) async {
+    if (!serverMessage.isErrorStatus) {
+      if (successMessage != null) _mainBloc.emitDefaultSuccess(successMessage);
+      emit(DeviceActionsState());
+      return false;
+    }
+
+    _mainBloc.emitDefaultError(serverMessage.getError!);
+
+    if (serverMessage.status == 101) emit(DeletedDeviceState());
+
+    emit(DeviceActionsState());
+    return true;
+  }
+
+  bool _checkLoadingState() {
+    bool res = state.isLoading;
+    if (res) _mainBloc.emitDefaultError("Другая команда в процессе выполнения");
+    return res;
   }
 }

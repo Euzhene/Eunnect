@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
-import 'package:eunnect/models/socket/socket_command.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
 
@@ -34,8 +33,20 @@ class CustomClientSocket {
     await socket.close();
   }
 
-  Future<void> sendCommand({required SecureSocket socket, required SocketCommand command}) async {
-    socket.add(ClientMessage(call: changePcStateCall, data: command.toJsonString(), deviceId: myDeviceInfo.id).toUInt8List());
+  Future<ServerMessage> getCommands({required SecureSocket socket}) async {
+      socket.add(ClientMessage(call: getCommandsCall,data: "", deviceId: myDeviceInfo.id).toUInt8List());
+      //todo добавить общий обработчик для получения ответа
+      BytesBuilder bytesBuilder = BytesBuilder(copy: false);
+      await for (Uint8List bytes in socket) {
+        bytesBuilder.add(bytes);
+      }
+      ServerMessage socketMessage = ServerMessage.fromUInt8List(bytesBuilder.takeBytes());
+      socket.destroy();
+      return socketMessage;
+  }
+
+  Future<void> sendCommand({required SecureSocket socket, required String commandId}) async {
+    socket.add(ClientMessage(call: sendCommandCall, data: commandId, deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
   }
 
@@ -47,12 +58,10 @@ class CustomClientSocket {
 
     socket.add(initialMessage.toUInt8List());
     await Future.delayed(const Duration(seconds: 1)); //дает возможность успеть серверу получить только начальное сообщение
-    try {
-      socket.add(bytes);
-      await socket.flush();
-    } catch (e, st) {
-      return ServerMessage(status: 104);
-    }
+
+    socket.add(bytes);
+    await socket.flush();
+
     await socket.close();
     return null;
   }

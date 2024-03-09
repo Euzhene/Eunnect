@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/extensions.dart';
-import 'package:eunnect/models/socket/socket_command.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +16,6 @@ const _isFoundDeviceListExpanded = "is_found_device_list_expanded";
 const _isPairedDeviceListExpanded = "is_paired_device_list_expanded";
 const _isDarkThemeKey = "is_dark_theme";
 const _lastOpenDeviceKey = "last_open_device";
-const commandsKey = "commands";
 
 const _deviceIdKey = "device_id";
 const _deviceNameKey = "device_name";
@@ -182,49 +180,4 @@ class LocalStorage {
     await saveBaseDevices(baseDevices, deviceKey);
     FLog.trace(text: "a $deviceKey device was deleted from the local storage");
   }
-
-  Future<List<SocketCommand>> getSocketCommands() async {
-    String? listJsonString = (await secureStorage.read(key: commandsKey));
-    if (listJsonString == null) return [];
-    return SocketCommand.fromJsonList(listJsonString);
-  }
-
-  Future<SocketCommand?> getSocketCommand(String? id) async {
-    if (id == null) return null;
-    List<SocketCommand> commands = (await getSocketCommands()).where((element) => element.id == id).toList();
-    return commands.isEmpty ? null : commands.first;
-  }
-
-  Future<void> saveSocketCommands(List<SocketCommand> list) async {
-    String json = jsonEncode(list.map((e) => e.toJsonString()).toList());
-    await secureStorage.write(key: commandsKey, value: json);
-    FLog.trace(text: "socket commands were saved");
-  }
-
-  Future<void> addSocketCommand(SocketCommand command) async {
-    List<SocketCommand> commands = await getSocketCommands();
-    if (commands.where((e) => e.id == command.id).isNotEmpty) return;
-
-    commands.add(command);
-    await saveSocketCommands(commands);
-    FLog.trace(text: "a new command was added to the local storage");
-  }
-
-  Future<void> updateSocketCommand(SocketCommand command) async {
-    List<SocketCommand> commands = await getSocketCommands();
-    int commandIndex = commands.indexWhere((e) => e.id == command.id);
-    if (commandIndex < 0 || commands[commandIndex] == command) return;
-    commands[commandIndex] = command;
-    await saveSocketCommands(commands);
-    FLog.trace(text: "a command was updated to the local storage");
-  }
-
-  Future<void> deleteSocketCommand(SocketCommand command) async {
-    List<SocketCommand> commands = await getSocketCommands();
-    commands.removeWhere((e) => e.id == command.id);
-    await saveSocketCommands(commands);
-    FLog.trace(text: "a command was deleted from the local storage");
-  }
-
-
 }
