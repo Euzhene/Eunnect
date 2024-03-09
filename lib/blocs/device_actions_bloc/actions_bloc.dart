@@ -113,6 +113,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
     if (serverMessage.status == 101) emit(DeletedDeviceState());
 
+    emit(DeviceActionsState());
     return true;
   }
 

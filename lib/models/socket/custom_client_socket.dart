@@ -39,7 +39,6 @@ class CustomClientSocket {
     await socket.close();
   }
 
-  ///возвращает false, если не получилось отправить файл из-за отсутствия сопряжения
   Future<ServerMessage?> sendFile({required SecureSocket socket, required Uint8List bytes, required String fileName}) async {
     ClientMessage initialMessage = ClientMessage(
         call: sendFileCall,
@@ -52,7 +51,7 @@ class CustomClientSocket {
       socket.add(bytes);
       await socket.flush();
     } catch (e, st) {
-      return ServerMessage(status: 101);
+      return ServerMessage(status: 104);
     }
     await socket.close();
     return null;
