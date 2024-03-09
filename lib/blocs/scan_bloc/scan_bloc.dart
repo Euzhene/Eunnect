@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/blocs/scan_bloc/scan_state.dart';
 import 'package:eunnect/extensions.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/ssl_helper.dart';
+import 'package:eunnect/models/custom_message.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/network/custom_nsd.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -82,8 +84,14 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
-      FLog.trace(text: "a pairing with a new device ${deviceInfo.name} was requested");
-      ServerMessage socketMessage = await compute<List, ServerMessage>(pair, [GetItHelper.i<DeviceInfo>(), deviceInfo]);
+      ReceivePort receivePort = ReceivePort();
+      receivePort.listen((message) {
+        message as IsolateMessage;
+        ErrorMessage? error = message.errorMessage;
+        if (error != null) FLog.error(text: error.shortError, stacktrace: error.stackTrace);
+        else FLog.trace(text: message.data);
+      });
+      ServerMessage socketMessage = await compute<List, ServerMessage>(_pair, [receivePort.sendPort, GetItHelper.i<DeviceInfo>(), deviceInfo]);
 
       if (socketMessage.isErrorStatus) {
         _mainBloc.emitDefaultError(socketMessage.getError!);
@@ -108,8 +116,8 @@ class ScanBloc extends Cubit<ScanState> {
       FLog.trace(text: "getting info of a device by ip...");
       SecureSocket socket = await SecureSocket.connect(InternetAddress(ip, type: InternetAddressType.IPv4), port,
           timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
-        return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [], deviceIdCheck: false);
-      });
+            return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [], deviceIdCheck: false);
+          });
 
       socket.add(ClientMessage(call: deviceInfoCall, data: "", deviceId: GetItHelper.i<DeviceInfo>().id).toUInt8List());
       await socket.close();
@@ -155,26 +163,28 @@ class ScanBloc extends Cubit<ScanState> {
   }
 }
 
-FutureOr<ServerMessage> pair(List args) async {
-  DeviceInfo myDeviceInfo = args[0];
-  DeviceInfo deviceInfo = args[1];
-  try {
-    FLog.trace(text: "pairing with a new device...");
+FutureOr<ServerMessage> _pair(List args) async {
+  SendPort sendPort = args[0];
+  DeviceInfo myDeviceInfo = args[1];
+  DeviceInfo deviceInfo = args[2];
+  try{
+    sendPort.send(IsolateMessage(data: "a pairing with a new device ${deviceInfo.name} was requested"));
     SecureSocket socket = await SecureSocket.connect(InternetAddress(deviceInfo.ipAddress, type: InternetAddressType.IPv4), port,
         timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
-      return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [deviceInfo.id]);
-    });
+          return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [deviceInfo.id]);
+        });
 
     socket.add(ClientMessage(call: pairDevicesCall, data: myDeviceInfo.toJsonString(), deviceId: deviceInfo.id).toUInt8List());
     await socket.close();
 
     final bytes = await socket.single;
     ServerMessage socketMessage = ServerMessage.fromUInt8List(bytes);
-    FLog.trace(text: "Pairing is successful!");
+    if (socketMessage.isErrorStatus) sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: socketMessage.getError!)));
+    else sendPort.send(IsolateMessage(data: "Pairing is successful!"));
 
     return socketMessage;
   } catch (e, st) {
-    FLog.error(text: "Caught error while pairing. Error: $e", stacktrace: st);
+    sendPort.send(IsolateMessage(errorMessage: ErrorMessage(shortError: e.toString(),stackTrace: st)));
     return ServerMessage(status: 105);
   }
 }
