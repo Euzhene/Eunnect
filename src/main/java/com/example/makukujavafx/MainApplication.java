@@ -31,6 +31,11 @@ public class MainApplication extends Application {
         stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
             @Override
             public void handle(WindowEvent t) {
+                try {
+                    serverHandler.stopService();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 Platform.exit();
                 System.exit(0);
             }

@@ -1,5 +1,7 @@
 package com.example.makukujavafx.classes;
 
+import com.example.makukujavafx.models.DeviceInfo;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -10,91 +12,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Iterator;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
+import java.util.*;
 
 public class JsonHandler {
 
-    private static final String DEVICE_INFO_FILE = "/com/example/makukujavafx/package.json";
+    private static final String DEVICE_INFO_FILE = "MaKuKuDevices.json";
 
-    public static void saveJsonToFile(ArrayNode jsonArray) {
+    public static void createJsonFile() {
+        String homeDir = System.getProperty("user.home");
+        Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-            URL resourceUrl = JsonHandler.class.getResource(DEVICE_INFO_FILE);
-            if (resourceUrl == null) {
-                throw new RuntimeException("Ресурс не найден: " + DEVICE_INFO_FILE);
-            }
-
-            File file = new File(resourceUrl.toURI());
-
-            objectMapper.writeValue(file, jsonArray);
-            System.out.println("JSON успешно обновлен.");
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException("Ошибка при записи JSON в файл", e);
-        }
-    }
-
-    /*    public static ArrayNode loadJsonFromFile() {
-            try {
-                ObjectMapper objectMapper = new ObjectMapper();
-
-                InputStream inputStream = JsonHandler.class.getResourceAsStream(DEVICE_INFO_FILE);
-                if (inputStream == null) {
-                    return objectMapper.createArrayNode();
-                }
-
-                JsonNode rootNode = objectMapper.readTree(inputStream);
-
-                if (rootNode instanceof ArrayNode) {
-                    return (ArrayNode) rootNode;
-                } else {
-                    throw new RuntimeException("Корень JSON не является массивом");
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Ошибка при чтении JSON из файла", e);
-            }
-        }*/
-    public static ArrayNode loadJsonFromFile() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try (InputStream inputStream = JsonHandler.class.getResourceAsStream(DEVICE_INFO_FILE)) {
-            if (inputStream == null) {
-                return objectMapper.createArrayNode();
-            }
-            return objectMapper.readValue(inputStream, ArrayNode.class);
+            objectMapper.writeValue(new File(filePath.toString()), objectMapper.createArrayNode());
         } catch (IOException e) {
-            throw new RuntimeException("Error reading json file", e);
-        }
-    }
-
-    /*    public static void createInitialJsonFile() {
-            try {
-                ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-                objectMapper.writeValue(new File(DEVICE_INFO_FILE), objectMapper.createArrayNode());
-            } catch (IOException e) {
-                throw new RuntimeException("Ошибка при создании начального JSON файла", e);
-            }
-        }*/
-    /*public static void createInitialJsonFile() {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-            URL resourceUrl = JsonHandler.class.getResource(DEVICE_INFO_FILE);
-            if (resourceUrl == null) {
-                throw new RuntimeException("Ресурс не найден: " + DEVICE_INFO_FILE);
-            }
-
-            try (OutputStream resourceStream = Files.newOutputStream(Paths.get(resourceUrl.toURI()))) {
-                objectMapper.writeValue(resourceStream, objectMapper.createArrayNode());
-            }
-
-            System.out.println("JSON успешно создан.");
-        } catch (IOException | URISyntaxException e) {
             throw new RuntimeException("Ошибка при создании начального JSON файла", e);
         }
-    }*/
+    }
 
 
     public static void removeDeviceById(String id, ArrayNode jsonArray) {
@@ -109,6 +46,44 @@ public class JsonHandler {
             }
         }
     }
+
+    public static void saveDeviceToJsonFile(ArrayNode jsonArray) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            String homeDir = System.getProperty("user.home");
+            Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
+            if (!Files.exists(filePath)) {
+                createJsonFile();
+            }
+
+            File file = new File(String.valueOf(filePath));
+
+            objectMapper.writeValue(file, jsonArray);
+            System.out.println("JSON успешно обновлен.");
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка при сохранении объекта в JSON-файл", e);
+        }
+    }
+
+    public static ArrayNode loadDevicesFromJsonFile() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String homeDir = System.getProperty("user.home");
+            Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
+
+            if (!Files.exists(filePath)) {
+                createJsonFile();
+            }
+
+            byte[] json = Files.readAllBytes(filePath);
+            ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
+            return devices;
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка при чтении JSON-файла", e);
+        }
+    }
+
 
     public static boolean isIdInArray(String id, ArrayNode jsonArray) {
         if (jsonArray != null) {

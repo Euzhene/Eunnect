@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.UUID;
 
 public class DeviceInfo implements Serializable {
@@ -76,6 +78,12 @@ public class DeviceInfo implements Serializable {
                 ", id='" + id + '\'' +
                 ", ipAddress='" + ipAddress + '\'' +
                 '}';
+    }
+
+    public DeviceInfo createDeviceInfo() throws UnknownHostException {
+        String platform = System.getProperty("os.name").toLowerCase();
+        String name = System.getProperty("user.name");
+        return new DeviceInfo(platform, name, InetAddress.getLocalHost().getHostAddress());
     }
 
 }
