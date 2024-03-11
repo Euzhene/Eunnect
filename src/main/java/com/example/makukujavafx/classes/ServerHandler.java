@@ -44,14 +44,12 @@ public class ServerHandler {
     private JmDNS jmdns;
     private ServiceInfo serviceInfo;
     private final Preferences prefs;
-    //    private List<InetAddress> wirelessAddresses;
     private final String FIRST_LAUNCH_KEY = "makuku";
 
     private final String SERVICE_TYPE = "_makuku._tcp.local.";
     private final int PORT = 10242;
     private InetAddress address;
-    private ArrayNode devices;
-    private JsonNode deviceNode;
+    private Thread clientThread;
 
     public ServerHandler(Scene scene) throws SocketException {
         this.scene = scene;
@@ -132,37 +130,21 @@ public class ServerHandler {
             }
         }, 0, 3, TimeUnit.SECONDS);
 
-//        for (InetAddress address : wirelessAddresses) {
-//            System.out.println("Creating server socket on address: " + address);
-//            try {
-//                serverSocket = new ServerSocket(PORT, 0, address);
-//                deviceInfo.setIpAddress(String.valueOf(address));
-//                jmdns = JmDNS.create(address);
-//                Map<String, Object> txtMap = new HashMap<>();
-//                txtMap.put("id", deviceId);
-//                txtMap.put("ip", deviceInfo.getIpAddress());
-//                txtMap.put("name", deviceInfo.getName());
-//                txtMap.put("type", deviceInfo.getDeviceType());
-//
-//                serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
-//                jmdns.registerService(serviceInfo);
-//            } catch (IOException e) {
-//                System.out.println("Error creating server socket on address: {}" + address);
-//            }
-//        }
-
-        new Thread(() -> {
-            while (isConnection) {
+        clientThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {
                     Socket clientSocket = serverSocket.accept();
                     handleClient(clientSocket);
                     clientSocket.close();
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    if (!serverSocket.isClosed()) {
+                        throw new RuntimeException(e);
+                    }
                 }
-
             }
-        }).start();
+        });
+
+        clientThread.start();
     }
 
 
@@ -247,9 +229,18 @@ public class ServerHandler {
 
 
     public void stopService() throws IOException {
-        if (jmdns != null && serviceInfo != null) {
-            jmdns.unregisterService(serviceInfo);
+        isConnection = false;
+        clientThread.interrupt();
+        if (serverSocket != null && !serverSocket.isClosed()) {
+            serverSocket.close();
+        }
+        if (jmdns != null) {
+            jmdns.unregisterAllServices();
             jmdns.close();
         }
+        if (scheduledExecutorService != null) {
+            scheduledExecutorService.shutdownNow();
+        }
     }
+
 }
