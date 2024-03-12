@@ -33,11 +33,11 @@ public class MainApplication extends Application {
             public void handle(WindowEvent t) {
                 try {
                     serverHandler.stopService();
+                    Platform.exit();
+                    System.exit(0);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                Platform.exit();
-                System.exit(0);
             }
         });
         stage.show();
@@ -52,14 +52,13 @@ public class MainApplication extends Application {
     }
 
     private void startServerAsync() {
-        Thread thread = new Thread(() -> {
+        new Thread(() -> {
             try {
                 serverHandler.startServer();
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
-        });
+        }).start();
 //        thread.setDaemon(true);
-        thread.start();
     }
 }

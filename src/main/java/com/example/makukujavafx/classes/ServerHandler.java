@@ -1,33 +1,18 @@
 package com.example.makukujavafx.classes;
 
-import com.example.makukujavafx.MainApplication;
-import com.example.makukujavafx.MainController;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.example.makukujavafx.models.*;
-import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.paint.Color;
-import javafx.stage.Stage;
-import org.w3c.dom.ls.LSOutput;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
@@ -39,99 +24,94 @@ public class ServerHandler {
     private ArrayNode jsonArray;
     private DeviceInfo deviceInfo;
     private ObjectMapper objectMapper;
-    private String deviceId;
     private Scene scene;
     private JmDNS jmdns;
     private ServiceInfo serviceInfo;
     private final Preferences prefs;
     private final String FIRST_LAUNCH_KEY = "makuku";
+    private JsonHandler jsonHandler;
 
     private final String SERVICE_TYPE = "_makuku._tcp.local.";
     private final int PORT = 10242;
     private InetAddress address;
-    private Thread clientThread;
+    private volatile boolean isRunning = true;
+
 
     public ServerHandler(Scene scene) throws SocketException {
         this.scene = scene;
         objectMapper = new ObjectMapper();
         prefs = Preferences.userNodeForPackage(ServerHandler.class);
-        jsonArray = JsonHandler.loadDevicesFromJsonFile();
+        jsonHandler = new JsonHandler();
+        jsonArray = jsonHandler.getDevicesFromJsonFile();
     }
 
     public void initialization() {
         boolean isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
-        if (!isFirstLaunch) {
-            System.out.println("First launch!");
-            try {
-                address = getWirelessAddresses().isEmpty() ? InetAddress.getLocalHost() : getWirelessAddresses().get(0);
-                deviceInfo = new DeviceInfo(System.getProperty("os.name").toLowerCase(), System.getProperty("user.name"), address.getHostAddress());
-                System.out.println("ID - " + deviceId);
-                jsonArray.add(objectMapper.valueToTree(deviceInfo));
-                JsonHandler.saveDeviceToJsonFile(jsonArray);
-            } catch (UnknownHostException | SocketException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            address = getWirelessAddresses().isEmpty() ? InetAddress.getLocalHost() : getWirelessAddresses().get(0);
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        if (isFirstLaunch) {
+            deviceInfo = new DeviceInfo(System.getProperty("os.name").toLowerCase(), System.getProperty("user.name"), address.getHostAddress());
+            jsonArray.add(objectMapper.valueToTree(deviceInfo));
+            jsonHandler.saveDeviceToJsonFile(jsonArray);
             prefs.putBoolean(FIRST_LAUNCH_KEY, false);
         } else {
-            try {
-                deviceInfo = getDeviceInfo();
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
+            JsonNode firstDevice = jsonArray.get(0);
+            ((ObjectNode) firstDevice).put("ip", address.getHostAddress());
+            jsonHandler.saveDeviceToJsonFile(jsonArray);
+            deviceInfo = new JsonHandler().getDeviceFromJsonFile();
         }
-        jsonArray = JsonHandler.loadDevicesFromJsonFile();
+        jsonArray = jsonHandler.getDevicesFromJsonFile();
         System.out.println(jsonArray);
-        deviceId = deviceInfo.getId();
-
     }
 
-    private boolean isConnection = true;
 
-    public void startServer() throws IOException {
-        serverSocket = new ServerSocket(PORT, 0, address);
-        deviceInfo.setIpAddress(String.valueOf(address));
+    /*public void startServer() throws IOException {
         jmdns = JmDNS.create(address);
         Map<String, Object> txtMap = new HashMap<>();
-        txtMap.put("id", deviceId);
-        txtMap.put("ip", deviceInfo.getIpAddress());
+        txtMap.put("id", deviceInfo.getId());
+        txtMap.put("ip", deviceInfo.getIp());
         txtMap.put("name", deviceInfo.getName());
-        txtMap.put("type", deviceInfo.getDeviceType());
+        txtMap.put("type", deviceInfo.getType());
 
         serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
         jmdns.registerService(serviceInfo);
 
-        AnchorPane banner = (AnchorPane) scene.lookup("#banner");
-        Label errorLabel = (Label) scene.lookup("#errorLabel");
-        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-            if (isInternetConnectionAvailable()) {
-                try {
-                    address = getWirelessAddresses().isEmpty() ? InetAddress.getLocalHost() : getWirelessAddresses().get(0);
-                } catch (SocketException e) {
-                    throw new RuntimeException(e);
-                } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
-                }
-                if (!isConnection) {
-                    Platform.runLater(() -> {
-                        banner.setStyle("-fx-background-color: green;-fx-background-radius: 10;");
-                        errorLabel.setVisible(false);
-                    });
-                }
+        serverSocket = new ServerSocket(PORT, 0, address);
 
-                isConnection = true;
-            } else {
-                isConnection = false;
-                Platform.runLater(() -> {
-                    banner.setStyle("-fx-background-color: red;-fx-background-radius: 10;");
-                    errorLabel.setVisible(true);
-                    errorLabel.setText("No internet connection!");
-                });
+
+        while (isRunning) {
+            try {
+                Socket clientSocket = serverSocket.accept();
+                handleClient(clientSocket);
+                clientSocket.close();
+            } catch (IOException e) {
+                if (!serverSocket.isClosed()) {
+                    throw new RuntimeException(e);
+                }
             }
-        }, 0, 3, TimeUnit.SECONDS);
+        }
+        serverSocket.close();
+    }
+*/
+    public void startServer() throws IOException {
+        try {
+            serverSocket = new ServerSocket(PORT, 0, address);
 
-        clientThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
+            jmdns = JmDNS.create(address);
+            Map<String, Object> txtMap = new HashMap<>();
+            txtMap.put("id", deviceInfo.getId());
+            txtMap.put("ip", deviceInfo.getIp());
+            txtMap.put("name", deviceInfo.getName());
+            txtMap.put("type", deviceInfo.getType());
+
+            serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
+            jmdns.registerService(serviceInfo);
+            while (isRunning) {
                 try {
                     Socket clientSocket = serverSocket.accept();
                     handleClient(clientSocket);
@@ -142,9 +122,11 @@ public class ServerHandler {
                     }
                 }
             }
-        });
-
-        clientThread.start();
+        } finally {
+            if (serverSocket != null && !serverSocket.isClosed()) {
+                serverSocket.close();
+            }
+        }
     }
 
 
@@ -162,10 +144,10 @@ public class ServerHandler {
             SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
             String id = socketMessage.getDevice_id();
             System.out.println("Array - " + jsonArray);
-            if (socketMessage.getCall().equals("pair_devices") || JsonHandler.isIdInArray(id, jsonArray)) {
+            if (socketMessage.getCall().equals("pair_devices") || jsonHandler.isIdInArray(id, jsonArray)) {
                 switch (socketMessage.getCall()) {
                     case "pair_devices":
-                        DeviceAction.pairDevices(/*scene, */socketMessage, dos, jsonArray, objectMapper, deviceId);
+                        DeviceAction.pairDevices(/*scene, */socketMessage, dos, jsonArray, objectMapper, deviceInfo.getId());
                         break;
                     case "buffer":
                         DeviceAction.getBuffer(socketMessage, dos, objectMapper, jsonArray);
@@ -194,20 +176,6 @@ public class ServerHandler {
         }
     }
 
-    private boolean isInternetConnectionAvailable() {
-        try (Socket socket = new Socket("www.google.com", 80)) {
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private DeviceInfo getDeviceInfo() throws UnknownHostException {
-        String platform = System.getProperty("os.name").toLowerCase();
-        String name = System.getProperty("user.name");
-        return new DeviceInfo(platform, name, InetAddress.getLocalHost().getHostAddress(), deviceId);
-    }
-
     private List<InetAddress> getWirelessAddresses() throws SocketException {
         List<InetAddress> wirelessAddresses = new ArrayList<>();
         List<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -220,7 +188,6 @@ public class ServerHandler {
                     continue;
                 if (address.getHostAddress().contains(":"))
                     continue;
-                System.out.println("Add: " + address);
                 wirelessAddresses.add(address);
             }
         }
@@ -229,17 +196,10 @@ public class ServerHandler {
 
 
     public void stopService() throws IOException {
-        isConnection = false;
-        clientThread.interrupt();
-        if (serverSocket != null && !serverSocket.isClosed()) {
-            serverSocket.close();
-        }
+        isRunning = false;
         if (jmdns != null) {
-            jmdns.unregisterAllServices();
+            jmdns.unregisterService(serviceInfo);
             jmdns.close();
-        }
-        if (scheduledExecutorService != null) {
-            scheduledExecutorService.shutdownNow();
         }
     }
 

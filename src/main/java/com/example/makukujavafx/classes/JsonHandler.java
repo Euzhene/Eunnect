@@ -1,7 +1,7 @@
 package com.example.makukujavafx.classes;
 
 import com.example.makukujavafx.models.DeviceInfo;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -9,19 +9,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.*;
 import java.util.*;
 
 public class JsonHandler {
 
-    private static final String DEVICE_INFO_FILE = "MaKuKuDevices.json";
+    private final String DEVICE_INFO_FILE = "MaKuKuDevices.json";
 
-    public static void createJsonFile() {
+    public void createJsonFile() {
         String homeDir = System.getProperty("user.home");
         Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
         try {
@@ -34,7 +29,7 @@ public class JsonHandler {
     }
 
 
-    public static void removeDeviceById(String id, ArrayNode jsonArray) {
+    public void removeDeviceById(String id, ArrayNode jsonArray) {
         if (jsonArray != null) {
             Iterator<JsonNode> iterator = jsonArray.elements();
             while (iterator.hasNext()) {
@@ -47,7 +42,7 @@ public class JsonHandler {
         }
     }
 
-    public static void saveDeviceToJsonFile(ArrayNode jsonArray) {
+    public void saveDeviceToJsonFile(ArrayNode jsonArray) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -66,7 +61,7 @@ public class JsonHandler {
         }
     }
 
-    public static ArrayNode loadDevicesFromJsonFile() {
+    public ArrayNode getDevicesFromJsonFile() {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String homeDir = System.getProperty("user.home");
@@ -84,8 +79,54 @@ public class JsonHandler {
         }
     }
 
+    /*    public DeviceInfo getDeviceFromJsonFile() {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                String homeDir = System.getProperty("user.home");
+                Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
 
-    public static boolean isIdInArray(String id, ArrayNode jsonArray) {
+                if (!Files.exists(filePath)) {
+                    createJsonFile();
+                }
+
+                byte[] json = Files.readAllBytes(filePath);
+                ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
+                JsonNode device = devices.get(0);
+                return objectMapper.treeToValue(device, DeviceInfo.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Ошибка при обработке JSON-файла", e);
+            } catch (IOException e) {
+                throw new RuntimeException("Ошибка при чтении JSON-файла", e);
+            }
+        }*/
+    public DeviceInfo getDeviceFromJsonFile() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String homeDir = System.getProperty("user.home");
+            Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
+
+            if (!Files.exists(filePath)) {
+                createJsonFile();
+            }
+
+            byte[] json = Files.readAllBytes(filePath);
+            ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
+
+            if (devices.size() == 0) {
+                throw new RuntimeException("JSON-файл не содержит записей устройств");
+            }
+
+            JsonNode device = devices.get(0);
+            return objectMapper.treeToValue(device, DeviceInfo.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Ошибка при обработке JSON-файла", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка при чтении JSON-файла", e);
+        }
+    }
+
+
+    public boolean isIdInArray(String id, ArrayNode jsonArray) {
         if (jsonArray != null) {
             for (JsonNode element : jsonArray) {
                 if (element.has("id") && id.equals(element.get("id").asText())) {

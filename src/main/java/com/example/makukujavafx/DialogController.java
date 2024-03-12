@@ -1,16 +1,10 @@
 package com.example.makukujavafx;
 
-import com.example.makukujavafx.classes.DataSingletone;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
-
-import java.net.URL;
-import java.util.ResourceBundle;
 
 public class DialogController /*implements Initializable*/ {
 

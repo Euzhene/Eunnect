@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public class DeviceInfo implements Serializable {
     @JsonProperty("type")
-    private String deviceType;
+    private String type;
 
     @JsonProperty("name")
     private String name;
@@ -20,33 +20,33 @@ public class DeviceInfo implements Serializable {
     private String id;
 
     @JsonProperty("ip")
-    private String ipAddress;
+    private String ip;
 
     public DeviceInfo() {
     }
 
-    @JsonCreator
-    public DeviceInfo(@JsonProperty("type") String deviceType,
+    //    @JsonCreator
+    public DeviceInfo(@JsonProperty("type") String type,
                       @JsonProperty("name") String name,
-                      @JsonProperty("ip") String ipAddress) {
-        if (deviceType.contains("windows"))
-            this.deviceType = "windows";
-        else if (deviceType.contains("linux"))
-            this.deviceType = "linux";
+                      @JsonProperty("ip") String ip) {
+        if (type.contains("windows"))
+            this.type = "windows";
+        else if (type.contains("linux"))
+            this.type = "linux";
         this.name = name;
-        this.ipAddress = ipAddress;
+        this.ip = ip;
         this.id = UUID.randomUUID().toString();
     }
 
     @JsonCreator
-    public DeviceInfo(@JsonProperty("type") String deviceType, @JsonProperty("name") String name,
-                      @JsonProperty("ip") String ipAddress, @JsonProperty("id") String id) {
-        if (deviceType.contains("windows"))
-            this.deviceType = "windows";
-        else if (deviceType.contains("linux"))
-            this.deviceType = "linux";
+    public DeviceInfo(@JsonProperty("type") String type, @JsonProperty("name") String name,
+                      @JsonProperty("ip") String ip, @JsonProperty("id") String id) {
+        if (type.contains("windows"))
+            this.type = "windows";
+        else if (type.contains("linux"))
+            this.type = "linux";
         this.name = name;
-        this.ipAddress = ipAddress;
+        this.ip = ip;
         this.id = id;
     }
 
@@ -54,29 +54,29 @@ public class DeviceInfo implements Serializable {
         return name;
     }
 
-    public String getDeviceType() {
-        return deviceType;
+    public String getType() {
+        return type;
     }
 
     public String getId() {
         return id;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
+    public String getIp() {
+        return ip;
     }
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
+    public void setIpAddress(String ip) {
+        this.ip = ip;
     }
 
     @Override
     public String toString() {
         return "DeviceInfo{" +
-                "deviceType='" + deviceType + '\'' +
+                "deviceType='" + type + '\'' +
                 ", name='" + name + '\'' +
                 ", id='" + id + '\'' +
-                ", ipAddress='" + ipAddress + '\'' +
+                ", ipAddress='" + ip + '\'' +
                 '}';
     }
 
