@@ -4,16 +4,19 @@ import 'dart:typed_data';
 
 import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../constants.dart';
 
 class RtcHelper {
   final SslHelper sslHelper;
-
   Function(RTCVideoRenderer)? onVideoRendererUpdated;
   MediaStream? _localStream;
   RTCVideoRenderer? _localRendered;
+  SecureSocket? client;
+  SecureServerSocket? server;
+  RTCPeerConnection? peerConnection;
 
   late bool isClient;
 
@@ -34,27 +37,37 @@ class RtcHelper {
 
   Future<void> initForClient({required DeviceInfo pairedDeviceInfo}) async {
     isClient = true;
+    await closeConnections();
     await _createClientPeerConnection(pairedDeviceInfo);
   }
 
   Future<void> initForServer(DeviceInfo myDeviceInfo) async {
     isClient = false;
+    await closeConnections();
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
     _localRendered = RTCVideoRenderer();
     await _localRendered!.initialize();
     await _localRendered!.setSrcObject(stream: _localStream);
+    onVideoRendererUpdated?.call(_localRendered!);
     await _createServerPeerConnection(myDeviceInfo);
+  }
+
+  Future<void> closeConnections() async {
+    client?.destroy();
+    await peerConnection?.close();
+    await server?.close();
   }
 
   Future<void> _createClientPeerConnection(DeviceInfo pairedDeviceInfo) async {
     RTCPeerConnection peerConnection = await createPeerConnection(configuration);
+    this.peerConnection = peerConnection;
 
-    SecureSocket client =
+    client =
         await SecureSocket.connect(pairedDeviceInfo.ipAddress, cameraPort, onBadCertificate: (X509Certificate certificate) {
       return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [pairedDeviceInfo.id]);
     });
 
-    client.listen((event) async {
+    client!.listen((event) async {
       Map<String, dynamic> data = jsonDecode(utf8.decode(event));
       String type = data['type'];
 
@@ -65,47 +78,52 @@ class RtcHelper {
       }
     });
     peerConnection.onIceCandidate = (RTCIceCandidate candidate) async {
-      print("onIceCandidate ${candidate.candidate}");
+      FLog.debug(text:"onIceCandidate ${candidate.candidate}");
       client =
           await SecureSocket.connect(pairedDeviceInfo.ipAddress, cameraPort, onBadCertificate: (X509Certificate certificate) {
         return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [pairedDeviceInfo.id]);
       });
-      client.add(jsonEncode({
+      client!.add(jsonEncode({
         'type': 'candidate',
         'candidate': candidate.candidate,
         'sdpMid': candidate.sdpMid,
         'sdpMLineIndex': candidate.sdpMLineIndex,
       }).codeUnits);
 
-      client.close();
+      client!.close();
     };
 
     peerConnection.createOffer().then((offer) async {
       peerConnection.setLocalDescription(offer);
       String? sdp = (await peerConnection.getLocalDescription())!.sdp;
-      client.add(jsonEncode({
+      client!.add(jsonEncode({
         'type': 'offer',
         'sdp': sdp,
       }).codeUnits);
-      client.close();
+      client!.close();
     });
 
     peerConnection.onAddTrack = (MediaStream stream, MediaStreamTrack track) async {
-      print('Added remote stream: ${stream.getTracks().length}');
+      FLog.debug(text:'Added remote stream: ${stream.getTracks().length}');
       RTCVideoRenderer remoteRenderer = RTCVideoRenderer();
       remoteRenderer.initialize().then((_) {
         remoteRenderer.srcObject = stream;
         onVideoRendererUpdated?.call(remoteRenderer);
       });
     };
+
+    peerConnection.onConnectionState = (c) {
+      FLog.debug(text: "connection state changed ${c.name}");
+    };
   }
 
   Future<void> _createServerPeerConnection(DeviceInfo myDeviceInfo) async {
     RTCPeerConnection peerConnection = await createPeerConnection(configuration);
+    this.peerConnection = peerConnection;
     _localStream!.getTracks().forEach((track) => peerConnection.addTrack(track, _localStream!));
     SecurityContext context = await sslHelper.getServerSecurityContext();
-    SecureServerSocket server = await SecureServerSocket.bind(myDeviceInfo.ipAddress, cameraPort, context);
-    server.listen((socket) async {
+    server = await SecureServerSocket.bind(myDeviceInfo.ipAddress, cameraPort, context);
+    server!.listen((socket) async {
       BytesBuilder bytesBuilder = BytesBuilder();
       await for (Uint8List bytes in socket) {
         bytesBuilder.add(bytes);
@@ -134,26 +152,9 @@ class RtcHelper {
         socket.close();
       }
     });
-  }
 
-// @override
-// Widget build(BuildContext context) {
-// return MaterialApp(
-// home: Scaffold(
-// appBar: AppBar(
-// title: Text('Video Streaming'),
-// ),
-// body: Center(
-// child: Column(
-// children: [
-// if (_localRendered != null)Expanded(child: RTCVideoView(_localRendered!, mirror: true)),
-// if (_remoteRendered != null) Expanded(child: RTCVideoView(_remoteRendered!,placeholderBuilder: (context){
-// return CircularProgressIndicator();
-// },)),
-// ],
-// ),
-// ),
-// ),
-// );
-// }
+    peerConnection.onConnectionState = (c) {
+      FLog.debug(text: "connection state changed ${c.name}");
+    };
+  }
 }

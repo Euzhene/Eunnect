@@ -40,6 +40,11 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
 
   Future<void> _init() async {
     tryConnectToDevice();
+
+    rtcHelper.onVideoRendererUpdated = (RTCVideoRenderer renderer) {
+      rtcVideoRenderer = renderer;
+      emit(DeviceActionsState());
+    };
   }
 
   Future<void> tryConnectToDevice() async {
@@ -131,11 +136,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   }
 
   Future<void> onGetTranslation() async {
-    rtcVideoRenderer = null;
-    rtcHelper.onVideoRendererUpdated = (RTCVideoRenderer renderer) {
-      rtcVideoRenderer = renderer;
-      emit(DeviceActionsState());
-    };
     await rtcHelper.initForClient(pairedDeviceInfo: deviceInfo);
   }
 
@@ -162,4 +162,9 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   }
 
 
+  @override
+  Future<void> close() {
+    rtcHelper.closeConnections();
+    return super.close();
+  }
 }
