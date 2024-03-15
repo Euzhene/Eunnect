@@ -35,3 +35,4 @@ final DateFormat dateFormat = DateFormat("dd-MM-y");
 late final String appName;
 
 const int port = 10242;
+const int cameraPort = 10243;

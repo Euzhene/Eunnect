@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   flutter_secure_storage_windows
+  flutter_webrtc
   nsd_windows
   permission_handler_windows
   share_plus

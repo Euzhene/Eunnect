@@ -34,21 +34,22 @@ class CustomServerSocket {
   Function(NotificationFile?, FileMessage)? onFileFullReceivedCall;
   Function(NotificationFile?)? onFileNotFullyReceivedCall;
   Function(int, NotificationFile?)? onFileBytesReceivedCall;
+  Function(Map<String,dynamic>)? onWebRtcPeerConnectionCall;
 
   late StreamController<DeviceInfo?> pairStream;
 
   final LocalStorage storage;
+  final SslHelper sslHelper;
   late DeviceInfo myDeviceInfo;
   late SecureSocket curSocket;
 
-  CustomServerSocket({required this.storage});
+  CustomServerSocket({required this.storage, required this.sslHelper});
 
   Future<void> initServer(DeviceInfo myDeviceInfo) async {
     this.myDeviceInfo = myDeviceInfo;
     await _server?.close();
     String? ipAddress = await NetworkInfo().getWifiIP();
     if (ipAddress == null) return;
-    SslHelper sslHelper = SslHelper(storage);
     SecurityContext context = await sslHelper.getServerSecurityContext();
     _server = await SecureServerSocket.bind(ipAddress, port, context);
     FLog.info(text: "Server is initiated. Address - $ipAddress");

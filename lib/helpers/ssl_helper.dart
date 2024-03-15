@@ -8,15 +8,15 @@ import 'package:f_logs/f_logs.dart';
 import '../repo/local_storage.dart';
 
 class SslHelper {
-  final LocalStorage storage;
+  final LocalStorage _storage;
 
-  SslHelper(this.storage);
+  SslHelper(this._storage);
 
   Future<SecurityContext> getServerSecurityContext() async {
     SecurityContext securityContext = SecurityContext();
-    String? certificatePem = await storage.getCertificate();
-    String? privateKeyPem = await storage.getPrivateKey();
-    String? publicKeyPem = await storage.getPublicKey();
+    String? certificatePem = await _storage.getCertificate();
+    String? privateKeyPem = await _storage.getPrivateKey();
+    String? publicKeyPem = await _storage.getPublicKey();
     bool needToGenerateCertificate = certificatePem == null || privateKeyPem == null || publicKeyPem == null;
     if (needToGenerateCertificate) {
       FLog.info(text: "Certificate, public, or (and) private keys are not saved. Move to generating");
@@ -29,9 +29,9 @@ class SslHelper {
       privateKeyPem = CryptoUtils.encodeEcPrivateKeyToPem(privateKey);
       FLog.info(text: "Certificate, public and private keys were successfully generated. Save in the local storage");
 
-      await storage.setPublicKey(publicKeyPem);
-      await storage.setPrivateKey(privateKeyPem);
-      await storage.setCertificate(certificatePem);
+      await _storage.setPublicKey(publicKeyPem);
+      await _storage.setPrivateKey(privateKeyPem);
+      await _storage.setCertificate(certificatePem);
       FLog.info(text: "Certificate, public and private keys were successfully saved in the local storage");
     }
 
@@ -57,7 +57,7 @@ class SslHelper {
   Future<String> _generateCertificate(ECPublicKey publicKey,ECPrivateKey privateKey) async {
     FLog.trace(text: "generating certificate...");
     Map<String,String> attributes = {
-      'CN': await storage.getDeviceId(),
+      'CN': await _storage.getDeviceId(),
       'OU': 'Makuku',
     };
     String csr = X509Utils.generateEccCsrPem(attributes, privateKey, publicKey);

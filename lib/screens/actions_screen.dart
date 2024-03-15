@@ -9,6 +9,7 @@ import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../models/device_info/device_info.dart';
 import '../widgets/custom_text.dart';
@@ -36,31 +37,44 @@ class ActionsScreen extends StatelessWidget {
       child: BlocConsumer<ActionsBloc, DeviceActionsState>(listener: (context, state) {
         if (state is DeletedDeviceState) bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true));
       }, builder: (context, state) {
-        return Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (state.isUnreachableDevice)
-                  const Row(
-                    children: [
-                      Icon(Icons.error_outline, size: 40),
-                      HorizontalSizedBox(),
-                      Expanded(
-                          child: CustomText(
-                        "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
-                        fontSize: 20,
-                      )),
-                    ],
-                  )
-                else ...[
-                  _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
-                  _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
-                  if (!bloc.isAndroidDeviceType) _buildActionButton(text: "Команды", onPressed: () => _showCommandBottomSheet(context)),
-                ]
-              ],
+        return Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (state.isUnreachableDevice)
+                      const Row(
+                        children: [
+                          Icon(Icons.error_outline, size: 40),
+                          HorizontalSizedBox(),
+                          Expanded(
+                              child: CustomText(
+                            "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
+                            fontSize: 20,
+                          )),
+                        ],
+                      )
+                    else ...[
+                      _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
+                      _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
+                      _buildActionButton(text: "Включить трансляцию для устройства", onPressed: () => bloc.onEnableTranslation()),
+                      _buildActionButton(text: "Получить трансляцию", onPressed: () => bloc.onGetTranslation()),
+                      if (!bloc.isAndroidDeviceType) _buildActionButton(text: "Команды", onPressed: () => _showCommandBottomSheet(context)),
+                    ]
+                  ],
+                ),
+              ),
             ),
-          ),
+            if (bloc.rtcVideoRenderer != null) Positioned(bottom: 0,  right: 0, child: SizedBox(
+              width: 300,
+              height: 300,
+              child: RTCVideoView(
+                bloc.rtcVideoRenderer!,
+              ),
+            )),
+          ],
         );
       }),
     );

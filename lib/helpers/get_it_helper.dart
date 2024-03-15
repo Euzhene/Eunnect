@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:eunnect/helpers/rtc_helper.dart';
+import 'package:eunnect/helpers/rtc_helper.dart';
+import 'package:eunnect/helpers/ssl_helper.dart';
 import 'package:eunnect/models/socket/custom_client_socket.dart';
 import 'package:eunnect/models/socket/custom_server_socket.dart';
 import 'package:eunnect/network/custom_nsd.dart';
@@ -50,7 +53,7 @@ abstract class GetItHelper {
   }
 
   static Future<void> _registerSockets() async {
-    CustomServerSocket customServerSocket = CustomServerSocket(storage: i<LocalStorage>());
+    CustomServerSocket customServerSocket = CustomServerSocket(storage: i<LocalStorage>(), sslHelper: i<SslHelper>());
     await _customRegister(customServerSocket);
     CustomClientSocket customClientSocket = CustomClientSocket(myDeviceInfo: GetItHelper.i<DeviceInfo>(), storage: GetItHelper.i<LocalStorage>());
     await _customRegister(customClientSocket);
@@ -68,6 +71,12 @@ abstract class GetItHelper {
   static Future<void> _registerHelpers() async {
     CustomNsd customNsd = CustomNsd();
     await _customRegister(customNsd);
+
+    SslHelper sslHelper = SslHelper(i<LocalStorage>());
+    await _customRegister(sslHelper);
+
+    RtcHelper rtcHelper = RtcHelper(sslHelper);
+    await _customRegister(rtcHelper);
   }
 
   static Future<T> _customRegister<T extends Object>(T value) async {

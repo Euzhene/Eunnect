@@ -31,6 +31,7 @@ dependencies:
   basic_utils: ^5.7.0
   nsd: ^3.0.0
   app_settings: ^5.1.1
+  flutter_webrtc: ^0.9.48+hotfix.1
 
 
 dev_dependencies:

@@ -2,6 +2,7 @@ import 'dart:io' hide SocketMessage;
 
 import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
+import 'package:eunnect/helpers/rtc_helper.dart';
 import 'package:eunnect/models/socket/custom_client_socket.dart';
 import 'package:eunnect/models/socket/socket_message.dart';
 import 'package:eunnect/repo/local_storage.dart';
@@ -9,6 +10,7 @@ import 'package:f_logs/f_logs.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../models/device_info/device_info.dart';
 import '../../models/device_info/device_type.dart';
@@ -29,33 +31,16 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final DeviceInfo myDeviceInfo = GetItHelper.i<DeviceInfo>();
   final CustomClientSocket clientSocket = GetItHelper.i<CustomClientSocket>();
+  final RtcHelper rtcHelper = GetItHelper.i<RtcHelper>();
   final DeviceInfo deviceInfo;
- // List<SocketCommand> commands = [];
+
+  RTCVideoRenderer? rtcVideoRenderer;
 
   final bool isAndroidDeviceType;
 
   Future<void> _init() async {
     tryConnectToDevice();
   }
-
-  // Future<void> onGetCommands() async {
-  //   try {
-  //     if (isAndroidDeviceType) return;
-  //
-  //     SecureSocket socket = await clientSocket.connect(deviceInfo.ipAddress);
-  //     ServerMessage serverMessage = await clientSocket.getCommands(socket: socket);
-  //
-  //     bool isError = await _handleServerResponse(serverMessage: serverMessage);
-  //     if (isError) return;
-  //
-  //     commands = serverMessage.data == null ? [] : SocketCommand.fromJsonList(serverMessage.data!);
-  //     if (!isClosed) emit(DeviceActionsState());
-  //   } catch (e, st) {
-  //     FLog.error(text: e.toString(), stacktrace: st);
-  //     _mainBloc.emitDefaultError("Ошибка во время передачи команды");
-  //     emit(DeviceActionsState());
-  //   }
-  // }
 
   Future<void> tryConnectToDevice() async {
     try {
@@ -141,6 +126,19 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     await _storage.deleteBaseDevice(deviceInfo, _deviceKey);
   }
 
+  Future<void> onEnableTranslation() async {
+      await rtcHelper.initForServer(myDeviceInfo);
+  }
+
+  Future<void> onGetTranslation() async {
+    rtcVideoRenderer = null;
+    rtcHelper.onVideoRendererUpdated = (RTCVideoRenderer renderer) {
+      rtcVideoRenderer = renderer;
+      emit(DeviceActionsState());
+    };
+    await rtcHelper.initForClient(pairedDeviceInfo: deviceInfo);
+  }
+
   ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
   Future<bool> _handleServerResponse({required ServerMessage serverMessage, String? successMessage}) async {
     if (!serverMessage.isErrorStatus) {
@@ -162,4 +160,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     if (res) _mainBloc.emitDefaultError("Другая команда в процессе выполнения");
     return res;
   }
+
+
 }
