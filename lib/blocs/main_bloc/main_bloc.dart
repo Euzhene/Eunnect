@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../helpers/get_it_helper.dart';
 import '../../models/custom_message.dart';
@@ -48,9 +49,13 @@ class MainBloc extends Cubit<MainState> {
     };
 
     customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
+      bool isNotificationPermissionGranted = await Permission.notification.isGranted;
+
       bool isBlockedDevice = (await _storage.getBaseDevice(deviceInfo.id, blockedDevicesKey)) != null;
       if (!isBlockedDevice)
-        NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo);
+        isNotificationPermissionGranted
+            ? NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo)
+            : NotificationHelper.onNotificationClicked?.call(deviceInfo);
       else
         onPairConfirmed(null);
     };
