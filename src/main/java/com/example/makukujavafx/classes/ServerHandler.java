@@ -65,39 +65,10 @@ public class ServerHandler {
             jsonHandler.saveDeviceToJsonFile(jsonArray);
             deviceInfo = new JsonHandler().getDeviceFromJsonFile();
         }
-        jsonArray = jsonHandler.getDevicesFromJsonFile();
         System.out.println(jsonArray);
     }
 
 
-    /*public void startServer() throws IOException {
-        jmdns = JmDNS.create(address);
-        Map<String, Object> txtMap = new HashMap<>();
-        txtMap.put("id", deviceInfo.getId());
-        txtMap.put("ip", deviceInfo.getIp());
-        txtMap.put("name", deviceInfo.getName());
-        txtMap.put("type", deviceInfo.getType());
-
-        serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
-        jmdns.registerService(serviceInfo);
-
-        serverSocket = new ServerSocket(PORT, 0, address);
-
-
-        while (isRunning) {
-            try {
-                Socket clientSocket = serverSocket.accept();
-                handleClient(clientSocket);
-                clientSocket.close();
-            } catch (IOException e) {
-                if (!serverSocket.isClosed()) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        serverSocket.close();
-    }
-*/
     public void startServer() throws IOException {
         try {
             serverSocket = new ServerSocket(PORT, 0, address);

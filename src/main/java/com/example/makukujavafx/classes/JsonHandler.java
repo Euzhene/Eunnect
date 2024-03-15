@@ -16,13 +16,16 @@ public class JsonHandler {
 
     private final String DEVICE_INFO_FILE = "MaKuKuDevices.json";
 
+    private ObjectMapper objectMapper;
+
+    public JsonHandler() {
+        objectMapper = new ObjectMapper();
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+    }
+
     public void createJsonFile() {
-        String homeDir = System.getProperty("user.home");
-        Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-            objectMapper.writeValue(new File(filePath.toString()), objectMapper.createArrayNode());
+            objectMapper.writeValue(new File(getDeviceFilepath().toString()), objectMapper.createArrayNode());
         } catch (IOException e) {
             throw new RuntimeException("Ошибка при создании начального JSON файла", e);
         }
@@ -44,15 +47,11 @@ public class JsonHandler {
 
     public void saveDeviceToJsonFile(ArrayNode jsonArray) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-            String homeDir = System.getProperty("user.home");
-            Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
-            if (!Files.exists(filePath)) {
+            if (!Files.exists(getDeviceFilepath())) {
                 createJsonFile();
             }
 
-            File file = new File(String.valueOf(filePath));
+            File file = new File(String.valueOf(getDeviceFilepath()));
 
             objectMapper.writeValue(file, jsonArray);
             System.out.println("JSON успешно обновлен.");
@@ -63,15 +62,11 @@ public class JsonHandler {
 
     public ArrayNode getDevicesFromJsonFile() {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String homeDir = System.getProperty("user.home");
-            Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
-
-            if (!Files.exists(filePath)) {
+            if (!Files.exists(getDeviceFilepath())) {
                 createJsonFile();
             }
 
-            byte[] json = Files.readAllBytes(filePath);
+            byte[] json = Files.readAllBytes(getDeviceFilepath());
             ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
             return devices;
         } catch (IOException e) {
@@ -79,37 +74,13 @@ public class JsonHandler {
         }
     }
 
-    /*    public DeviceInfo getDeviceFromJsonFile() {
-            try {
-                ObjectMapper objectMapper = new ObjectMapper();
-                String homeDir = System.getProperty("user.home");
-                Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
-
-                if (!Files.exists(filePath)) {
-                    createJsonFile();
-                }
-
-                byte[] json = Files.readAllBytes(filePath);
-                ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
-                JsonNode device = devices.get(0);
-                return objectMapper.treeToValue(device, DeviceInfo.class);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Ошибка при обработке JSON-файла", e);
-            } catch (IOException e) {
-                throw new RuntimeException("Ошибка при чтении JSON-файла", e);
-            }
-        }*/
     public DeviceInfo getDeviceFromJsonFile() {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String homeDir = System.getProperty("user.home");
-            Path filePath = Paths.get(homeDir, DEVICE_INFO_FILE);
-
-            if (!Files.exists(filePath)) {
+            if (!Files.exists(getDeviceFilepath())) {
                 createJsonFile();
             }
 
-            byte[] json = Files.readAllBytes(filePath);
+            byte[] json = Files.readAllBytes(getDeviceFilepath());
             ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
 
             if (devices.size() == 0) {
@@ -135,5 +106,22 @@ public class JsonHandler {
             }
         }
         return false;
+    }
+
+    private String getHomeDir() {
+        String homeDir = System.getProperty("user.home");
+        Path filePath = Paths.get(homeDir, "Makuku");
+        if (!Files.exists(filePath)) {
+            try {
+                Files.createDirectory(filePath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return filePath.toString();
+    }
+
+    private Path getDeviceFilepath() {
+        return Path.of(getHomeDir(), DEVICE_INFO_FILE);
     }
 }

@@ -9,6 +9,8 @@ module com.example.makukujavafx {
     requires com.fasterxml.jackson.databind;
     requires java.desktop;
     requires javax.jmdns;
+    requires org.bouncycastle.provider;
+    requires org.bouncycastle.pkix;
 
     opens com.example.makukujavafx to javafx.fxml;
     exports com.example.makukujavafx;
