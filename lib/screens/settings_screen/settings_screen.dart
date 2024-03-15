@@ -15,8 +15,40 @@ import '../../main.dart';
 import '../../widgets/custom_sized_box.dart';
 import '../../widgets/custom_text.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<StatefulWidget> createState() => _SettingsScreenState();
+
+  static Future<void> openScreen(BuildContext context) {
+    Widget screen = MultiBlocProvider(providers: [BlocProvider(create: (_) => SettingsBloc())], child: const SettingsScreen());
+    return pushScreen<void>(context, screen: screen, screenName: "SettingsScreen");
+  }
+}
+
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
+  _SettingsScreenState();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    bool isResumed = state == AppLifecycleState.resumed;
+    if (isResumed) context.read<SettingsBloc>().onUpdateNotificationPermission();
+
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +70,8 @@ class SettingsScreen extends StatelessWidget {
                         _buildBlockedGroup(),
                         const VerticalSizedBox(),
                         _buildGroup(title: "Доверенные устройства", children: []),
+                        const VerticalSizedBox(),
+                        _buildNotificationSwitch(),
                         const VerticalSizedBox(),
                         CustomButton(onPressed: bloc.onSendLogs, text: "Сообщить об ошибке"),
                         const VerticalSizedBox(),
@@ -160,8 +194,20 @@ class SettingsScreen extends StatelessWidget {
     });
   }
 
-  static Future<void> openScreen(BuildContext context) {
-    Widget screen = MultiBlocProvider(providers: [BlocProvider(create: (_) => SettingsBloc())], child: const SettingsScreen());
-    return pushScreen<void>(context, screen: screen, screenName: "SettingsScreen");
+  Widget _buildNotificationSwitch() {
+    return Builder(builder: (context) {
+      SettingsBloc bloc = context.read();
+
+      return CheckboxListTile(
+        value: bloc.notificationPermissionGranted,
+        onChanged: (val) => bloc.onRequestNotificationPermission(),
+        title: const CustomText(
+          "Уведомления",
+          textAlign: TextAlign.start,
+          fontSize: 17,
+        ), //добавить CustomText.header()
+        secondary: const Icon(Icons.notifications_active),
+      );
+    });
   }
 }

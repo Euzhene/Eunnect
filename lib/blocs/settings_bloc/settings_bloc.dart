@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app_settings/app_settings.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/helpers/log_helper.dart';
@@ -10,6 +11,7 @@ import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../main_bloc/main_bloc.dart';
 
@@ -25,6 +27,7 @@ class SettingsBloc extends Cubit<SettingsState> {
   late bool isDarkTheme;
   late String? coreDeviceModel;
   late String? coreDeviceAdditionalInfo;
+  bool notificationPermissionGranted = false;
   List<DeviceInfo> blockedDevices = [];
 
   SettingsBloc() : super(LoadingScreenState()) {
@@ -47,6 +50,7 @@ class SettingsBloc extends Cubit<SettingsState> {
       packageInfo = await PackageInfo.fromPlatform();
       await _setCoreDeviceInfo();
       blockedDevices = await _storage.getBaseDevices(blockedDevicesKey);
+      onUpdateNotificationPermission();
       emit(SettingsState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
@@ -109,7 +113,7 @@ class SettingsBloc extends Cubit<SettingsState> {
 
   Future<void> onDeleteBlockedDevice(DeviceInfo deviceInfo) async {
     try {
-      await _storage.deleteBaseDevice(deviceInfo,blockedDevicesKey);
+      await _storage.deleteBaseDevice(deviceInfo, blockedDevicesKey);
       blockedDevices = await _storage.getBaseDevices(blockedDevicesKey);
       emit(SettingsState());
     } catch (e, st) {
@@ -117,6 +121,24 @@ class SettingsBloc extends Cubit<SettingsState> {
       _mainBloc.emitDefaultError(e.toString());
     }
   }
+
+  Future<void> onUpdateNotificationPermission() async {
+    notificationPermissionGranted = await Permission.notification.isGranted;
+    emit(SettingsState());
+  }
+
+  Future<void> onRequestNotificationPermission() async {
+    bool isGranted = await Permission.notification.isGranted;
+    if (isGranted) {
+      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+      return;
+    }
+    PermissionStatus status = await Permission.notification.request();
+    if (status.isPermanentlyDenied)
+      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+
+  }
+
 
   Future<void> _setCoreDeviceInfo() async {
     DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
@@ -138,4 +160,6 @@ class SettingsBloc extends Cubit<SettingsState> {
       coreDeviceAdditionalInfo = linuxInfo.versionId;
     }
   }
+
+
 }
