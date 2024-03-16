@@ -6,6 +6,7 @@ import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
 import 'package:eunnect/helpers/notification/notification_file.dart';
 import 'package:eunnect/helpers/notification/notification_helper.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
+import 'package:eunnect/models/socket/custom_client_socket.dart';
 import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/f_logs.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +24,7 @@ part 'main_state.dart';
 class MainBloc extends Cubit<MainState> {
   final LocalStorage _storage = GetItHelper.i<LocalStorage>();
   final CustomServerSocket customServerSocket = GetItHelper.i<CustomServerSocket>();
+  final CustomClientSocket customClientSocket = GetItHelper.i<CustomClientSocket>();
 
   final Map<NotificationFile, int> _notificationFileQueue = {};
   late Function(DeviceInfo) onPairedDeviceChanged;
@@ -148,6 +150,7 @@ class MainBloc extends Cubit<MainState> {
     await updateDeviceInfo();
     await startServer();
     await _scanBloc.onScanDevices();
+    await _checkAndDeleteUnpairedDevices();
   }
 
   Future<void> checkFirstLaunch() async {
@@ -227,5 +230,25 @@ class MainBloc extends Cubit<MainState> {
         NotificationHelper.updateFileNotification(progress: _notificationFileQueue[key]!, notificationFile: key);
       }
     });
+  }
+
+  Future<void> _checkAndDeleteUnpairedDevices() async {
+    try{
+    List<DeviceInfo> pairedDeviceList =  await _storage.getBaseDevices(pairedDevicesKey);
+    for (DeviceInfo deviceInfo in pairedDeviceList) {
+      Future.sync(() async {
+        SecureSocket secureSocket = await customClientSocket.connect(deviceInfo.ipAddress);
+        bool isPairedDevice = await customClientSocket.checkIsPairDevice(socket: secureSocket);
+        if (!isPairedDevice) {
+          await _storage.deleteBaseDevice(deviceInfo: deviceInfo, deviceKey: pairedDevicesKey);
+          onPairedDeviceChanged.call(deviceInfo);
+        }
+      }).then((value) => null, onError: (e,st){});
+
+    }
+
+    }catch(e,st) {
+      FLog.error(text: e.toString(),stacktrace: st);
+    }
   }
 }

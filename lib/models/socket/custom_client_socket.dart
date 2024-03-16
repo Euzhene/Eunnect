@@ -65,4 +65,22 @@ class CustomClientSocket {
     await socket.close();
     return null;
   }
+
+  ///true, если сервер считает это устройство сопряженным
+  Future<bool> checkIsPairDevice({required SecureSocket socket}) async {
+    socket.add(ClientMessage(call: isPairedCall, data: "", deviceId: myDeviceInfo.id).toUInt8List());
+    await socket.close();
+    BytesBuilder bytesBuilder = BytesBuilder(copy: false);
+    await for (Uint8List bytes in socket) {
+      bytesBuilder.add(bytes);
+    }
+    ServerMessage socketMessage = ServerMessage.fromUInt8List(bytesBuilder.takeBytes());
+    return socketMessage.status != 101;
+  }
+
+  Future<void> unpair({required SecureSocket socket}) async {
+    socket.add(ClientMessage(call: unpairCall, data: "", deviceId: myDeviceInfo.id).toUInt8List());
+    await socket.close();
+    socket.destroy();
+  }
 }

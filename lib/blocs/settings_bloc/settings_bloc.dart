@@ -113,7 +113,7 @@ class SettingsBloc extends Cubit<SettingsState> {
 
   Future<void> onDeleteBlockedDevice(DeviceInfo deviceInfo) async {
     try {
-      await _storage.deleteBaseDevice(deviceInfo, blockedDevicesKey);
+      await _storage.deleteBaseDevice(deviceInfo:  deviceInfo,deviceKey:  blockedDevicesKey);
       blockedDevices = await _storage.getBaseDevices(blockedDevicesKey);
       emit(SettingsState());
     } catch (e, st) {

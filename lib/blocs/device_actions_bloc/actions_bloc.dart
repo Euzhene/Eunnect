@@ -128,7 +128,14 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   }
 
   Future<void> onBreakPairing() async {
-    await _storage.deleteBaseDevice(deviceInfo, _deviceKey);
+    try {
+      clientSocket.connect(deviceInfo.ipAddress).then<void>((value) async {
+        await clientSocket.unpair(socket:  value);
+      }, onError: (e,st) => FLog.error(text: e.toString(), stacktrace: st));
+      await _storage.deleteBaseDevice(deviceInfo: deviceInfo, deviceKey: _deviceKey);
+    }catch(e,st) {
+      FLog.error(text: e.toString(),stacktrace: st);
+    }
   }
 
   Future<void> onEnableTranslation() async {

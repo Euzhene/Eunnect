@@ -174,9 +174,10 @@ class LocalStorage {
     FLog.trace(text: "a $deviceKey device was updated to the local storage");
   }
 
-  Future<void> deleteBaseDevice(DeviceInfo deviceInfo, String deviceKey) async {
+  Future<void> deleteBaseDevice({DeviceInfo? deviceInfo,String? deviceId, required String deviceKey}) async {
     List<DeviceInfo> baseDevices = await getBaseDevices(deviceKey);
-    baseDevices.removeWhere((e) => e.id == deviceInfo.id);
+    String id = deviceInfo?.id ?? deviceId!;
+    baseDevices.removeWhere((e) => e.id == id);
     await saveBaseDevices(baseDevices, deviceKey);
     FLog.trace(text: "a $deviceKey device was deleted from the local storage");
   }

@@ -18,6 +18,8 @@ import '../custom_message.dart';
 
 const pairDevicesCall = "pair_devices";
 const deviceInfoCall = "device_info";
+const isPairedCall = "is_paired";
+const unpairCall = "unpair";
 const sendBufferCall = "buffer";
 const sendFileCall = "file";
 const getCommandsCall = "get_commands";
@@ -35,6 +37,7 @@ class CustomServerSocket {
   Function(NotificationFile?)? onFileNotFullyReceivedCall;
   Function(int, NotificationFile?)? onFileBytesReceivedCall;
   Function(Map<String,dynamic>)? onWebRtcPeerConnectionCall;
+  VoidCallback? onDeviceUnpaired;
 
   late StreamController<DeviceInfo?> pairStream;
 
@@ -80,6 +83,12 @@ class CustomServerSocket {
         case sendFileCall:
           sendMessage = await _handleFileCall(stream, receiveMessage, curSocket);
           break;
+        case isPairedCall:
+          sendMessage = await _handleIsPairedCall(receiveMessage.deviceId);
+          break;
+        case unpairCall:
+          sendMessage = await _handleUnpairCall(receiveMessage.deviceId);
+          break;
         default:
           sendMessage = _handleUnknownCall(receiveMessage.call);
           break;
@@ -123,7 +132,27 @@ class CustomServerSocket {
     }
   }
 
-  static ServerMessage _handleUnknownCall(String call) => ServerMessage(status: 102);
+  Future<ServerMessage> _handleIsPairedCall(String deviceId) async {
+    try {
+      bool isPairedDevice = (await storage.getBaseDevice(deviceId, pairedDevicesKey)) != null;
+      return ServerMessage(status: isPairedDevice ? 200 : 101);
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      return ServerMessage(status: 104);
+    }
+  }
+
+  Future<ServerMessage> _handleUnpairCall(String deviceId) async {
+    try {
+      await storage.deleteBaseDevice(deviceId: deviceId, deviceKey: pairedDevicesKey);
+      onDeviceUnpaired?.call();
+      return ServerMessage(status: 200);
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      return ServerMessage(status: 104);
+    }
+  }
+
 
   Future<ServerMessage> _handleBufferCall(ClientMessage receiveMessage) async {
     ServerMessage? checkRes = await _checkPairDevice(receiveMessage);
@@ -168,4 +197,7 @@ class CustomServerSocket {
     }
     return ServerMessage(status: status);
   }
+
+  static ServerMessage _handleUnknownCall(String call) => ServerMessage(status: 102);
+
 }

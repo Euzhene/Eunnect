@@ -26,6 +26,7 @@ class ScanBloc extends Cubit<ScanState> {
   final LocalStorage _localStorage = GetItHelper.i<LocalStorage>();
   final MainBloc _mainBloc = GetItHelper.i<MainBloc>();
   final CustomNsd nsd = GetItHelper.i<CustomNsd>();
+  final CustomServerSocket customServerSocket = GetItHelper.i<CustomServerSocket>();
 
   List<DeviceInfo> foundDevices = [];
   List<ScanPairedDevice> pairedDevices = [];
@@ -44,6 +45,10 @@ class ScanBloc extends Cubit<ScanState> {
       getSavedDevices();
       foundDevices.remove(deviceInfo);
       _emitScanState();
+    };
+
+    customServerSocket.onDeviceUnpaired = () {
+      getSavedDevices();
     };
   }
 
