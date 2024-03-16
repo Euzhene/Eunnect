@@ -46,7 +46,7 @@ class CustomNsd {
       if (service.txt != null) {
         Map<String, Uint8List?> attributes = service.txt!;
         DeviceInfo deviceInfo = DeviceInfo.fromNsdJson(attributes);
-        if (myDeviceInfo == deviceInfo) continue;
+        if (myDeviceInfo.id == deviceInfo.id) continue;
         foundDevices.add(deviceInfo);
       }
     }

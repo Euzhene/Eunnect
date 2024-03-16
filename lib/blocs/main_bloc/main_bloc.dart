@@ -147,8 +147,8 @@ class MainBloc extends Cubit<MainState> {
   Future<void> resetNetworkSettings() async {
     FLog.trace(text: "reseting network settings");
     ScanBloc _scanBloc = GetItHelper.i<ScanBloc>();
-    await updateDeviceInfo();
-    await startServer();
+    await _updateDeviceInfo();
+    await customServerSocket.initServer(GetItHelper.i<DeviceInfo>());
     await _scanBloc.onScanDevices();
     await _checkAndDeleteUnpairedDevices();
   }
@@ -164,10 +164,6 @@ class MainBloc extends Cubit<MainState> {
       FLog.error(text: e.toString(), stacktrace: st);
       emit(ErrorMainState(error: "Критическая ошибка при чтении из БД. Обратитесь в службу поддержки"));
     }
-  }
-
-  Future<void> startServer() async {
-    await customServerSocket.initServer(GetItHelper.i<DeviceInfo>());
   }
 
   Future<void> onPairConfirmed(DeviceInfo? pairDeviceInfo) async {
@@ -213,7 +209,7 @@ class MainBloc extends Cubit<MainState> {
     emit(MainState());
   }
 
-  Future<void> updateDeviceInfo() async {
+  Future<void> _updateDeviceInfo() async {
     DeviceInfo deviceInfo = GetItHelper.i<DeviceInfo>();
     String deviceIp = (await NetworkInfo().getWifiIP()) ?? "";
     deviceInfo = deviceInfo.copyWith(ipAddress: deviceIp);
