@@ -4,12 +4,12 @@ import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/socket/socket_command.dart';
 import 'package:eunnect/routes.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
+import 'package:eunnect/widgets/camera_widget.dart';
 import 'package:eunnect/widgets/custom_card.dart';
 import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../models/device_info/device_info.dart';
 import '../widgets/custom_text.dart';
@@ -67,13 +67,7 @@ class ActionsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            if (bloc.rtcVideoRenderer != null) Positioned(bottom: 0,  right: 0, child: SizedBox(
-              width: 300,
-              height: 300,
-              child: RTCVideoView(
-                bloc.rtcVideoRenderer!,
-              ),
-            )),
+            if (bloc.rtcVideoRenderer != null) CameraWidget(rtcVideoRenderer: bloc.rtcVideoRenderer!,),
           ],
         );
       }),
