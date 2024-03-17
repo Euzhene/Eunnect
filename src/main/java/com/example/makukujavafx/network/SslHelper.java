@@ -118,8 +118,8 @@ public class SslHelper {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", new BouncyCastleProvider());
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        FileUtils.writePrivateKey(keyPair.getPrivate());
-        FileUtils.writePublicKey(keyPair.getPublic());
+        FileUtils.write(keyPair.getPrivate().getEncoded(), FileUtils.getPrivateKeyFilePath());
+        FileUtils.write(keyPair.getPublic().getEncoded(), FileUtils.getPublicKeyFilePath());
         return keyPair;
 
     }

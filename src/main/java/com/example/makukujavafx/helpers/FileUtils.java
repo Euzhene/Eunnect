@@ -5,9 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
 
 public class FileUtils {
     private static final String HOME_DIRECTORY = "Makuku";
@@ -25,23 +22,14 @@ public class FileUtils {
     public static byte[] getPublicKey() throws IOException {
         return read(getPublicKeyFilePath());
     }
-    public static void writeCert(X509Certificate certificate) throws Exception {
-         write(certificate.getEncoded(), getCertFilePath());
-    }
-    public static void writePrivateKey(PrivateKey privateKey) throws IOException {
-        write(privateKey.getEncoded(), getPrivateKeyFilePath());
-    }
-    public static void writePublicKey(PublicKey publicKey) throws IOException {
-        write(publicKey.getEncoded(), getPublicKeyFilePath());
-    }
 
     public static byte[] getDevicesBytesFromJsonFile() throws IOException {
-        tryCreateDeviceFile();
+        tryCreateFile(getDeviceFilePath());
         return Files.readAllBytes(getDeviceFilePath());
     }
 
     public static File getDeviceFile() throws IOException {
-        tryCreateDeviceFile();
+        tryCreateFile(getDeviceFilePath());
         return new File(getDeviceFilePath().toString());
     }
 
@@ -73,10 +61,6 @@ public class FileUtils {
         return getHomeDirPath().resolve(CERT_FILE);
     }
 
-
-    private static boolean tryCreateDeviceFile() throws IOException {
-        return  tryCreateFile(getDeviceFilePath());
-    }
 
     private static boolean tryCreateFile(Path path) throws IOException {
         if (Files.exists(path)) return false;
