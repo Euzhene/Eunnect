@@ -32,7 +32,7 @@ public class ServerHandler {
     private JsonHandler jsonHandler;
 
     private final String SERVICE_TYPE = "_makuku._tcp.local.";
-    private final int PORT = 10242;
+    public static final int PORT = 10242;
     private InetAddress address;
     private volatile boolean isRunning = true;
 
@@ -42,7 +42,9 @@ public class ServerHandler {
         objectMapper = new ObjectMapper();
         prefs = Preferences.userNodeForPackage(ServerHandler.class);
         jsonHandler = new JsonHandler();
-        jsonArray = jsonHandler.getDevicesFromJsonFile();
+        boolean isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
+        if (isFirstLaunch) jsonArray = objectMapper.createArrayNode();
+        else jsonArray = jsonHandler.getDevicesFromJsonFile();
     }
 
     public void initialization() {

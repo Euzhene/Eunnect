@@ -5,10 +5,35 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 
 public class FileUtils {
     private static final String HOME_DIRECTORY = "Makuku";
     private static final String DEVICE_INFO_FILE = "MaKuKuDevices.json";
+    private static final String PRIVATE_KEY_FILE = "private.der";
+    private static final String PUBLIC_KEY_FILE = "public.der";
+    private static final String CERT_FILE = "cert.der";
+
+    public static byte[] getCert() throws IOException {
+        return read(getCertFilePath());
+    }
+    public static byte[] getPrivateKey() throws IOException {
+        return read(getPrivateKeyFilePath());
+    }
+    public static byte[] getPublicKey() throws IOException {
+        return read(getPublicKeyFilePath());
+    }
+    public static void writeCert(X509Certificate certificate) throws Exception {
+         write(certificate.getEncoded(), getCertFilePath());
+    }
+    public static void writePrivateKey(PrivateKey privateKey) throws IOException {
+        write(privateKey.getEncoded(), getPrivateKeyFilePath());
+    }
+    public static void writePublicKey(PublicKey publicKey) throws IOException {
+        write(publicKey.getEncoded(), getPublicKeyFilePath());
+    }
 
     public static byte[] getDevicesBytesFromJsonFile() throws IOException {
         tryCreateDeviceFile();
@@ -20,6 +45,15 @@ public class FileUtils {
         return new File(getDeviceFilePath().toString());
     }
 
+    public static void write(byte[] bytes, Path path) throws IOException {
+        tryCreateFile(path);
+        Files.write(path, bytes);
+    }
+
+    private static byte[] read(Path path) throws IOException {
+        if (!Files.exists(path)) return null;
+        return Files.readAllBytes(path);
+    }
 
     private static Path getHomeDirPath() {
         String homeDir = System.getProperty("user.home");
@@ -29,13 +63,29 @@ public class FileUtils {
     private static Path getDeviceFilePath() {
         return getHomeDirPath().resolve(DEVICE_INFO_FILE);
     }
+    public static Path getPrivateKeyFilePath() {
+        return getHomeDirPath().resolve(PRIVATE_KEY_FILE);
+    }
+    public static Path getPublicKeyFilePath() {
+        return getHomeDirPath().resolve(PUBLIC_KEY_FILE);
+    }
+    public static Path getCertFilePath() {
+        return getHomeDirPath().resolve(CERT_FILE);
+    }
 
 
     private static boolean tryCreateDeviceFile() throws IOException {
-        Path deviceFile = getDeviceFilePath();
-        if (Files.exists(deviceFile)) return false;
+        return  tryCreateFile(getDeviceFilePath());
+    }
 
-        Files.createDirectories(deviceFile);
+    private static boolean tryCreateFile(Path path) throws IOException {
+        if (Files.exists(path)) return false;
+
+        File  file = path.toFile();
+        File parentFile = file.getParentFile();
+
+        Files.createDirectories(parentFile.toPath());
+        Files.createFile(file.toPath());
         return true;
     }
 }

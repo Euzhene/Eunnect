@@ -1,6 +1,7 @@
 package com.example.makukujavafx;
 
 import com.example.makukujavafx.classes.ServerHandler;
+import com.example.makukujavafx.network.SslHelper;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -17,6 +18,8 @@ import javafx.stage.WindowEvent;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.action.Action;
 import javafx.application.Application;
+
+import javax.net.ssl.SSLServerSocket;
 
 public class MainApplication extends Application {
     private ServerHandler serverHandler;
@@ -41,10 +44,16 @@ public class MainApplication extends Application {
             }
         });
         stage.show();
+
+
         serverHandler = new ServerHandler(scene);
         serverHandler.initialization();
+        SslHelper.init();
+
+        SSLServerSocket server= SslHelper.getSslServerSocket();
 
         startServerAsync();
+
     }
 
     public static void main(String[] args) {

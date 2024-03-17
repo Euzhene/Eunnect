@@ -55,6 +55,7 @@ public class JsonHandler {
     public ArrayNode getDevicesFromJsonFile() {
         try {
             byte[] json = FileUtils.getDevicesBytesFromJsonFile();
+
             ArrayNode devices = (ArrayNode) objectMapper.readTree(json);
 
             if (devices.isEmpty())

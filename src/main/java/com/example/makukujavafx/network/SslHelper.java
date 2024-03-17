@@ -1,46 +1,126 @@
 package com.example.makukujavafx.network;
 
 import com.example.makukujavafx.classes.JsonHandler;
+import com.example.makukujavafx.helpers.FileUtils;
 import com.example.makukujavafx.models.DeviceInfo;
-import org.bouncycastle.asn1.pkcs.RSAPublicKey;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
-import java.security.SecureRandom;
+import java.net.ServerSocket;
+import java.security.*;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Date;
 
-public class SslHelper {
-    public X509Certificate createCertificate() throws Exception {
-        KeyGenerator keyGenerator = new KeyGenerator();
-        keyGenerator.createKey();
+import static com.example.makukujavafx.classes.ServerHandler.PORT;
 
-        RSAPublicKey rsaPublicKey = (RSAPublicKey) keyGenerator.getKey().getPublic();
-        SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(rsaPublicKey.getEncoded());
+public class SslHelper {
+    private static SSLContext sslContext;
+    public static SSLServerSocket getSslServerSocket(int port) throws IOException {
+        ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket(port);
+        return (SSLServerSocket) serverSocket;
+    }
+
+    public static SSLServerSocket getSslServerSocket() throws IOException {
+        return getSslServerSocket(PORT);
+    }
+
+    public static void init() throws Exception {
+        initSslContext();
+    }
+
+
+
+
+    private static void initSslContext() throws Exception {
+        byte[] certBytes = FileUtils.getCert();
+        byte[] privateKeyBytes = FileUtils.getPrivateKey();
+        byte[] publicKeyBytes = FileUtils.getPublicKey();
+        boolean needToGenerateCert = certBytes == null || privateKeyBytes == null || publicKeyBytes == null;
+
+        if (needToGenerateCert) {
+            KeyPair keyPair = createKeys();
+            X509Certificate cert = generateCertificate(keyPair);
+            certBytes = cert.getEncoded();
+            privateKeyBytes = keyPair.getPrivate().getEncoded();
+            publicKeyBytes = keyPair.getPublic().getEncoded();
+
+            FileUtils.write(certBytes, FileUtils.getCertFilePath());
+            FileUtils.write(privateKeyBytes, FileUtils.getPrivateKeyFilePath());
+            FileUtils.write(publicKeyBytes, FileUtils.getPublicKeyFilePath());
+        }
+
+        CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+        InputStream in = new ByteArrayInputStream(certBytes);
+        X509Certificate cert = (X509Certificate)certFactory.generateCertificate(in);
+
+
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+
+        // Загрузка KeyStore
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(null, null);
+        keyStore.setCertificateEntry("cert-alias", cert);
+        keyStore.setKeyEntry("key-alias", privateKey, "".toCharArray(), new java.security.cert.Certificate[]{cert});
+
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, "".toCharArray());
+
+        // Создание SSLContext
+        sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+    }
+
+    private static X509Certificate generateCertificate(KeyPair keyPair) throws Exception {
+
+
+        SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
         JsonHandler jsonHandler = new JsonHandler();
         DeviceInfo deviceInfo = jsonHandler.getDeviceFromJsonFile();
 
         X500Name issuerName = new X500Name(String.format("CN={0}, OU=Makuku", deviceInfo.getId()));
-        X500Name subjectName = issuerName;
         X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder(issuerName,
                 new BigInteger(64, new SecureRandom()),
                 new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
                 new Date(System.currentTimeMillis() + 365 * 24 * 60 * 60 * 1000),
-                subjectName,
+                issuerName,
                 subjectPublicKeyInfo);
 
-        // Create a content signer
-        ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA").build(keyGenerator.getKey().getPrivate());
 
-        // Create a self-signed certificate
+        ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
+
+
         X509Certificate certificate = new JcaX509CertificateConverter().getCertificate(certificateBuilder.build(contentSigner));
 
-        // Print the certificate
+
         return certificate;
+    }
+
+
+
+    private static KeyPair createKeys() throws Exception {
+
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", new BouncyCastleProvider());
+        keyPairGenerator.initialize(2048);
+        KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        FileUtils.writePrivateKey(keyPair.getPrivate());
+        FileUtils.writePublicKey(keyPair.getPublic());
+        return keyPair;
+
     }
 }
