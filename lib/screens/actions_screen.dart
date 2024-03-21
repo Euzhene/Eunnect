@@ -22,55 +22,58 @@ class ActionsScreen extends StatelessWidget {
     ActionsBloc bloc = context.read();
     DeviceInfo deviceInfo = bloc.deviceInfo;
 
-    return CustomScreen(
-      appbarText: "${deviceInfo.name} (${deviceInfo.ipAddress})",
-      menuButtons: [
-        PopupMenuItem(
-          value: () => bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
-          child: const Text('Разорвать сопряжение'),
-        ),
-        PopupMenuItem(
-          value: () => _showCommandBottomSheet(context),
-          child: const Text('Добавить команду'),
-        ),
-      ],
-      child: BlocConsumer<ActionsBloc, DeviceActionsState>(listener: (context, state) {
-        if (state is DeletedDeviceState) bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true));
-      }, builder: (context, state) {
-        return Stack(
-          children: [
-            Center(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (state.isUnreachableDevice)
-                      const Row(
-                        children: [
-                          Icon(Icons.error_outline, size: 40),
-                          HorizontalSizedBox(),
-                          Expanded(
-                              child: CustomText(
-                            "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
-                            fontSize: 20,
-                          )),
-                        ],
-                      )
-                    else ...[
-                      _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
-                      _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
-                      _buildActionButton(text: "Включить трансляцию для устройства", onPressed: () => bloc.onEnableTranslation()),
-                      _buildActionButton(text: "Получить трансляцию", onPressed: () => bloc.onGetTranslation()),
-                      if (!bloc.isAndroidDeviceType) _buildActionButton(text: "Команды", onPressed: () => _showCommandBottomSheet(context)),
-                    ]
-                  ],
-                ),
-              ),
+    return BlocConsumer<ActionsBloc, DeviceActionsState>(listener: (context, state) {
+      if (state is DeletedDeviceState) bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true));
+    },
+      builder: (context,state) {
+        return CustomScreen(
+          appbarText: "${deviceInfo.name} (${deviceInfo.ipAddress})",
+          menuButtons: [
+            PopupMenuItem(
+              value: () => bloc.onBreakPairing().then((value) => Navigator.of(context).pop(true)),
+              child: const Text('Разорвать сопряжение'),
             ),
-            if (bloc.rtcVideoRenderer != null) CameraWidget(rtcVideoRenderer: bloc.rtcVideoRenderer!,),
+            PopupMenuItem(
+              value: () => bloc.onBlockDevice(),
+              child: Text(bloc.isBlockedDevice ? 'Разблокировать' : 'Заблокировать'),
+            ),
           ],
+          child: Stack(
+              children: [
+                Center(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (state.isUnreachableDevice || bloc.isBlockedDevice)
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline, size: 40),
+                              const HorizontalSizedBox(),
+                              Expanded(
+                                  child: CustomText(
+                                    bloc.isBlockedDevice ? "Устройство заблокировано" :
+                                "Не удалось достичь сопряженное устройство. Убедитесь, что оно подключено к той же сети.",
+                                fontSize: 20,
+                              )),
+                            ],
+                          )
+                        else ...[
+                          _buildActionButton(text: "Передать буфер обмена", onPressed: () => bloc.onSendBuffer()),
+                          _buildActionButton(text: "Передать файл", onPressed: () => bloc.onSendFile()),
+                          _buildActionButton(text: "Включить трансляцию для устройства", onPressed: () => bloc.onEnableTranslation()),
+                          _buildActionButton(text: "Получить трансляцию", onPressed: () => bloc.onGetTranslation()),
+                          if (!bloc.isAndroidDeviceType) _buildActionButton(text: "Команды", onPressed: () => _showCommandBottomSheet(context)),
+                        ]
+                      ],
+                    ),
+                  ),
+                ),
+                if (bloc.rtcVideoRenderer != null) CameraWidget(rtcVideoRenderer: bloc.rtcVideoRenderer!,),
+              ],
+            ),
         );
-      }),
+      }
     );
   }
 

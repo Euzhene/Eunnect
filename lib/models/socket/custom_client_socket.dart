@@ -20,7 +20,7 @@ class CustomClientSocket {
     List<String> pairedDevicesId = (await storage.getBaseDevices(pairedDevicesKey)).map((e) => e.id).toList();
     return SecureSocket.connect(ip, port, onBadCertificate: (X509Certificate certificate) {
       return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: pairedDevicesId);
-    });
+    }, timeout: const Duration(seconds: 2));
   }
 
   ///Проверка того, что устройство, с которым мы хотим работать, доступно для подключения

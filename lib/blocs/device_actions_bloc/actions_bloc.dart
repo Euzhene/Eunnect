@@ -37,25 +37,7 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   RTCVideoRenderer? rtcVideoRenderer;
 
   final bool isAndroidDeviceType;
-
-  Future<void> _init() async {
-    tryConnectToDevice();
-
-    rtcHelper.onVideoRendererUpdated = (RTCVideoRenderer renderer) {
-      rtcVideoRenderer = renderer;
-      emit(DeviceActionsState());
-    };
-  }
-
-  Future<void> tryConnectToDevice() async {
-    try {
-      await clientSocket.checkConnection(deviceInfo.ipAddress);
-      if (!isClosed) emit(DeviceActionsState());
-    } catch (e, st) {
-      if (!isClosed) emit(UnreachableDeviceState());
-      FLog.error(text: e.toString(), stacktrace: st);
-    }
-  }
+  bool isBlockedDevice = false;
 
   void onSendBuffer() async {
     try {
@@ -97,7 +79,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     }
   }
 
-
   void onSendFile() async {
     try {
       if (_checkLoadingState()) return;
@@ -130,20 +111,58 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
   Future<void> onBreakPairing() async {
     try {
       clientSocket.connect(deviceInfo.ipAddress).then<void>((value) async {
-        await clientSocket.unpair(socket:  value);
-      }, onError: (e,st) => FLog.error(text: e.toString(), stacktrace: st));
+        await clientSocket.unpair(socket: value);
+      }, onError: (e, st) => FLog.error(text: e.toString(), stacktrace: st));
       await _storage.deleteBaseDevice(deviceInfo: deviceInfo, deviceKey: _deviceKey);
-    }catch(e,st) {
-      FLog.error(text: e.toString(),stacktrace: st);
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
     }
   }
 
   Future<void> onEnableTranslation() async {
-      await rtcHelper.initForServer(myDeviceInfo);
+    await rtcHelper.initForServer(myDeviceInfo);
   }
 
   Future<void> onGetTranslation() async {
     await rtcHelper.initForClient(pairedDeviceInfo: deviceInfo);
+  }
+
+  Future<void> onBlockDevice() async {
+    try {
+      isBlockedDevice = !isBlockedDevice;
+      isBlockedDevice
+          ? await _storage.addBaseDevice(deviceInfo, blockedDevicesKey)
+          : await _storage.deleteBaseDevice(deviceKey: blockedDevicesKey, deviceInfo: deviceInfo);
+      emit(DeviceActionsState());
+      await _init();
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
+      _mainBloc.emitDefaultError(e.toString());
+    }
+  }
+
+  Future<void> _init() async {
+    isBlockedDevice = (await _storage.getBaseDevice(deviceInfo.id, blockedDevicesKey)) != null;
+    if (isBlockedDevice)
+      emit(DeviceActionsState());
+    else
+      _tryConnectToDevice();
+
+    rtcHelper.closeConnections();
+    rtcHelper.onVideoRendererUpdated = (RTCVideoRenderer renderer) {
+      rtcVideoRenderer = renderer;
+      emit(DeviceActionsState());
+    };
+  }
+
+  Future<void> _tryConnectToDevice() async {
+    try {
+      await clientSocket.checkConnection(deviceInfo.ipAddress);
+      if (!isClosed) emit(DeviceActionsState());
+    } catch (e, st) {
+      if (!isClosed) emit(UnreachableDeviceState());
+      FLog.error(text: e.toString(), stacktrace: st);
+    }
   }
 
   ///возвращает true в случае если сервер отправляет статус-ошибку, иначе false
@@ -167,7 +186,6 @@ class ActionsBloc extends Cubit<DeviceActionsState> {
     if (res) _mainBloc.emitDefaultError("Другая команда в процессе выполнения");
     return res;
   }
-
 
   @override
   Future<void> close() {
