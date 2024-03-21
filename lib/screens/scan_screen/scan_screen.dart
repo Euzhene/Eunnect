@@ -29,7 +29,7 @@ class ScanScreen extends StatelessWidget {
             appbarText: "Подключение Устройств",
             padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding * 3),
             appbarActions: [IconButton(onPressed: () => SettingsScreen.openScreen(context), icon: const Icon(Icons.settings))],
-            fab: FloatingActionButton(tooltip: "Добавить устройство по IP", onPressed: () => AddDeviceByIpDialog.openDialog(context, bloc), child: const Icon(Icons.add),),
+            fab: FloatingActionButton(tooltip: "Добавить устройство по IP", onPressed: () => AddDeviceByIpDialog.openDialog(context), child: const Icon(Icons.add),),
             child: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
               if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
             }, buildWhen: (prevS, curS) {

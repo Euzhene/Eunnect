@@ -170,6 +170,7 @@ class ScanBloc extends Cubit<ScanState> {
     DeviceInfo? lastOpenDevice = await _localStorage.getBaseDevice(lastOpenDeviceId, _deviceKey);
     if (lastOpenDevice != null) emit(MoveToLastOpenDeviceState(ScanPairedDevice.fromDeviceInfo(lastOpenDevice)));
   }
+
 }
 
 FutureOr<ServerMessage> _pair(List args) async {

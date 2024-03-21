@@ -53,13 +53,9 @@ class MainBloc extends Cubit<MainState> {
     customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
       bool isNotificationPermissionGranted = await Permission.notification.isGranted;
 
-      bool isBlockedDevice = (await _storage.getBaseDevice(deviceInfo.id, blockedDevicesKey)) != null;
-      if (!isBlockedDevice)
-        isNotificationPermissionGranted
-            ? NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo)
-            : NotificationHelper.onNotificationClicked?.call(deviceInfo);
-      else
-        onPairConfirmed(null);
+      isNotificationPermissionGranted
+          ? NotificationHelper.createPairingNotification(anotherDeviceInfo: deviceInfo)
+          : NotificationHelper.onNotificationClicked?.call(deviceInfo);
     };
 
     customServerSocket.onBufferCall = (text) async {
@@ -230,22 +226,20 @@ class MainBloc extends Cubit<MainState> {
   }
 
   Future<void> _checkAndDeleteUnpairedDevices() async {
-    try{
-    List<DeviceInfo> pairedDeviceList =  await _storage.getBaseDevices(pairedDevicesKey);
-    for (DeviceInfo deviceInfo in pairedDeviceList) {
-      Future.sync(() async {
-        SecureSocket secureSocket = await customClientSocket.connect(deviceInfo.ipAddress);
-        bool isPairedDevice = await customClientSocket.checkIsPairDevice(socket: secureSocket);
-        if (!isPairedDevice) {
-          await _storage.deleteBaseDevice(deviceInfo: deviceInfo, deviceKey: pairedDevicesKey);
-          onPairedDeviceChanged.call(deviceInfo);
-        }
-      }).then((value) => null, onError: (e,st){});
-
-    }
-
-    }catch(e,st) {
-      FLog.error(text: e.toString(),stacktrace: st);
+    try {
+      List<DeviceInfo> pairedDeviceList = await _storage.getBaseDevices(pairedDevicesKey);
+      for (DeviceInfo deviceInfo in pairedDeviceList) {
+        Future.sync(() async {
+          SecureSocket secureSocket = await customClientSocket.connect(deviceInfo.ipAddress);
+          bool isPairedDevice = await customClientSocket.checkIsPairDevice(socket: secureSocket);
+          if (!isPairedDevice) {
+            await _storage.deleteBaseDevice(deviceInfo: deviceInfo, deviceKey: pairedDevicesKey);
+            onPairedDeviceChanged.call(deviceInfo);
+          }
+        }).then((value) => null, onError: (e, st) {});
+      }
+    } catch (e, st) {
+      FLog.error(text: e.toString(), stacktrace: st);
     }
   }
 }

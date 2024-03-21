@@ -178,8 +178,10 @@ class CustomServerSocket {
   }
 
   Future<ServerMessage?> _checkPairDevice(ClientMessage clientMessage) async {
-    if ((await storage.getBaseDevice(clientMessage.deviceId, pairedDevicesKey) == null))
-      return ServerMessage(status: 101);
+    bool isNotPairedDevice = (await storage.getBaseDevice(clientMessage.deviceId, pairedDevicesKey) == null);
+    bool isBlockedDevice = (await storage.getBaseDevice(clientMessage.deviceId, blockedDevicesKey) != null);
+    if (isNotPairedDevice) return ServerMessage(status: 101);
+    if (isBlockedDevice) return ServerMessage(status: 103);
 
     return null;
   }
