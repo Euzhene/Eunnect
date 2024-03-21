@@ -120,6 +120,12 @@ abstract class NotificationHelper {
     await _flutterLocalNotificationsPlugin.cancel(notificationId);
   }
 
+  static Future<void> deletePairingNotification(String deviceId) async {
+    int? notificationId = _pairingDeviceNotifications[deviceId];
+    if (notificationId != null)
+      await _flutterLocalNotificationsPlugin.cancel(notificationId);
+  }
+
   static void _onDidReceiveLocalNotification(int id, String? title, String? body, String? payload) {
     return;
   }

@@ -126,6 +126,11 @@ class MainBloc extends Cubit<MainState> {
         await NotificationHelper.deleteNotification(notificationFile.notificationId);
       }
     };
+
+    customServerSocket.onPairingRequestTimeOut = (String deviceId) async {
+      bool isNotificationPermissionGranted = await Permission.notification.isGranted;
+      if (isNotificationPermissionGranted) await NotificationHelper.deletePairingNotification(deviceId);
+    };
   }
 
   void initNetworkListener() {
@@ -168,11 +173,7 @@ class MainBloc extends Cubit<MainState> {
 
   Future<void> onPairConfirmed(DeviceInfo? pairDeviceInfo) async {
     try {
-      if (pairDeviceInfo == null)
-        customServerSocket.pairStream.sink.add(null);
-      else
-        customServerSocket.pairStream.sink.add(pairDeviceInfo);
-
+      customServerSocket.pairStream.sink.add(pairDeviceInfo);
       await customServerSocket.pairStream.close();
       if (pairDeviceInfo != null) {
         await _storage.addBaseDevice(pairDeviceInfo, pairedDevicesKey);

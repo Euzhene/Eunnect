@@ -38,6 +38,7 @@ class CustomServerSocket {
   Function(int, NotificationFile?)? onFileBytesReceivedCall;
   Function(Map<String,dynamic>)? onWebRtcPeerConnectionCall;
   VoidCallback? onDeviceUnpaired;
+  Function(String)? onPairingRequestTimeOut;
 
   late StreamController<DeviceInfo?> pairStream;
 
@@ -121,7 +122,10 @@ class CustomServerSocket {
       DeviceInfo pairDeviceInfo = DeviceInfo.fromJsonString(data);
       onPairDeviceCall?.call(pairDeviceInfo);
       pairStream = StreamController();
-      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 30), onTimeout: () => null);
+      DeviceInfo? myPairDeviceInfo = await pairStream.stream.single.timeout(const Duration(seconds: 30), onTimeout: () {
+        onPairingRequestTimeOut?.call(pairDeviceInfo.id);
+        return null;
+      });
       if (myPairDeviceInfo == null)
         return ServerMessage(status: 103);
       else
