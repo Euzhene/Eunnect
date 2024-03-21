@@ -10,6 +10,7 @@ import 'package:eunnect/repo/local_storage.dart';
 import 'package:f_logs/model/flog/flog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../constants.dart';
 import '../../helpers/ssl_helper.dart';
@@ -36,7 +37,6 @@ class CustomServerSocket {
   Function(NotificationFile?, FileMessage)? onFileFullReceivedCall;
   Function(NotificationFile?)? onFileNotFullyReceivedCall;
   Function(int, NotificationFile?)? onFileBytesReceivedCall;
-  Function(Map<String,dynamic>)? onWebRtcPeerConnectionCall;
   VoidCallback? onDeviceUnpaired;
   Function(String)? onPairingRequestTimeOut;
 
@@ -45,13 +45,14 @@ class CustomServerSocket {
   final LocalStorage storage;
   final SslHelper sslHelper;
   late DeviceInfo myDeviceInfo;
-  late SecureSocket curSocket;
+  final Map<String, SecureSocket> fileMessagesSocket = {};
 
   CustomServerSocket({required this.storage, required this.sslHelper});
 
   Future<void> initServer(DeviceInfo myDeviceInfo) async {
     this.myDeviceInfo = myDeviceInfo;
     await _server?.close();
+    fileMessagesSocket.clear();
     String? ipAddress = await NetworkInfo().getWifiIP();
     if (ipAddress == null) return;
     SecurityContext context = await sslHelper.getServerSecurityContext();
@@ -60,51 +61,60 @@ class CustomServerSocket {
     _start();
   }
 
+  void destroySocket(FileMessage fileMessage) {
+    SecureSocket? socket = fileMessagesSocket.remove(fileMessage.id);
+    socket?.destroy();
+  }
+
   void _start() {
     _server?.listen((s) async {
-      curSocket = s; //todo: handle multiple sockets
-      Stream<Uint8List> stream = s.asBroadcastStream();
+      try {
+        Stream<Uint8List> stream = s.asBroadcastStream();
 
-      Uint8List bytes = await stream.first.then((value) => value, onError: (e, st) => Uint8List(0));
-      if (bytes.isEmpty) return;
+        Uint8List bytes = await stream.first.then((value) => value, onError: (e, st) => Uint8List(0));
+        if (bytes.isEmpty) return;
 
-      ClientMessage receiveMessage = ClientMessage.fromUInt8List(bytes);
+        ClientMessage receiveMessage = ClientMessage.fromUInt8List(bytes);
 
-      ServerMessage sendMessage;
-      switch (receiveMessage.call) {
-        case deviceInfoCall:
-          sendMessage = await _handleDeviceInfoCall();
-          break;
-        case pairDevicesCall:
-          sendMessage = await _handlePairCall(receiveMessage.data);
-          break;
-        case sendBufferCall:
-          sendMessage = await _handleBufferCall(receiveMessage);
-          break;
-        case sendFileCall:
-          sendMessage = await _handleFileCall(stream, receiveMessage, curSocket);
-          break;
-        case isPairedCall:
-          sendMessage = await _handleIsPairedCall(receiveMessage.deviceId);
-          break;
-        case unpairCall:
-          sendMessage = await _handleUnpairCall(receiveMessage.deviceId);
-          break;
-        default:
-          sendMessage = _handleUnknownCall(receiveMessage.call);
-          break;
+        ServerMessage sendMessage;
+        switch (receiveMessage.call) {
+          case deviceInfoCall:
+            sendMessage = await _handleDeviceInfoCall();
+            break;
+          case pairDevicesCall:
+            sendMessage = await _handlePairCall(receiveMessage.data);
+            break;
+          case sendBufferCall:
+            sendMessage = await _handleBufferCall(receiveMessage);
+            break;
+          case sendFileCall:
+            sendMessage = await _handleFileCall(stream, receiveMessage, s);
+            break;
+          case isPairedCall:
+            sendMessage = await _handleIsPairedCall(receiveMessage.deviceId);
+            break;
+          case unpairCall:
+            sendMessage = await _handleUnpairCall(receiveMessage.deviceId);
+            break;
+          default:
+            sendMessage = _handleUnknownCall(receiveMessage.call);
+            break;
+        }
+        s.add(sendMessage.toUInt8List());
+        s.destroy();
+      }catch(e,st) {
+        FLog.error(text: e.toString(), stacktrace: st);
+        if (e is HandshakeException) {
+
+        }
+        else if (e is! SocketException) {
+          s.add(ServerMessage(status: 105).toUInt8List());
+          s.destroy();
+        }
       }
-      s.add(sendMessage.toUInt8List());
-      s.destroy();
+      FLog.debug(text: "${fileMessagesSocket.length} sockets remains");
     }, onError: (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
-      if (e is HandshakeException) {
-
-      }
-      else if (e is! SocketException){
-        curSocket.add(ServerMessage(status: 105).toUInt8List());
-        curSocket.destroy();
-      }
     });
   }
 
@@ -174,13 +184,16 @@ class CustomServerSocket {
     return null;
   }
 
-  Future<ServerMessage> _handleFileCall(Stream<Uint8List> stream, ClientMessage receiveMessage, Socket socket) async {
+  Future<ServerMessage> _handleFileCall(Stream<Uint8List> stream, ClientMessage receiveMessage, SecureSocket socket) async {
     int status = 200;
+    FileMessage? fileMessage;
     try {
       ServerMessage? checkRes = await _checkPairDevice(receiveMessage);
       if (checkRes != null) return checkRes;
 
-      FileMessage fileMessage = FileMessage.fromJsonString(receiveMessage.data);
+      fileMessage = FileMessage.fromJsonString(receiveMessage.data);
+      fileMessage = fileMessage.copyWith(id: const Uuid().v4());
+      fileMessagesSocket[fileMessage.id!] = socket;
       DeviceInfo otherDeviceInfo = (await storage.getBaseDevice(receiveMessage.deviceId, pairedDevicesKey))!;
       NotificationFile? notificationFile = await onFileStartReceivingCall?.call(fileMessage, otherDeviceInfo);
 
@@ -195,10 +208,13 @@ class CustomServerSocket {
         fileMessage = fileMessage.copyWith(bytes: bytesBuilder.takeBytes());
         onFileFullReceivedCall?.call(notificationFile, fileMessage);
       } else onFileNotFullyReceivedCall?.call(notificationFile);
+
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       status = 105;
     }
+
+    fileMessagesSocket.remove(fileMessage?.id);
     return ServerMessage(status: status);
   }
 

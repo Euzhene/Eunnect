@@ -31,17 +31,19 @@ class ErrorMessage {
 
 const _filenameField = "name";
 const _fileSizeField = "size";
+const _idField = "id";
 
 class FileMessage {
   final List<int> bytes;
   final String filename;
   final int fileSize;
+  final String? id;
 
-  FileMessage({this.bytes = const [], required this.filename, required this.fileSize});
+  FileMessage({this.bytes = const [], required this.filename, required this.fileSize, this.id});
 
-  FileMessage copyWith({List<int>? bytes}) => FileMessage(bytes: bytes ?? this.bytes, filename: filename, fileSize: fileSize);
+  FileMessage copyWith({List<int>? bytes, String? id}) => FileMessage(bytes: bytes ?? this.bytes, filename: filename, fileSize: fileSize, id: id ?? this.id);
 
-  String toJsonString() => jsonEncode({_filenameField: filename, _fileSizeField: fileSize});
+  String toJsonString() => jsonEncode({_filenameField: filename, _fileSizeField: fileSize, _idField : id});
 
   List<int> toUInt8List() => utf8.encode(toJsonString());
 
@@ -52,6 +54,7 @@ class FileMessage {
       bytes: [],
       filename: json[_filenameField],
       fileSize: json[_fileSizeField],
+      id: json[_idField],
     );
   }
 }

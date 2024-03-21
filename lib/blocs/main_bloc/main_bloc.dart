@@ -47,7 +47,7 @@ class MainBloc extends Cubit<MainState> {
     };
 
     NotificationHelper.onCancelFile = (notificationFile) {
-      customServerSocket.curSocket.destroy();
+      customServerSocket.destroySocket(notificationFile.fileInfo);
     };
 
     customServerSocket.onPairDeviceCall = (DeviceInfo deviceInfo) async {
