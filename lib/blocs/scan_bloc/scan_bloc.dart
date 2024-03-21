@@ -119,6 +119,7 @@ class ScanBloc extends Cubit<ScanState> {
   Future<void> onAddDeviceByIp(String ip) async {
     try {
       FLog.trace(text: "getting info of a device by ip...");
+      emit(AwaitPairingDeviceState(null));
       SecureSocket socket = await SecureSocket.connect(InternetAddress(ip, type: InternetAddressType.IPv4), port,
           timeout: const Duration(seconds: 2), onBadCertificate: (X509Certificate certificate) {
             return SslHelper.handleSelfSignedCertificate(certificate: certificate, pairedDevicesId: [], deviceIdCheck: false);
@@ -131,13 +132,16 @@ class ScanBloc extends Cubit<ScanState> {
       ServerMessage socketMessage = ServerMessage.fromUInt8List(bytes);
       if (socketMessage.isErrorStatus) {
         FLog.error(text: socketMessage.getError!);
+        _mainBloc.emitDefaultError(socketMessage.getError!);
         return;
       }
       DeviceInfo pairingDeviceInfo = DeviceInfo.fromJsonString(socketMessage.data!);
 
       onPairRequested(pairingDeviceInfo);
+      emit(AwaitPairingDeviceState(pairingDeviceInfo));
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
+      _mainBloc.emitDefaultError(e.toString());
     }
   }
 
