@@ -1,7 +1,5 @@
-import 'package:eunnect/blocs/scan_bloc/scan_bloc.dart';
-import 'package:eunnect/blocs/scan_bloc/scan_state.dart';
+import 'package:eunnect/blocs/scan_bloc/add_device_by_ip_bloc.dart';
 import 'package:eunnect/constants.dart';
-import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_text.dart';
 import 'package:f_logs/f_logs.dart';
@@ -9,14 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-//todo добавить addDeviceByIpBloc
 class AddDeviceByIpDialog extends StatefulWidget {
   final TextEditingController controller = TextEditingController();
+
+  AddDeviceByIpDialog({super.key});
 
   static Future<void> openDialog(BuildContext context) {
     //todo добавить pushDialog в routes
     FLog.trace(text: "Navigating to $AddDeviceByIpDialog");
-    return showDialog(context: context, builder: (context) => BlocProvider.value(value: GetItHelper.i<ScanBloc>(), child: AddDeviceByIpDialog()));
+    return showDialog(
+        context: context, builder: (context) => BlocProvider(create: (ctx) => AddDeviceByIpBloc(), child: AddDeviceByIpDialog()));
   }
 
   @override
@@ -29,7 +29,7 @@ class _AddDeviceByIpState extends State<AddDeviceByIpDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: BlocBuilder<ScanBloc, ScanState>(builder: (context, state) {
+      child: BlocBuilder<AddDeviceByIpBloc, IpState>(builder: (context, state) {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
           child: Column(
@@ -41,7 +41,7 @@ class _AddDeviceByIpState extends State<AddDeviceByIpDialog> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter(RegExp(r'[\d\.]'), allow: true)],
                 decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.devices),
+                  prefixIcon: Icon(Icons.location_on_outlined),
                   hintText: "IP устройства",
                 ),
                 onChanged: (val) => setState(() {
@@ -49,11 +49,14 @@ class _AddDeviceByIpState extends State<AddDeviceByIpDialog> {
                 }),
               ),
               if (state is AwaitPairingDeviceState && state.deviceInfo == null)
-                const CircularProgressIndicator()
+                const Padding(
+                  padding: EdgeInsets.only(top: verticalPadding),
+                  child: CircularProgressIndicator(),
+                )
               else
                 CustomButton(
                     enabled: isValid,
-                    onPressed: () => context.read<ScanBloc>().onAddDeviceByIp(widget.controller.text),
+                    onPressed: () => context.read<AddDeviceByIpBloc>().onAddDeviceByIp(widget.controller.text),
                     text: "Добавить"),
               if (state is AwaitPairingDeviceState && state.deviceInfo != null)
                 CustomText("Ожидание ответа от ${state.deviceInfo!.name}...")

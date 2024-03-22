@@ -67,7 +67,7 @@ class ScanScreen extends StatelessWidget {
             FloatingActionButton(
               heroTag: "ip",
               tooltip: "Добавить по IP",
-              child: const Icon(Icons.location_on_rounded),
+              child: const Icon(Icons.location_on_outlined),
               onPressed: () => AddDeviceByIpDialog.openDialog(context),
             ),
             FloatingActionButton(
