@@ -4,14 +4,18 @@ import 'package:eunnect/constants.dart';
 import 'package:eunnect/helpers/get_it_helper.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_text.dart';
+import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+//todo добавить addDeviceByIpBloc
 class AddDeviceByIpDialog extends StatefulWidget {
   final TextEditingController controller = TextEditingController();
 
   static Future<void> openDialog(BuildContext context) {
+    //todo добавить pushDialog в routes
+    FLog.trace(text: "Navigating to $AddDeviceByIpDialog");
     return showDialog(context: context, builder: (context) => BlocProvider.value(value: GetItHelper.i<ScanBloc>(), child: AddDeviceByIpDialog()));
   }
 

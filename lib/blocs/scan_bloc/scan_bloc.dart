@@ -89,6 +89,7 @@ class ScanBloc extends Cubit<ScanState> {
 
   Future<void> onPairRequested(DeviceInfo deviceInfo) async {
     try {
+      _mainBloc.emitDefaultSuccess("Запрос на сопряжение отправлен");
       ReceivePort receivePort = ReceivePort();
       receivePort.listen((message) {
         message as IsolateMessage;

@@ -7,6 +7,7 @@ class CustomScreen extends StatelessWidget {
   final List<PopupMenuItem>? menuButtons;
   final EdgeInsets padding;
   final Widget? fab;
+  final FloatingActionButtonLocation? fabLocation;
   final Widget child;
 
   const CustomScreen({
@@ -16,6 +17,7 @@ class CustomScreen extends StatelessWidget {
     this.menuButtons,
     this.padding = const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
     this.fab,
+    this.fabLocation,
     required this.child,
   });
 
@@ -28,6 +30,7 @@ class CustomScreen extends StatelessWidget {
         actions: _getActions(),
       ),
       floatingActionButton: fab,
+      floatingActionButtonLocation: fabLocation,
       body: Padding(
         padding: padding,
         child: child,

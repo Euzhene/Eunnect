@@ -33,7 +33,7 @@ class DeveloperConsoleScreen extends StatelessWidget {
   static Future<void> openScreen(BuildContext context) {
     Widget screen = MultiBlocProvider(
         providers: [BlocProvider(create: (_) => DeveloperConsoleBloc())], child: const DeveloperConsoleScreen());
-    return pushScreen<void>(context, screen: screen, screenName: "DeveloperConsoleScreen");
+    return pushScreen<void>(context, screen: screen, screenName: (DeveloperConsoleScreen).toString());
   }
 }
 

@@ -113,7 +113,7 @@ class ActionsScreen extends StatelessWidget {
       child: const ActionsScreen(),
     );
 
-    return pushScreen<bool?>(context, screen: screen, screenName: "ActionsScreen");
+    return pushScreen<bool?>(context, screen: screen, screenName: (ActionsScreen).toString());
   }
 }
 

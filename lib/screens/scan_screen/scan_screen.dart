@@ -2,14 +2,16 @@ import 'package:eunnect/blocs/main_bloc/main_bloc.dart';
 import 'package:eunnect/constants.dart';
 import 'package:eunnect/models/device_info/device_info.dart';
 import 'package:eunnect/screens/actions_screen.dart';
+import 'package:eunnect/screens/scan_screen/add_device_by_qr_screen.dart';
 import 'package:eunnect/screens/scan_screen/scan_paired_device.dart';
 import 'package:eunnect/screens/settings_screen/settings_screen.dart';
-import 'package:eunnect/widgets/add_device_by_ip_dialog.dart';
+import 'package:eunnect/screens/scan_screen/add_device_by_ip_dialog.dart';
 import 'package:eunnect/widgets/custom_expansion_tile.dart';
 import 'package:eunnect/widgets/custom_screen.dart';
 import 'package:eunnect/widgets/device_info_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 
 import '../../blocs/scan_bloc/scan_bloc.dart';
 import '../../blocs/scan_bloc/scan_state.dart';
@@ -29,7 +31,8 @@ class ScanScreen extends StatelessWidget {
             appbarText: "Подключение Устройств",
             padding: const EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding * 3),
             appbarActions: [IconButton(onPressed: () => SettingsScreen.openScreen(context), icon: const Icon(Icons.settings))],
-            fab: FloatingActionButton(tooltip: "Добавить устройство по IP", onPressed: () => AddDeviceByIpDialog.openDialog(context), child: const Icon(Icons.add),),
+            fabLocation: ExpandableFab.location,
+            fab: _buildFab(),
             child: BlocConsumer<ScanBloc, ScanState>(listener: (context, state) {
               if (state is MoveToLastOpenDeviceState) _onMoveToActionScreen(context: context, deviceInfo: state.device);
             }, buildWhen: (prevS, curS) {
@@ -56,6 +59,30 @@ class ScanScreen extends StatelessWidget {
               );
             })));
   }
+
+  Widget _buildFab() => Builder(builder: (context) {
+        return ExpandableFab(
+          openButtonBuilder: RotateFloatingActionButtonBuilder(child: const Icon(Icons.add)),
+          children: [
+            FloatingActionButton(
+              heroTag: "ip",
+              tooltip: "Добавить по IP",
+              child: const Icon(Icons.location_on_rounded),
+              onPressed: () => AddDeviceByIpDialog.openDialog(context),
+            ),
+            FloatingActionButton(
+              heroTag: "qr",
+              tooltip: "Добавить по QR",
+              child: const Icon(Icons.qr_code_2),
+              onPressed: () async {
+                ScanBloc bloc = context.read();
+                DeviceInfo? deviceInfo = await AddDeviceByQrScreen.openScreen(context);
+                if (deviceInfo != null) bloc.onPairRequested(deviceInfo);
+              },
+            ),
+          ],
+        );
+      });
 
   Widget _buildFoundDeviceList({required List<DeviceInfo> devices, required ScanBloc bloc}) => CustomExpansionTile(
         initiallyExpanded: bloc.isFoundDeviceListExpanded,

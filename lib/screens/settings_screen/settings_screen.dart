@@ -23,7 +23,7 @@ class SettingsScreen extends StatefulWidget {
 
   static Future<void> openScreen(BuildContext context) {
     Widget screen = MultiBlocProvider(providers: [BlocProvider(create: (_) => SettingsBloc())], child: const SettingsScreen());
-    return pushScreen<void>(context, screen: screen, screenName: "SettingsScreen");
+    return pushScreen<void>(context, screen: screen, screenName: (SettingsScreen).toString());
   }
 }
 
