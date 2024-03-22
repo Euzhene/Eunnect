@@ -35,12 +35,7 @@ class CustomClientSocket {
 
   Future<ServerMessage> getCommands({required SecureSocket socket}) async {
       socket.add(ClientMessage(call: getCommandsCall,data: "", deviceId: myDeviceInfo.id).toUInt8List());
-      //todo добавить общий обработчик для получения ответа
-      BytesBuilder bytesBuilder = BytesBuilder(copy: false);
-      await for (Uint8List bytes in socket) {
-        bytesBuilder.add(bytes);
-      }
-      ServerMessage socketMessage = ServerMessage.fromUInt8List(bytesBuilder.takeBytes());
+      ServerMessage socketMessage = await _getServerMessage(socket);
       socket.destroy();
       return socketMessage;
   }
@@ -70,11 +65,7 @@ class CustomClientSocket {
   Future<bool> checkIsPairDevice({required SecureSocket socket}) async {
     socket.add(ClientMessage(call: isPairedCall, data: "", deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
-    BytesBuilder bytesBuilder = BytesBuilder(copy: false);
-    await for (Uint8List bytes in socket) {
-      bytesBuilder.add(bytes);
-    }
-    ServerMessage socketMessage = ServerMessage.fromUInt8List(bytesBuilder.takeBytes());
+    ServerMessage socketMessage = await _getServerMessage(socket);
     return socketMessage.status != 101;
   }
 
@@ -82,5 +73,13 @@ class CustomClientSocket {
     socket.add(ClientMessage(call: unpairCall, data: "", deviceId: myDeviceInfo.id).toUInt8List());
     await socket.close();
     socket.destroy();
+  }
+
+  Future<ServerMessage> _getServerMessage(SecureSocket socket) async {
+    BytesBuilder bytesBuilder = BytesBuilder(copy: false);
+    await for (Uint8List bytes in socket) {
+      bytesBuilder.add(bytes);
+    }
+    return ServerMessage.fromUInt8List(bytesBuilder.takeBytes());
   }
 }
