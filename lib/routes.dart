@@ -6,7 +6,17 @@ Future<T?> pushScreen<T>(BuildContext context, {required Widget screen, required
 }
 
 Future<T?> pushDialog<T>(BuildContext context, {required Widget screen, required String screenName}) async {
-  return _basePush(screenName: screenName, action: showDialog<T?>(context: context, builder: (context) => screen));
+  Widget _screen = ScaffoldMessenger(
+      child: Builder(
+          builder: (context) => Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).pop(),
+                child: GestureDetector(onTap: () {}, child: screen),
+              ))));
+
+  return _basePush(screenName: screenName, action: showDialog<T?>(context: context, builder: (context) => _screen));
 }
 
 Future<T?> _basePush<T>({required String screenName, required Future<T?> action}) async {

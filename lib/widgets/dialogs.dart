@@ -6,7 +6,7 @@ import 'custom_button.dart';
 showSnackBar(BuildContext context,
     {required String text, Color? backgroundColor = white, Color? textColor = black, Color? closeIconColor}) {
   Duration duration = closeIconColor == null ? const Duration(milliseconds: 4000) : const Duration(minutes: 1);
-  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  ScaffoldMessenger.of(context).clearSnackBars();
   return ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       duration: duration,
       showCloseIcon: closeIconColor != null,

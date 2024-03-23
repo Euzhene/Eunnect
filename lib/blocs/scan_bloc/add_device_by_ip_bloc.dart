@@ -42,10 +42,10 @@ class AddDeviceByIpBloc extends Cubit<IpState> {
       DeviceInfo pairingDeviceInfo = DeviceInfo.fromJsonString(socketMessage.data!);
       emit(AwaitPairingDeviceState(pairingDeviceInfo));
       await _scanBloc.onPairRequested(pairingDeviceInfo);
-      emit(IpState());
     } catch (e, st) {
       FLog.error(text: e.toString(), stacktrace: st);
       _mainBloc.emitDefaultError(e.toString());
     }
+    emit(IpState());
   }
 }
