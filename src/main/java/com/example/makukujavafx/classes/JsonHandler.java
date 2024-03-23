@@ -20,14 +20,6 @@ public class JsonHandler {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    public void createJsonFile() {
-        try {
-            objectMapper.writeValue(FileUtils.getDeviceFile(), objectMapper.createArrayNode());
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка при создании начального JSON файла", e);
-        }
-    }
-
 
     public void removeDeviceById(String id, ArrayNode jsonArray) {
         if (jsonArray != null) {
@@ -44,7 +36,6 @@ public class JsonHandler {
 
     public void saveDeviceToJsonFile(ArrayNode jsonArray) {
         try {
-
             objectMapper.writeValue(FileUtils.getDeviceFile(), jsonArray);
             System.out.println("JSON успешно обновлен.");
         } catch (IOException e) {

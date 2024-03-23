@@ -9,8 +9,12 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
 
 import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 public class MainApplication extends Application {
     private ServerHandler serverHandler;
@@ -28,18 +32,13 @@ public class MainApplication extends Application {
 
 
         serverHandler = new ServerHandler(scene);
-        serverHandler.initialization();
         SslHelper.init();
 
-        SSLServerSocket server= SslHelper.getSslServerSocket();
 
         startServerAsync();
 
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
 
     private void startServerAsync() {
         new Thread(() -> {
@@ -49,6 +48,12 @@ public class MainApplication extends Application {
                 throw new RuntimeException(ex);
             }
         }).start();
-//        thread.setDaemon(true);
     }
+
+
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
 }

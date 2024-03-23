@@ -14,11 +14,14 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -29,20 +32,21 @@ import static com.example.makukujavafx.classes.ServerHandler.PORT;
 
 public class SslHelper {
     private static SSLContext sslContext;
-    public static SSLServerSocket getSslServerSocket(int port) throws IOException {
-        ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket(port);
+
+    public static SSLServerSocket getSslServerSocket(InetAddress inetAddress) throws IOException {
+        ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket(PORT, 0, inetAddress);
         return (SSLServerSocket) serverSocket;
     }
 
-    public static SSLServerSocket getSslServerSocket() throws IOException {
-        return getSslServerSocket(PORT);
+    public static SSLSocket getSslClientSocket(InetAddress inetAddress) throws IOException {
+        Socket clientSocket = sslContext.getSocketFactory().createSocket(inetAddress, PORT);
+        return (SSLSocket) clientSocket;
     }
+
 
     public static void init() throws Exception {
         initSslContext();
     }
-
-
 
 
     private static void initSslContext() throws Exception {
@@ -65,7 +69,7 @@ public class SslHelper {
 
         CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
         InputStream in = new ByteArrayInputStream(certBytes);
-        X509Certificate cert = (X509Certificate)certFactory.generateCertificate(in);
+        X509Certificate cert = (X509Certificate) certFactory.generateCertificate(in);
 
 
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -110,7 +114,6 @@ public class SslHelper {
 
         return certificate;
     }
-
 
 
     private static KeyPair createKeys() throws Exception {

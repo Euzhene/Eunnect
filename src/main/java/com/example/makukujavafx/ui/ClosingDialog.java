@@ -13,7 +13,6 @@ import javafx.stage.StageStyle;
 
 public class ClosingDialog {
     public void build(ServerHandler serverHandler) {
-        // Create a new Stage for the loading dialog
         Stage loadingDialog = new Stage();
         loadingDialog.setResizable(false);
         loadingDialog.setAlwaysOnTop(true);
@@ -21,8 +20,6 @@ public class ClosingDialog {
         loadingDialog.initModality(Modality.APPLICATION_MODAL); // This makes the dialog block events to other windows
         loadingDialog.setTitle("Завершение программы");
 
-
-        // Put the ProgressIndicator and Label in a VBox
         VBox vbox = new VBox(10);
         vbox.getChildren().addAll(new ProgressIndicator());
         vbox.alignmentProperty().set(Pos.CENTER);
@@ -31,10 +28,8 @@ public class ClosingDialog {
         Scene scene = new Scene(vbox, 200, 100);
         loadingDialog.setScene(scene);
 
-        // Show the loading dialog
         loadingDialog.show();
 
-        // Create a Task to simulate the loading process
         Task<Void> task = new Task<Void>() {
             @Override
             protected Void call() throws Exception {
@@ -43,13 +38,11 @@ public class ClosingDialog {
             }
         };
 
-        // When the task is done, close the loading dialog
-        task.setOnSucceeded(e ->{
+        task.setOnSucceeded(e -> {
             Platform.exit();
             System.exit(0);
         });
 
-        // Start the task in a background thread
         new Thread(task).start();
     }
 }

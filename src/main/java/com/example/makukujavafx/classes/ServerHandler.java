@@ -1,5 +1,7 @@
 package com.example.makukujavafx.classes;
 
+import com.example.makukujavafx.network.NetworkUtil;
+import com.example.makukujavafx.network.SslHelper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -12,14 +14,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.prefs.Preferences;
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 
 
 public class ServerHandler {
-    private ScheduledExecutorService scheduledExecutorService;
     private ServerSocket serverSocket;
     private ArrayNode jsonArray;
     private DeviceInfo deviceInfo;
@@ -35,22 +37,18 @@ public class ServerHandler {
     public static final int PORT = 10242;
     private InetAddress address;
     private volatile boolean isRunning = true;
+    private SSLSocket clientSocket;
 
 
     public ServerHandler(Scene scene) throws SocketException {
         this.scene = scene;
         objectMapper = new ObjectMapper();
         prefs = Preferences.userNodeForPackage(ServerHandler.class);
+        jsonArray = objectMapper.createArrayNode();
         jsonHandler = new JsonHandler();
         boolean isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
-        if (isFirstLaunch) jsonArray = objectMapper.createArrayNode();
-        else jsonArray = jsonHandler.getDevicesFromJsonFile();
-    }
-
-    public void initialization() {
-        boolean isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
         try {
-            address = getWirelessAddresses().isEmpty() ? InetAddress.getLocalHost() : getWirelessAddresses().get(0);
+            address = NetworkUtil.getWirelessAddresses().isEmpty() ? InetAddress.getLocalHost() : NetworkUtil.getWirelessAddresses().get(0);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         } catch (UnknownHostException e) {
@@ -62,48 +60,72 @@ public class ServerHandler {
             jsonHandler.saveDeviceToJsonFile(jsonArray);
             prefs.putBoolean(FIRST_LAUNCH_KEY, false);
         } else {
+            jsonArray = jsonHandler.getDevicesFromJsonFile();
             JsonNode firstDevice = jsonArray.get(0);
             ((ObjectNode) firstDevice).put("ip", address.getHostAddress());
             jsonHandler.saveDeviceToJsonFile(jsonArray);
             deviceInfo = new JsonHandler().getDeviceFromJsonFile();
         }
-        System.out.println(jsonArray);
     }
 
 
-    public void startServer() throws IOException {
-        try {
-            serverSocket = new ServerSocket(PORT, 0, address);
-
-            jmdns = JmDNS.create(address);
-            Map<String, Object> txtMap = new HashMap<>();
-            txtMap.put("id", deviceInfo.getId());
-            txtMap.put("ip", deviceInfo.getIp());
-            txtMap.put("name", deviceInfo.getName());
-            txtMap.put("type", deviceInfo.getType());
-
-            serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
-            jmdns.registerService(serviceInfo);
-            while (isRunning) {
+    /*        public void startServer() throws IOException {
                 try {
-                    Socket clientSocket = serverSocket.accept();
-                    handleClient(clientSocket);
-                    clientSocket.close();
-                } catch (IOException e) {
-                    if (!serverSocket.isClosed()) {
-                        throw new RuntimeException(e);
+        //            serverSocket = new ServerSocket(PORT, 0, address);
+                    serverSocket = SslHelper.getSslServerSocket(address);
+
+                    jmdns = JmDNS.create(address);
+                    Map<String, Object> txtMap = new HashMap<>();
+                    txtMap.put("id", deviceInfo.getId());
+                    txtMap.put("ip", deviceInfo.getIp());
+                    txtMap.put("name", deviceInfo.getName());
+                    txtMap.put("type", deviceInfo.getType());
+
+                    serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
+                    jmdns.registerService(serviceInfo);
+                    while (isRunning) {
+                        try {
+                            clientSocket = (SSLSocket) serverSocket.accept();
+        //                    Socket clientSocket = serverSocket.accept();
+                            handleClient(clientSocket);
+                        } catch (IOException e) {
+                            if (!serverSocket.isClosed()) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+                } finally {
+                    if (serverSocket != null && !serverSocket.isClosed()) {
+                        serverSocket.close();
                     }
                 }
-            }
-        } finally {
-            if (serverSocket != null && !serverSocket.isClosed()) {
-                serverSocket.close();
+            }*/
+    public void startServer() throws IOException {
+        serverSocket = SslHelper.getSslServerSocket(address);
+
+        jmdns = JmDNS.create(address);
+        Map<String, Object> txtMap = new HashMap<>();
+        txtMap.put("id", deviceInfo.getId());
+        txtMap.put("ip", deviceInfo.getIp());
+        txtMap.put("name", deviceInfo.getName());
+        txtMap.put("type", deviceInfo.getType());
+
+        serviceInfo = ServiceInfo.create(SERVICE_TYPE, deviceInfo.getId(), PORT, 0, 0, txtMap);
+        jmdns.registerService(serviceInfo);
+        while (isRunning) {
+            try {
+                clientSocket = (SSLSocket) serverSocket.accept();
+                handleClient(clientSocket);
+            } catch (IOException e) {
+                if (!serverSocket.isClosed()) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
 
 
-    private void handleClient(Socket clientSocket) throws IOException {
+    private void handleClient(SSLSocket clientSocket) throws IOException {
         try (DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
              DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
 
@@ -113,6 +135,7 @@ public class ServerHandler {
 
             String jsonInput = new String(jsonBytes, 0, bytesRead);
             System.out.println("JsonInput - " + jsonInput);
+
 
             SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
             String id = socketMessage.getDevice_id();
@@ -143,28 +166,11 @@ public class ServerHandler {
                 String jsonResponse = objectMapper.writeValueAsString(responseMessage);
                 dos.write(jsonResponse.getBytes());
             }
-
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            clientSocket.close();
         }
-    }
-
-    private List<InetAddress> getWirelessAddresses() throws SocketException {
-        List<InetAddress> wirelessAddresses = new ArrayList<>();
-        List<NetworkInterface> networkInterfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-        for (NetworkInterface networkInterface : networkInterfaces) {
-            if (networkInterface.getDisplayName().contains("VirtualBox"))
-                continue;
-            List<InetAddress> addresses = Collections.list(networkInterface.getInetAddresses());
-            for (InetAddress address : addresses) {
-                if (address.getHostAddress().equals("127.0.0.1"))
-                    continue;
-                if (address.getHostAddress().contains(":"))
-                    continue;
-                wirelessAddresses.add(address);
-            }
-        }
-        return wirelessAddresses;
     }
 
 
@@ -174,6 +180,11 @@ public class ServerHandler {
             jmdns.unregisterService(serviceInfo);
             jmdns.close();
         }
+        if (clientSocket != null && !clientSocket.isClosed()) {
+            clientSocket.close();
+        }
+        if (serverSocket != null && !serverSocket.isClosed()) {
+            serverSocket.close();
+        }
     }
-
 }
