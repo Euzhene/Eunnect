@@ -1,8 +1,8 @@
 import 'package:eunnect/blocs/scan_bloc/add_device_by_ip_bloc.dart';
 import 'package:eunnect/constants.dart';
+import 'package:eunnect/routes.dart';
 import 'package:eunnect/widgets/custom_button.dart';
 import 'package:eunnect/widgets/custom_text.dart';
-import 'package:f_logs/f_logs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,10 +13,9 @@ class AddDeviceByIpDialog extends StatefulWidget {
   AddDeviceByIpDialog({super.key});
 
   static Future<void> openDialog(BuildContext context) {
-    //todo добавить pushDialog в routes
-    FLog.trace(text: "Navigating to $AddDeviceByIpDialog");
-    return showDialog(
-        context: context, builder: (context) => BlocProvider(create: (ctx) => AddDeviceByIpBloc(), child: AddDeviceByIpDialog()));
+    return pushDialog(context,
+        screen: BlocProvider(create: (ctx) => AddDeviceByIpBloc(), child: AddDeviceByIpDialog()),
+        screenName: (AddDeviceByIpDialog).toString());
   }
 
   @override
