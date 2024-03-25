@@ -30,7 +30,6 @@ public class DialogController /*implements Initializable*/ {
         System.out.println("Reject");
     }
 
-//    DataSingletone data = DataSingletone.getInstance();
 
 /*    @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {

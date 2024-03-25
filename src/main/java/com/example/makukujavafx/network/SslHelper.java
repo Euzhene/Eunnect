@@ -97,7 +97,8 @@ public class SslHelper {
         JsonHandler jsonHandler = new JsonHandler();
         DeviceInfo deviceInfo = jsonHandler.getDeviceFromJsonFile();
 
-        X500Name issuerName = new X500Name(String.format("CN={0}, OU=Makuku", deviceInfo.getId()));
+        X500Name issuerName = new X500Name(String.format("CN=%s, OU=Makuku", deviceInfo.getId()));
+        System.out.println("issuerName - " + issuerName);
         X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder(issuerName,
                 new BigInteger(64, new SecureRandom()),
                 new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000),

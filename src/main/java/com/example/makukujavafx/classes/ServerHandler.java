@@ -104,6 +104,7 @@ public class ServerHandler {
         serverSocket = SslHelper.getSslServerSocket(address);
 
         jmdns = JmDNS.create(address);
+        jmdns.unregisterAllServices();
         Map<String, Object> txtMap = new HashMap<>();
         txtMap.put("id", deviceInfo.getId());
         txtMap.put("ip", deviceInfo.getIp());
@@ -177,14 +178,17 @@ public class ServerHandler {
     public void stopService() throws IOException {
         isRunning = false;
         if (jmdns != null) {
-            jmdns.unregisterService(serviceInfo);
+            jmdns.unregisterAllServices();
             jmdns.close();
+            System.out.println("Jmdnss closed");
         }
         if (clientSocket != null && !clientSocket.isClosed()) {
             clientSocket.close();
+            System.out.println("Client closed");
         }
         if (serverSocket != null && !serverSocket.isClosed()) {
             serverSocket.close();
+            System.out.println("Server closed");
         }
     }
 }

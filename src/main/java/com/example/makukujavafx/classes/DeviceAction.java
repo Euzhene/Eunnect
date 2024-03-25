@@ -39,57 +39,56 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DeviceAction {
 //    private static DataSingletone dataSingletone = DataSingletone.getInstance();
 
-//    public static void pairDevices(/*Scene scene, */SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
-//        try {
-//            JsonNode data = objectMapper.readTree(socketMessage.getData());
-//            System.out.println("data - " + data);
-//
-///*            Platform.runLater(() -> {
-//                try {
-//                    DataSingletone dataSingletone = DataSingletone.getInstance();
-//                    dataSingletone.setData(data.get("device_type").asText() + " " + data.get("name").asText());
-//                    FXMLLoader fxmlLoader = new FXMLLoader(MainController.class.getResource("pairing-dialog.fxml"));
-//                    Parent root1 = (Parent) fxmlLoader.load();
-//                    DialogController dialogController = fxmlLoader.getController();
-//                    dialogController.initializeData(data.get("device_type").asText() + " " + data.get("name").asText());
-//                    Stage stage = new Stage();
-//                    stage.setResizable(false);
-//                    stage.setScene(new Scene(root1));
-//                    stage.initOwner(scene.getWindow());
-//                    stage.show();
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            });*/
-//            SocketMessage responseMessage = null;
-//
-//            /*if (dialog.isPairAllowed()) {
-//                if (deviceId != null) {
-//                    JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
-//                    responseMessage = new SocketMessage(socketMessage.getCall(), null, 200, null);
-//                    jsonArray.add(data);
-//                    JsonHandler.saveJsonToFile(jsonArray);
-//
-////                    ServerApp2.serverApp.readJSON(jsonArray);
-//
-//                    System.out.println("JsonArray pair - " + jsonArray);
-//                } else {
-//                    responseMessage = new SocketMessage(socketMessage.getCall(), null, 105, null);
-//                }
-//            } else {
-//                responseMessage = new SocketMessage(socketMessage.getCall(), null, 103, null);
-//            }*/
-//            String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-//            dos.write(jsonResponse.getBytes());
-//        } finally {
-//            if (dos != null) {
-//                dos.close();
-//            }
-//        }
-//    }
+    /*    public static void pairDevices(Scene scene, SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
+            try {
+                JsonNode data = objectMapper.readTree(socketMessage.getData());
+                System.out.println("data - " + data);
+
+                Platform.runLater(() -> {
+                    try {
+                        FXMLLoader fxmlLoader = new FXMLLoader(MainController.class.getResource("pairing-dialog.fxml"));
+                        Parent root1 = (Parent) fxmlLoader.load();
+                        DialogController dialogController = fxmlLoader.getController();
+                        dialogController.initializeData(data.get("device_type").asText() + " " + data.get("name").asText());
+                        Stage stage = new Stage();
+                        stage.setResizable(false);
+                        stage.setScene(new Scene(root1));
+                        stage.initOwner(scene.getWindow());
+                        stage.show();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                SocketMessage responseMessage = null;
+
+                if (dialog.isPairAllowed()) {
+                    if (deviceId != null) {
+                        JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
+                        responseMessage = new SocketMessage(socketMessage.getCall(), null, 200, null);
+                        jsonArray.add(data);
+    //                    JsonHandler.saveJsonToFile(jsonArray);
+
+    //                    ServerApp2.serverApp.readJSON(jsonArray);
+
+                        System.out.println("JsonArray pair - " + jsonArray);
+                    } else {
+                        responseMessage = new SocketMessage(socketMessage.getCall(), null, 105, null);
+                    }
+                } else {
+                    responseMessage = new SocketMessage(socketMessage.getCall(), null, 103, null);
+                }
+                String jsonResponse = objectMapper.writeValueAsString(responseMessage);
+                dos.write(jsonResponse.getBytes());
+            } finally {
+                if (dos != null) {
+                    dos.close();
+                }
+            }
+        }*/
+
 
     public static void pairDevices(SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
-        /*JsonNode data = objectMapper.readTree(socketMessage.getData());
+        JsonNode data = objectMapper.readTree(socketMessage.getData());
         System.out.println("data - " + data);
 
         final SocketMessage[] responseMessage = new SocketMessage[1];
@@ -100,10 +99,10 @@ public class DeviceAction {
             Action action1 = new Action("OK", evt -> {
                 System.out.println("OK clicked");
                 if (deviceId != null) {
-                    JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
+//                    JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
                     responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 200, null);
                     jsonArray.add(data);
-                    JsonHandler.saveJsonToFile(jsonArray);
+//                    JsonHandler.saveJsonToFile(jsonArray);
 
 
                     System.out.println("JsonArray pair - " + jsonArray);
@@ -134,7 +133,7 @@ public class DeviceAction {
 
             Notifications notification = Notifications.create()
                     .title("Запрос на сопряжение")
-                    .text(data.get("device_type").asText() + " " + data.get("name").asText())
+                    .text(data.get("type").asText() + " " + data.get("name").asText())
                     .action(action1, action2)
                     .hideCloseButton()
                     .hideAfter(Duration.seconds(5));
@@ -162,15 +161,14 @@ public class DeviceAction {
                 }
             };
             timer.schedule(timerTask, 5000); // 5 секунд
-        });*/
+        });
 
-        /*try {
+        try {
             future.get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
-        }*/
+        }
     }
-
 
     public static void getBuffer(SocketMessage socketMessage, DataOutputStream dos, ObjectMapper
             objectMapper, ArrayNode jsonArray) throws IOException {
@@ -185,7 +183,7 @@ public class DeviceAction {
             String jsonResponse = objectMapper.writeValueAsString(responseMessage);
             dos.write(jsonResponse.getBytes());
 
-            String device_name = getCurrentConnectedDevice(socketMessage, jsonArray);
+//            String device_name = getCurrentConnectedDevice(socketMessage, jsonArray);
 //            new Notification("Получен буфер от устройства " + device_name);
         } finally {
             if (dos != null) {
