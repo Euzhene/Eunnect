@@ -13,7 +13,7 @@ import java.util.Iterator;
 
 public class JsonHandler {
 
-    private ObjectMapper objectMapper;
+    private static ObjectMapper objectMapper;
 
     public JsonHandler() {
         objectMapper = new ObjectMapper();
@@ -21,7 +21,7 @@ public class JsonHandler {
     }
 
 
-    public void removeDeviceById(String id, ArrayNode jsonArray) {
+    public static void removeDeviceById(String id, ArrayNode jsonArray) {
         if (jsonArray != null) {
             Iterator<JsonNode> iterator = jsonArray.elements();
             while (iterator.hasNext()) {
@@ -34,7 +34,7 @@ public class JsonHandler {
         }
     }
 
-    public void saveDeviceToJsonFile(ArrayNode jsonArray) {
+    public static void saveDeviceToJsonFile(ArrayNode jsonArray) {
         try {
             objectMapper.writeValue(FileUtils.getDeviceFile(), jsonArray);
             System.out.println("JSON успешно обновлен.");
@@ -43,7 +43,7 @@ public class JsonHandler {
         }
     }
 
-    public ArrayNode getDevicesFromJsonFile() {
+    public static ArrayNode getDevicesFromJsonFile() {
         try {
             byte[] json = FileUtils.getDevicesBytesFromJsonFile();
 
@@ -59,7 +59,7 @@ public class JsonHandler {
         }
     }
 
-    public DeviceInfo getDeviceFromJsonFile() {
+    public static DeviceInfo getDeviceFromJsonFile() {
         try {
             ArrayNode devices = getDevicesFromJsonFile();
             JsonNode device = devices.get(0);
@@ -71,7 +71,7 @@ public class JsonHandler {
     }
 
 
-    public boolean isIdInArray(String id, ArrayNode jsonArray) {
+    public static boolean isIdInArray(String id, ArrayNode jsonArray) {
         if (jsonArray != null) {
             for (JsonNode element : jsonArray) {
                 if (element.has("id") && id.equals(element.get("id").asText())) {

@@ -23,7 +23,7 @@ public class MainApplication extends Application {
     public void start(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("main.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        scene.getStylesheets().add(MainApplication.class.getResource("styles.css").toString());
+//        scene.getStylesheets().add(MainApplication.class.getResource("styles.css").toString());
         stage.setResizable(false);
         stage.setScene(scene);
 

@@ -2,10 +2,15 @@
     -fx-background-color: null;
 }
 
+
 .accordion .titled-pane .title {
     -fx-background-color: null;
 }
 
 .titled-pane > *.content {
     -fx-border-color: transparent;
+}
+
+.titled-pane .transparent {
+    -fx-background-color: null;
 }

@@ -31,7 +31,6 @@ public class ServerHandler {
     private ServiceInfo serviceInfo;
     private final Preferences prefs;
     private final String FIRST_LAUNCH_KEY = "makuku";
-    private JsonHandler jsonHandler;
 
     private final String SERVICE_TYPE = "_makuku._tcp.local.";
     public static final int PORT = 10242;
@@ -45,7 +44,7 @@ public class ServerHandler {
         objectMapper = new ObjectMapper();
         prefs = Preferences.userNodeForPackage(ServerHandler.class);
         jsonArray = objectMapper.createArrayNode();
-        jsonHandler = new JsonHandler();
+        new JsonHandler();
         boolean isFirstLaunch = prefs.getBoolean(FIRST_LAUNCH_KEY, true);
         try {
             address = NetworkUtil.getWirelessAddresses().isEmpty() ? InetAddress.getLocalHost() : NetworkUtil.getWirelessAddresses().get(0);
@@ -57,13 +56,13 @@ public class ServerHandler {
         if (isFirstLaunch) {
             deviceInfo = new DeviceInfo(System.getProperty("os.name").toLowerCase(), System.getProperty("user.name"), address.getHostAddress());
             jsonArray.add(objectMapper.valueToTree(deviceInfo));
-            jsonHandler.saveDeviceToJsonFile(jsonArray);
+            JsonHandler.saveDeviceToJsonFile(jsonArray);
             prefs.putBoolean(FIRST_LAUNCH_KEY, false);
         } else {
-            jsonArray = jsonHandler.getDevicesFromJsonFile();
-            JsonNode firstDevice = jsonArray.get(0);
-            ((ObjectNode) firstDevice).put("ip", address.getHostAddress());
-            jsonHandler.saveDeviceToJsonFile(jsonArray);
+            jsonArray = JsonHandler.getDevicesFromJsonFile();
+            ObjectNode firstDevice = (ObjectNode) jsonArray.get(0);
+            firstDevice.put("ip", address.getHostAddress());
+            JsonHandler.saveDeviceToJsonFile(jsonArray);
             deviceInfo = new JsonHandler().getDeviceFromJsonFile();
         }
     }
@@ -141,7 +140,7 @@ public class ServerHandler {
             SocketMessage socketMessage = objectMapper.readValue(jsonInput, SocketMessage.class);
             String id = socketMessage.getDevice_id();
             System.out.println("Array - " + jsonArray);
-            if (socketMessage.getCall().equals("pair_devices") || jsonHandler.isIdInArray(id, jsonArray)) {
+            if (socketMessage.getCall().equals("pair_devices") || JsonHandler.isIdInArray(id, jsonArray)) {
                 switch (socketMessage.getCall()) {
                     case "pair_devices":
                         DeviceAction.pairDevices(/*scene, */socketMessage, dos, jsonArray, objectMapper, deviceInfo.getId());

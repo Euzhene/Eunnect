@@ -1,42 +1,39 @@
 package com.example.makukujavafx.classes;
 
 
-import com.example.makukujavafx.DialogController;
+import com.example.makukujavafx.CardController;
+import com.example.makukujavafx.ImagePath;
+import com.example.makukujavafx.MainApplication;
 import com.example.makukujavafx.MainController;
 import com.example.makukujavafx.models.SocketMessage;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.example.makukujavafx.models.FileMessage;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
+import javafx.scene.layout.HBox;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.action.Action;
-import org.w3c.dom.ls.LSOutput;
 
 import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
+
+//import static com.sun.javafx.scene.control.skin.Utils.getResource;
 
 public class DeviceAction {
+    private static Notifications notification;
+    private static int currentNotificationCount = 0;
+
+
 //    private static DataSingletone dataSingletone = DataSingletone.getInstance();
 
     /*    public static void pairDevices(Scene scene, SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
@@ -88,85 +85,86 @@ public class DeviceAction {
 
 
     public static void pairDevices(SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
-        JsonNode data = objectMapper.readTree(socketMessage.getData());
-        System.out.println("data - " + data);
+        ObjectNode data = (ObjectNode) objectMapper.readTree(socketMessage.getData());
+        System.out.println("Pairing. Device - " + data);
 
         final SocketMessage[] responseMessage = new SocketMessage[1];
-//
-        CompletableFuture<Void> future = new CompletableFuture<>();
+        currentNotificationCount++;
+        CountDownLatch latch = new CountDownLatch(currentNotificationCount);
 
         Platform.runLater(() -> {
             Action action1 = new Action("OK", evt -> {
                 System.out.println("OK clicked");
+
                 if (deviceId != null) {
-//                    JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
+                    JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
                     responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 200, null);
+
+
+                    if (data.get("type").asText().equalsIgnoreCase("windows")) {
+                        data.put("imageSrc", ImagePath.WINDOWS.getPath());
+                    } else if (data.get("type").asText().equalsIgnoreCase("phone")) {
+                        data.put("imageSrc", ImagePath.PHONE.getPath());
+                    } else if (data.get("type").asText().equalsIgnoreCase("linux")) {
+                        data.put("imageSrc", ImagePath.LINUX.getPath());
+                    } else if (data.get("type").asText().equalsIgnoreCase("tablet")) {
+                        data.put("imageSrc", ImagePath.TABLET.getPath());
+                    }
+
                     jsonArray.add(data);
-//                    JsonHandler.saveJsonToFile(jsonArray);
+                    JsonHandler.saveDeviceToJsonFile(jsonArray);
+
+                    FXMLLoader fxmlLoader = new FXMLLoader(MainController.class.getResource("/com/example/makukujavafx/main.fxml"));
+                    Parent root = null;
+                    MainController mainController = null;
+                    try {
+                        root = fxmlLoader.load();
+                        mainController = fxmlLoader.getController(); // Get the controller instance
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    if (mainController != null) {
+                        mainController.addDevice(data);
+                    } else {
+                        // Handle the case where mainController is null
+                    }
 
 
-                    System.out.println("JsonArray pair - " + jsonArray);
                 } else {
                     responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 105, null);
                 }
-                try {
-                    dos.write(objectMapper.writeValueAsString(responseMessage[0]).getBytes());
-                    dos.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                future.complete(null);
+                currentNotificationCount--;
+                latch.countDown();
             });
 
             Action action2 = new Action("Cancel", evt -> {
                 System.out.println("Cancel clicked");
                 responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 103, null);
-                try {
-                    dos.write(objectMapper.writeValueAsString(responseMessage[0]).getBytes());
-                    dos.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                future.complete(null);
+                currentNotificationCount--;
+                latch.countDown();
             });
-            Timer timer = new Timer();
 
-            Notifications notification = Notifications.create()
+            notification = Notifications.create()
                     .title("Запрос на сопряжение")
                     .text(data.get("type").asText() + " " + data.get("name").asText())
                     .action(action1, action2)
                     .hideCloseButton()
                     .hideAfter(Duration.seconds(5));
 
-            notification.onAction(event -> {
-                future.complete(null);
-                timer.cancel();
-            });
-            notification.show();
 
-            TimerTask timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    if (!future.isDone()) {
-                        try {
-                            responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 103, null);
-                            String jsonResponse = objectMapper.writeValueAsString(responseMessage[0]);
-                            dos.write(jsonResponse.getBytes());
-                            dos.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        future.complete(null);
-                    }
-                }
-            };
-            timer.schedule(timerTask, 5000); // 5 секунд
+            notification.show();
         });
 
         try {
-            future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 103, null);
+            }
+
+            dos.write(objectMapper.writeValueAsString(responseMessage[0]).getBytes());
+            dos.close();
+        } catch (InterruptedException | IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
