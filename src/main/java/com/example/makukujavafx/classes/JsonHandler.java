@@ -13,10 +13,9 @@ import java.util.Iterator;
 
 public class JsonHandler {
 
-    private static ObjectMapper objectMapper;
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
-    public JsonHandler() {
-        objectMapper = new ObjectMapper();
+    static {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
@@ -28,6 +27,11 @@ public class JsonHandler {
                 JsonNode element = iterator.next();
                 if (element.has("id") && id.equals(element.get("id").asText())) {
                     iterator.remove();
+                    try {
+                        objectMapper.writeValue(FileUtils.getDeviceFile(), jsonArray);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                     break;
                 }
             }

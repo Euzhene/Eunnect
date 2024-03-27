@@ -7,11 +7,11 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="70.0" prefWidth="260.0" style="-fx-background-radius: 10; -fx-background-color: #404040;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.makukujavafx.CardController">
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="60.0" prefWidth="250.0" style="-fx-background-radius: 10; -fx-background-color: #363636;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.makukujavafx.CardController">
     <children>
-        <VBox fx:id="colorField" minHeight="70.0" minWidth="70.0" prefHeight="70.0" prefWidth="70.0" style="-fx-background-color: green; -fx-background-radius: 10 0 0 10;">
+        <VBox fx:id="colorField" minHeight="60.0" minWidth="60.0" prefHeight="70.0" prefWidth="60.0" style="-fx-background-color: green; -fx-background-radius: 10 0 0 10;">
             <children>
-                <ImageView fx:id="iconDevice" fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true">
+                <ImageView fx:id="iconDevice" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
                     <VBox.margin>
                         <Insets left="10.0" top="10.0" />
                     </VBox.margin>
@@ -33,11 +33,11 @@
                 <Insets left="10.0" />
             </padding>
         </VBox>
-        <VBox alignment="CENTER" maxHeight="70.0" maxWidth="60.0" minHeight="70.0" minWidth="60.0" prefHeight="70.0" prefWidth="60.0">
+        <VBox alignment="CENTER" maxHeight="60.0" maxWidth="60.0" minHeight="60.0" minWidth="60.0" prefHeight="60.0" prefWidth="60.0">
             <children>
-                <HBox maxHeight="40.0" maxWidth="40.0" minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" style="-fx-background-color: #4A4A4A; -fx-background-radius: 10;">
+                <HBox fx:id="pairingPanel" alignment="CENTER" maxHeight="40.0" maxWidth="40.0" minHeight="40.0" minWidth="40.0" onMousePressed="#breakPairing" prefHeight="40.0" prefWidth="40.0" style="-fx-background-color: #4A4A4A; -fx-background-radius: 10; -fx-cursor: hand;">
                     <children>
-                        <ImageView fx:id="pairIcon" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fx:id="pairIcon" fitHeight="32.0" fitWidth="32.0" pickOnBounds="true" preserveRatio="true" />
                     </children>
                 </HBox>
             </children>

@@ -1,10 +1,9 @@
 package com.example.makukujavafx.classes;
 
 
-import com.example.makukujavafx.CardController;
 import com.example.makukujavafx.ImagePath;
-import com.example.makukujavafx.MainApplication;
 import com.example.makukujavafx.MainController;
+import com.example.makukujavafx.models.DeviceActionListener;
 import com.example.makukujavafx.models.SocketMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,15 +13,18 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.layout.HBox;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
-import org.controlsfx.control.action.Action;
 
+import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,56 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class DeviceAction {
     private static Notifications notification;
     private static int currentNotificationCount = 0;
-
-
-//    private static DataSingletone dataSingletone = DataSingletone.getInstance();
-
-    /*    public static void pairDevices(Scene scene, SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
-            try {
-                JsonNode data = objectMapper.readTree(socketMessage.getData());
-                System.out.println("data - " + data);
-
-                Platform.runLater(() -> {
-                    try {
-                        FXMLLoader fxmlLoader = new FXMLLoader(MainController.class.getResource("pairing-dialog.fxml"));
-                        Parent root1 = (Parent) fxmlLoader.load();
-                        DialogController dialogController = fxmlLoader.getController();
-                        dialogController.initializeData(data.get("device_type").asText() + " " + data.get("name").asText());
-                        Stage stage = new Stage();
-                        stage.setResizable(false);
-                        stage.setScene(new Scene(root1));
-                        stage.initOwner(scene.getWindow());
-                        stage.show();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                SocketMessage responseMessage = null;
-
-                if (dialog.isPairAllowed()) {
-                    if (deviceId != null) {
-                        JsonHandler.removeDeviceById(data.get("id").asText(), jsonArray);
-                        responseMessage = new SocketMessage(socketMessage.getCall(), null, 200, null);
-                        jsonArray.add(data);
-    //                    JsonHandler.saveJsonToFile(jsonArray);
-
-    //                    ServerApp2.serverApp.readJSON(jsonArray);
-
-                        System.out.println("JsonArray pair - " + jsonArray);
-                    } else {
-                        responseMessage = new SocketMessage(socketMessage.getCall(), null, 105, null);
-                    }
-                } else {
-                    responseMessage = new SocketMessage(socketMessage.getCall(), null, 103, null);
-                }
-                String jsonResponse = objectMapper.writeValueAsString(responseMessage);
-                dos.write(jsonResponse.getBytes());
-            } finally {
-                if (dos != null) {
-                    dos.close();
-                }
-            }
-        }*/
+    public static DeviceActionListener<ObjectNode> onDeviceAdded;
 
 
     public static void pairDevices(SocketMessage socketMessage, DataOutputStream dos, ArrayNode jsonArray, ObjectMapper objectMapper, String deviceId) throws IOException {
@@ -93,7 +46,7 @@ public class DeviceAction {
         CountDownLatch latch = new CountDownLatch(currentNotificationCount);
 
         Platform.runLater(() -> {
-            Action action1 = new Action("OK", evt -> {
+            org.controlsfx.control.action.Action action1 = new org.controlsfx.control.action.Action("OK", evt -> {
                 System.out.println("OK clicked");
 
                 if (deviceId != null) {
@@ -113,22 +66,7 @@ public class DeviceAction {
 
                     jsonArray.add(data);
                     JsonHandler.saveDeviceToJsonFile(jsonArray);
-
-                    FXMLLoader fxmlLoader = new FXMLLoader(MainController.class.getResource("/com/example/makukujavafx/main.fxml"));
-                    Parent root = null;
-                    MainController mainController = null;
-                    try {
-                        root = fxmlLoader.load();
-                        mainController = fxmlLoader.getController(); // Get the controller instance
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    if (mainController != null) {
-                        mainController.addDevice(data);
-                    } else {
-                        // Handle the case where mainController is null
-                    }
+                    onDeviceAdded.onAction(data);
 
 
                 } else {
@@ -138,7 +76,7 @@ public class DeviceAction {
                 latch.countDown();
             });
 
-            Action action2 = new Action("Cancel", evt -> {
+            org.controlsfx.control.action.Action action2 = new org.controlsfx.control.action.Action("Cancel", evt -> {
                 System.out.println("Cancel clicked");
                 responseMessage[0] = new SocketMessage(socketMessage.getCall(), null, 103, null);
                 currentNotificationCount--;

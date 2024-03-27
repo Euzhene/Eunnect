@@ -14,3 +14,7 @@
 .titled-pane .transparent {
     -fx-background-color: null;
 }
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
